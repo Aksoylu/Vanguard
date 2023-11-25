@@ -106,7 +106,8 @@ impl HttpServer {
         if self.routes.contains_key(&request_host)
         {
             let url_to_navigate = self.routes.get(&request_host).unwrap();
-            let response = self.navigate_url(url_to_navigate, req);
+            let response = self.navigate_url(url_to_navigate, req).await;
+            return response;
         }
 
         let response = Response::new(Body::from("Requested Reprox redirection URL not found..."));
