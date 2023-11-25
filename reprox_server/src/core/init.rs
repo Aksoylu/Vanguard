@@ -126,7 +126,7 @@ impl HttpServer {
         let original_uri = req.uri().clone();
     
         // Create a new URI with the updated host and port
-        let mut new_uri = format!("http://{}/{}", endpoint_to_navigate, original_uri.path());
+        let mut new_uri = format!("http://{}{}", endpoint_to_navigate, original_uri.path());
         if let Some(query) = original_uri.query() {
             new_uri.push('?');
             new_uri.push_str(query);
