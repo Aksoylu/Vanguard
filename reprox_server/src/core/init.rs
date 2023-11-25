@@ -101,10 +101,10 @@ impl HttpServer {
             return Ok(response);
         }
 
-        println!("request host: {}",request_host);
-        println!("routes: {:?}", self.routes);
         if self.routes.contains_key(&request_host)
         {
+            println!("request host: {}",request_host);
+            println!("routes: {:?}", self.routes);
             let url_to_navigate = self.routes.get(&request_host).unwrap();
             let response = self.navigate_url(url_to_navigate, req).await;
             return response;
