@@ -84,7 +84,7 @@ impl HttpServer {
 
     async fn handle_request(&self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
         let request_path = req.uri().to_string();
-
+        println!("request_path: {}", &request_path);
         if STATIC_ROUTER.contains_key(request_path.as_str())
         {
             let controller = STATIC_ROUTER.get(request_path.as_str()).unwrap();
