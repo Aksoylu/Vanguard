@@ -4,10 +4,10 @@ use hyper::{Body, Request, Response};
 use lazy_static::lazy_static;
 use std::collections::HashMap;
 
-use crate::core::static_controllers::echo::echo_controller;
+use crate::api_controller::echo::echo_controller;
 
 lazy_static! {
-    pub static ref STATIC_ROUTER: HashMap<&'static str, fn(Request<Body>) -> Result<Response<Body>, hyper::Error>> = {
+    pub static ref API_ROUTER: HashMap<&'static str, fn(Request<Body>) -> Result<Response<Body>, hyper::Error>> = {
         let mut map = HashMap::new();
         map.insert(
             "/echo",
