@@ -1,6 +1,6 @@
 use hyper::{
     service::{make_service_fn, service_fn},
-    Body, Request, Response, Server, Client, header,
+    Body, Request, Response, Server, Client, header, Uri,
 };
 use tokio::sync::Mutex;
 use std::{net::SocketAddr, collections::HashMap, sync::Arc};
@@ -101,13 +101,43 @@ impl HttpServer {
             return Ok(response);
         }
 
-        if let Some(response_body) = self.routes.get(&request_host) {
-            let response = Response::new(Body::from(response_body.clone()));
-            return Ok(response);
+        if self.routes.contains_key(&request_host)
+        {
+            let url_to_navigate = self.routes.get(&request_host).unwrap();
+            let response = self.navigate_url(url_to_navigate, req);
         }
 
         let response = Response::new(Body::from("Requested Reprox redirection URL not found..."));
         Ok(response)
     }
+
+    async fn navigate_url(&self, url_to_navigate: &String, req: Request<Body>) -> Result<Response<Body>, hyper::Error>
+    {
+        if let Ok(uri) = url_to_navigate.parse::<Uri>() {
+            let client = Client::new();
+
+            let mut forwarded_req = Request::builder()
+                .method(req.method())
+                .uri(uri)
+                .version(req.version());
+
+            for (key, value) in req.headers() {
+                forwarded_req = forwarded_req.header(key, value.clone());
+            }
+
+            let body = hyper::body::to_bytes(req.into_body()).await?;
+            let forwarded_req = forwarded_req.body(Body::from(body));
+
+            // Send the modified request to the destination URL
+            let response = client.request(forwarded_req.unwrap_or_default()).await?;
+
+            return Ok(response);
+        }
+       
+        let error_message: String = format!("Reprox Error: endpoint not supported: {}", &url_to_navigate);
+        let error_response = Response::new(Body::from(error_message));
+        return Ok(error_response);
+    }
+
 }
 
