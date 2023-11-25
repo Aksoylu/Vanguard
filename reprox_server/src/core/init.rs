@@ -131,7 +131,7 @@ impl HttpServer {
 
             let mut forwarded_req = Request::builder()
                 .method(req.method())
-                .uri(uri)
+                .uri(req.uri())
                 .version(req.version());
 
             for (key, value) in req.headers() {
