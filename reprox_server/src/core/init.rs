@@ -105,7 +105,15 @@ impl HttpServer {
         {
             println!("request host: {}",request_host);
             println!("routes: {:?}", self.routes);
-            let url_to_navigate = self.routes.get(&request_host).unwrap();
+            let default_url = "/".to_owned();
+           
+            let url_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
+            if url_to_navigate == "/"
+            {
+                let response = Response::new(Body::from("Failed to parse url_to_navigate"));
+                return Ok(response);
+            }
+
             let response = self.navigate_url(url_to_navigate, req).await;
             return response;
         }
