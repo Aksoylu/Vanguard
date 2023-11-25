@@ -101,6 +101,7 @@ impl HttpServer {
             return Ok(response);
         }
 
+        println!("request host: {}",request_host);
         if self.routes.contains_key(&request_host)
         {
             let url_to_navigate = self.routes.get(&request_host).unwrap();
