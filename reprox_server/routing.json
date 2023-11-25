@@ -1,6 +1,6 @@
 [
     {
-        "source": "api.typhoon.work",
-        "target": "127.0.0.1:3303"
+        "source": "yukal.typhoon.work",
+        "target": "154.53.160.69:9100"
     }
 ]
