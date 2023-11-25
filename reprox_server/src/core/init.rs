@@ -1,6 +1,6 @@
 use hyper::{
     service::{make_service_fn, service_fn},
-    Body, Request, Response, Server, Client,
+    Body, Request, Response, Server, Client, header,
 };
 use tokio::sync::Mutex;
 use std::{net::SocketAddr, collections::HashMap, sync::Arc};
@@ -83,20 +83,30 @@ impl HttpServer {
     }
 
     async fn handle_request(&self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
+        let request_host = req.headers().get(header::HOST)
+            .and_then(|host| host.to_str().ok())
+            .map_or_else(|| "/".to_string(), |host_value| host_value.to_string());
+
         let request_path = req.uri().to_string();
-        println!("request_path: {:?}", &req);
-        if STATIC_ROUTER.contains_key(request_path.as_str())
+
+        if request_host == self.ip_address.clone()
         {
-            let controller = STATIC_ROUTER.get(request_path.as_str()).unwrap();
-            return controller(req);
+            if STATIC_ROUTER.contains_key(request_path.as_str())
+            {
+                let controller = STATIC_ROUTER.get(request_path.as_str()).unwrap();
+                return controller(req);
+            }
+
+            let response = Response::new(Body::from("Requested URL not found..."));
+            return Ok(response);
         }
 
-        if let Some(response_body) = self.routes.get(&request_path) {
+        if let Some(response_body) = self.routes.get(&request_host) {
             let response = Response::new(Body::from(response_body.clone()));
             return Ok(response);
         }
 
-        let response = Response::new(Body::from("Requested URL not found..."));
+        let response = Response::new(Body::from("Requested Reprox redirection URL not found..."));
         Ok(response)
     }
 }
