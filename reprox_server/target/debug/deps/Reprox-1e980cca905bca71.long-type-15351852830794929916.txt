@@ -1,0 +1,1 @@
+server::server::new_svc::NewSvcTask<AddrStream, [async block@src/core/init.rs:41:37: 41:96], hyper::service::util::ServiceFn<fn(hyper::Request<Body>) -> impl Future<Output = Result<Response<Body>, hyper::Error>> {handle_request}, Body>, hyper::common::exec::Exec, server::server::NoopWatcher>
