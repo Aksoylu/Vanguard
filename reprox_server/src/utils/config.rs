@@ -4,7 +4,7 @@ use std::env;
 #[derive(Debug, Clone)]
 pub struct Environments {
     pub http_server_ip_address: String,
-    pub http_server_port: i32,
+    pub http_server_port: u16,
 }
 
 impl Environments {

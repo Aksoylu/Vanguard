@@ -1,3 +1,2 @@
-pub mod controllers;
+pub mod static_controllers;
 pub mod init;
-pub mod router;
