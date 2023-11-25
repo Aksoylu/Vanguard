@@ -7,13 +7,13 @@ use std::{net::SocketAddr, collections::HashMap, sync::Arc};
 
 use crate::utils::parse_ip_address::parse_ip_address;
 
-use super::router::ROUTER;
+use super::static_controllers::STATIC_ROUTER;
 
 
 #[derive(Debug, Clone)]
 pub struct HttpServer {
     ip_address: String,
-    port: i32,
+    port: u16,
     socket: SocketAddr,
     routes: HashMap<String, String>
 }
@@ -36,13 +36,15 @@ async fn handle_requestfn(req: Request<hyper::Body>) -> Result<Response<hyper::B
 }
 
 impl HttpServer {
-    pub fn singleton(ip_address: &String, port: &i32, routes: HashMap<String, String>) -> Self {
+    pub fn singleton(ip_address: &String, port: &u16, routes: HashMap<String, String>) -> Self {
         let parsed_ip_address = parse_ip_address(ip_address.clone());
-        let socket = SocketAddr::from((parsed_ip_address, 3000));
+        let parsed_port = port.clone();
+
+        let socket = SocketAddr::from((parsed_ip_address, parsed_port));
 
         Self {
             ip_address: ip_address.clone(),
-            port: *port,
+            port: port.clone(),
             socket,
             routes,
         }
@@ -70,13 +72,24 @@ impl HttpServer {
             }
         });
 
+        println!("Reprox Server started on {:?}", &self.socket);
+
         if let Err(e) = Server::bind(&self.socket).serve(make_svc).await {
             eprintln!("Server error: {}", e);
+            return;
         }
+
+
     }
 
     async fn handle_request(&self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
         let request_path = req.uri().to_string();
+
+        if STATIC_ROUTER.contains_key(request_path.as_str())
+        {
+            let controller = STATIC_ROUTER.get(request_path.as_str()).unwrap();
+            return controller(req);
+        }
 
         if let Some(response_body) = self.routes.get(&request_path) {
             let response = Response::new(Body::from(response_body.clone()));
