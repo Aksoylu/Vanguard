@@ -76,6 +76,7 @@ impl HttpServer {
         {
             if API_ROUTER.contains_key(request_path.as_str())
             {
+                // Validate token here
                 let controller = API_ROUTER.get(request_path.as_str()).unwrap();
                 return controller(req);
             }
