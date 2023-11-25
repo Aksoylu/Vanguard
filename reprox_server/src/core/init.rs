@@ -8,6 +8,7 @@ use std::{net::SocketAddr, collections::HashMap, sync::Arc};
 use crate::utils::parse_ip_address::parse_ip_address;
 
 use super::static_controllers::STATIC_ROUTER;
+use hyper::client::HttpConnector;
 
 
 #[derive(Debug, Clone)]
@@ -103,20 +104,16 @@ impl HttpServer {
 
         if self.routes.contains_key(&request_host)
         {
-            println!("request host: {}",request_host);
-            println!("routes: {:?}", self.routes);
-            let default_url = "/".to_owned();
-           
-            let url_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
-            println!("url_to_navigate: {}", url_to_navigate);
+            let default_url = "127.0.0.1".to_owned();           
+            let endpoint_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
 
-            if url_to_navigate == "/"
+            if endpoint_to_navigate == &default_url
             {
-                let response = Response::new(Body::from("Failed to parse url_to_navigate"));
-                return Ok(response);
+                let controller = STATIC_ROUTER.get("/echo").unwrap();
+                return controller(req);
             }
 
-            let response = self.navigate_url(url_to_navigate, req).await;
+            let response = self.navigate_url(endpoint_to_navigate, req).await;
             return response;
         }
 
@@ -124,32 +121,31 @@ impl HttpServer {
         Ok(response)
     }
 
-    async fn navigate_url(&self, url_to_navigate: &String, req: Request<Body>) -> Result<Response<Body>, hyper::Error>
+    async fn navigate_url(&self, endpoint_to_navigate: &String, req: Request<Body>) -> Result<Response<Body>, hyper::Error>
     {
-        if let Ok(uri) = url_to_navigate.parse::<Uri>() {
-            let client = Client::new();
-
-            let mut forwarded_req = Request::builder()
-                .method(req.method())
-                .uri(req.uri())
-                .version(req.version());
-
-            for (key, value) in req.headers() {
-                forwarded_req = forwarded_req.header(key, value.clone());
-            }
-
-            let body = hyper::body::to_bytes(req.into_body()).await?;
-            let forwarded_req = forwarded_req.body(Body::from(body));
-
-            // Send the modified request to the destination URL
-            let response = client.request(forwarded_req.unwrap_or_default()).await?;
-
-            return Ok(response);
+        let original_uri = req.uri().clone();
+    
+        // Create a new URI with the updated host and port
+        let mut new_uri = format!("http://{}/{}", endpoint_to_navigate, original_uri.path());
+        if let Some(query) = original_uri.query() {
+            new_uri.push('?');
+            new_uri.push_str(query);
         }
-       
-        let error_message: String = format!("Reprox Error: endpoint not supported: {}", &url_to_navigate);
-        let error_response = Response::new(Body::from(error_message));
-        return Ok(error_response);
+    
+        // Create a new request with the updated URI
+        let (mut parts, body) = req.into_parts();
+        parts.uri = new_uri.parse().unwrap();
+    
+        let new_request = Request::from_parts(parts, body);
+    
+        // Create a Hyper client to make the modified request
+        let http = HttpConnector::new();
+        let client: Client<HttpConnector> = Client::builder().build(http);
+    
+        // Send the modified request and get the response
+        let response = client.request(new_request).await?;
+    
+        Ok(response)
     }
 
 }
