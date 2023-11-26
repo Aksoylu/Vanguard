@@ -24,20 +24,21 @@ async fn main() {
         http_server.start().await;
     });
 
-    if &config.clone().rpc_enabled == &true
-    {
+    let jsonrpc_server_task = if &config.clone().rpc_enabled == &true {
         let jsonrpc_server = RPCServer::singleton(
             &config.clone().http_server_ip_address,
             &config.clone().rpc_server_port,
             &config.clone().rpc_key,
         );
-
-        let jsonrpc_server_task = tokio::spawn(async move {
+        
+        tokio::spawn(async move {
             jsonrpc_server.start();
-        });
+        })
+    } else {
+        // Return a dummy task if RPC is not enabled
+        tokio::spawn(async {})
+    };
 
-        jsonrpc_server_task.await.expect("Failed to run HTTP server");
-    }
-    http_server_task.await.expect("Failed to run HTTP server");
-
+    tokio::try_join!(http_server_task, jsonrpc_server_task)
+        .expect("Failed to run servers");
 }
