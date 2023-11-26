@@ -8,7 +8,6 @@ use core::http_server::HttpServer;
 use rpc_service::{rpc_server::RPCServer, RPC_ROUTER};
 use utils::{config, routing};
 
-
 #[tokio::main]
 async fn main() {
     let config = config::Environments::load();
@@ -32,13 +31,14 @@ async fn main() {
         );
         
         tokio::spawn(async move {
-            jsonrpc_server.start();
+            jsonrpc_server.start().await;
         })
     } else {
         // Return a dummy task if RPC is not enabled
         tokio::spawn(async {})
     };
 
-    tokio::try_join!(http_server_task, jsonrpc_server_task)
-        .expect("Failed to run servers");
+    if let Err(e) = tokio::try_join!(http_server_task, jsonrpc_server_task) {
+        eprintln!("Server error: {}", e);
+    }
 }

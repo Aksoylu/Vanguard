@@ -36,7 +36,7 @@ impl RPCServer{
         }
     }
 
-    pub fn start(&self) {
+    pub async fn start(&self) {
         let server = ServerBuilder::new(self.function_register.clone())
             .start_http(&self.endpoint.parse().unwrap())
             .expect("JRPC Server failed to start.");
