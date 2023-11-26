@@ -35,11 +35,9 @@ async fn main() {
         let jsonrpc_server_task = tokio::spawn(async move {
             jsonrpc_server.start();
         });
-        tokio::try_join!(http_server_task, jsonrpc_server_task)
-            .expect("Failed to run servers concurrently");
+
+        jsonrpc_server_task.await.expect("Failed to run HTTP server");
     }
-    else
-    {
-        http_server_task.await.expect("Failed to run HTTP server");
-    }
+    http_server_task.await.expect("Failed to run HTTP server");
+
 }
