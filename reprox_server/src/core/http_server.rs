@@ -5,7 +5,7 @@ use hyper::{
 use tokio::sync::Mutex;
 use std::{net::SocketAddr, collections::HashMap, sync::Arc};
 
-use crate::{utils::parse_ip_address::parse_ip_address, api_controller::API_ROUTER};
+use crate::utils::parse_ip_address::parse_ip_address;
 
 use hyper::client::HttpConnector;
 
@@ -61,8 +61,6 @@ impl HttpServer {
             eprintln!("Server error: {}", e);
             return;
         }
-
-
     }
 
     async fn handle_request(&self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
@@ -70,38 +68,23 @@ impl HttpServer {
             .and_then(|host| host.to_str().ok())
             .map_or_else(|| "/".to_string(), |host_value| host_value.to_string());
 
-        let request_path = req.uri().to_string();
-
-        if request_host == self.ip_address.clone()
+        if !self.routes.contains_key(&request_host)
         {
-            if API_ROUTER.contains_key(request_path.as_str())
-            {
-                // Validate token here
-                let controller = API_ROUTER.get(request_path.as_str()).unwrap();
-                return controller(req);
-            }
-
-            let response = Response::new(Body::from("Requested URL not found..."));
-            return Ok(response);
+            let response = Response::new(Body::from("Requested Reprox redirection URL not found..."));
+            return Ok(response)
         }
 
-        if self.routes.contains_key(&request_host)
+        let default_url = "".to_owned();           
+        let endpoint_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
+
+        if endpoint_to_navigate == &default_url
         {
-            let default_url = "127.0.0.1".to_owned();           
-            let endpoint_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
-
-            if endpoint_to_navigate == &default_url
-            {
-                let controller = API_ROUTER.get("/echo").unwrap();
-                return controller(req);
-            }
-
-            let response = self.navigate_url(endpoint_to_navigate, req).await;
-            return response;
+            let response = Response::new(Body::from("Requested Reprox redirection URL not found..."));
+            return Ok(response)
         }
 
-        let response = Response::new(Body::from("Requested Reprox redirection URL not found..."));
-        Ok(response)
+        let response = self.navigate_url(endpoint_to_navigate, req).await;
+        return response;
     }
 
     async fn navigate_url(&self, endpoint_to_navigate: &String, req: Request<Body>) -> Result<Response<Body>, hyper::Error>
