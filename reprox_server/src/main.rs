@@ -2,9 +2,10 @@
 mod core;
 mod utils;
 mod models;
-mod api_controller;
+mod rpc_service;
 
-use core::init::HttpServer;
+use core::http_server::HttpServer;
+use rpc_service::{rpc_server::RPCServer, RPC_ROUTER};
 use utils::{config, routing};
 
 
@@ -17,7 +18,28 @@ async fn main() {
         &config.clone().http_server_ip_address,
         &config.clone().http_server_port,
         routes.get(),
-    );
-    
-    http_server.start().await;
+    );    
+
+    let http_server_task = tokio::spawn(async move {
+        http_server.start().await;
+    });
+
+    if &config.clone().rpc_enabled == &true
+    {
+        let jsonrpc_server = RPCServer::singleton(
+            &config.clone().http_server_ip_address,
+            &config.clone().rpc_server_port,
+            &config.clone().rpc_key,
+        );
+
+        let jsonrpc_server_task = tokio::spawn(async move {
+            jsonrpc_server.start();
+        });
+        tokio::try_join!(http_server_task, jsonrpc_server_task)
+            .expect("Failed to run servers concurrently");
+    }
+    else
+    {
+        http_server_task.await.expect("Failed to run HTTP server");
+    }
 }
