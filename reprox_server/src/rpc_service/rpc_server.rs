@@ -1,12 +1,15 @@
 use jsonrpc_core::IoHandler;
 
-use crate::utils::parse_ip_address::parse_ip_address;
+use crate::{
+    core::http_server::HttpServer,
+    utils::{parse_ip_address::parse_ip_address, routing::Routing},
+};
 
 use jsonrpc_http_server::ServerBuilder;
 
 use super::RPC_ROUTER;
 
-pub struct RPCServer{
+pub struct RPCServer {
     ip_address: String,
     port: u16,
     key: String,
@@ -14,25 +17,24 @@ pub struct RPCServer{
     function_register: IoHandler,
 }
 
-impl RPCServer{
-    pub fn singleton(ip_address: &String, port: &u16, key: &String) -> Self {
+impl RPCServer {
+    pub fn singleton(ip_address: String, port: u16, key: String) -> Self {
         let parsed_ip_address = parse_ip_address(ip_address.clone());
         let parsed_port = port.clone();
         let endpoint = format!("{}:{}", parsed_ip_address, parsed_port);
 
         let mut function_register: IoHandler = IoHandler::default();
 
-        for(function_name, function_body) in RPC_ROUTER.iter() {
+        for (function_name, function_body) in RPC_ROUTER.iter() {
             function_register.add_method(function_name, function_body);
-
         }
 
         Self {
-            ip_address: ip_address.clone(),
-            port: port.clone(),
-            key: key.clone(),
+            ip_address,
+            port,
+            key,
             endpoint,
-            function_register
+            function_register,
         }
     }
 

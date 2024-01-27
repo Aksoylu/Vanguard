@@ -12,23 +12,19 @@ impl Routing {
         let mut route_table: HashMap<String, String> = HashMap::new();
 
         let route_list = Self::read_file();
-        for each_route in route_list{
+        for each_route in route_list {
             route_table.insert(each_route.source.clone(), each_route.target.clone());
         }
 
-        Self {
-            route_table
-        }
+        Self { route_table }
     }
 
-    pub fn get(&self) -> HashMap<String, String>
-    {
-        return self.route_table.clone()
+    pub fn get(&self) -> HashMap<String, String> {
+        return self.route_table.clone();
     }
 
-    pub fn read_file() -> Vec<Route>
-    {
-        let mut route_list: Vec<Route>  = vec![];
+    pub fn read_file() -> Vec<Route> {
+        let mut route_list: Vec<Route> = vec![];
 
         let mut file = match File::open("routing.json") {
             Ok(file) => file,
@@ -43,7 +39,7 @@ impl Routing {
             eprintln!("Failed to read the routing.json contents.");
             return route_list;
         }
-    
+
         route_list = match serde_json::from_str(&file_contents) {
             Ok(person) => person,
             Err(_) => {
@@ -55,4 +51,3 @@ impl Routing {
         route_list
     }
 }
-
