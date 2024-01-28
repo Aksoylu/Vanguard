@@ -20,10 +20,8 @@ pub struct HttpServer {
 
 impl HttpServer {
     pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, String>) -> Self {
-        let parsed_ip_address = parse_ip_address(ip_address.clone());
-        let parsed_port = port.clone();
-
-        let socket = SocketAddr::from((parsed_ip_address, parsed_port));
+        let ip = parse_ip_address(ip_address.clone());
+        let socket = SocketAddr::from((ip, port));
 
         Self {
             ip_address,
@@ -34,25 +32,22 @@ impl HttpServer {
     }
 
     pub async fn start(&self) {
-        let shared_data = Arc::new(Mutex::new(self.clone()));
+        let http_server = Arc::new(Mutex::new(self.clone()));
 
-        let make_svc = make_service_fn(move |_conn| {
-            let shared_data = Arc::clone(&shared_data);
-
+        let make_svc = make_service_fn(|_conn| {
+            let http_server = Arc::clone(&http_server);
+    
             async move {
                 Ok::<_, hyper::Error>(service_fn(move |req| {
-                    let shared_data = Arc::clone(&shared_data);
-                    let locked_data = shared_data.clone(); // Clone Arc for inner use
-                    let fut = async move {
-                        let data = locked_data.lock().await; // Await lock acquisition
+                    let http_server = Arc::clone(&http_server);
+                    async move {
+                        let data = http_server.lock().await;
+    
                         match data.handle_request(req).await {
                             Ok(response) => Ok::<_, hyper::Error>(response),
-                            Err(_) => Ok::<_, hyper::Error>(Response::new(Body::from(
-                                "Error processing request",
-                            ))),
+                            Err(_) => Ok::<_, hyper::Error>(Response::new(Body::from("Error processing request"))),
                         }
-                    };
-                    fut
+                    }
                 }))
             }
         });
