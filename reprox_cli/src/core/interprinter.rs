@@ -1,23 +1,25 @@
-use crate::{
-    core::methods::echo::echo,
-    utils::console::clear_screen,
-};
+use crate::{core::methods::echo::echo, utils::console::clear_screen};
 
-use super::{methods::{engine::engine, exit::exit, global_help::global_help, status::status, version::version}, rpc_client::RpcClient};
+use super::{
+    methods::{
+        engine::engine, exit::exit, global_help::global_help, status::status, version::version,
+    },
+    rpc_client::RpcClient,
+};
 
 pub struct CommandInterprinter {
     pub rpc_client: Option<RpcClient>,
-    is_start_up: bool
+    is_start_up: bool,
 }
 
 impl CommandInterprinter {
     //const EE: &'static str = "../variables/.session.json";
-    const DEFAULT_OPERATION:  &'static str = "help";
+    const DEFAULT_OPERATION: &'static str = "help";
 
     pub fn new() -> Self {
-        Self { 
+        Self {
             rpc_client: None,
-            is_start_up: false
+            is_start_up: false,
         }
     }
 
@@ -32,23 +34,19 @@ impl CommandInterprinter {
             // @todo
         }
 
-        if command.eq("clean") || command.eq("clear") || command.eq("cls"){
+        if command.eq("clean") || command.eq("clear") || command.eq("cls") {
             clear_screen();
         } else if command.eq("version") {
             version(self.rpc_client.as_ref()).await;
         } else if command.eq("status") {
             status(self.rpc_client.as_ref()).await;
-        }
-        else if command.eq("exit") {
+        } else if command.eq("exit") {
             exit();
-        }
-        else if command.eq("engine"){
+        } else if command.eq("engine") {
             engine(self, params).await;
-        }
-        else if command.eq("help"){
+        } else if command.eq("help") {
             global_help();
-        }
-        else {
+        } else {
             println!("'{}' is not a recognized method", command);
         }
     }

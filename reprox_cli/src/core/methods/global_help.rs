@@ -1,5 +1,6 @@
-pub fn global_help(){
-    println!(r#"
+pub fn global_help() {
+    println!(
+        r#"
     === Command List ===
     * Status
         » Description:
@@ -16,5 +17,6 @@ pub fn global_help(){
     * Help
         » Description:
         » Usage:    
-"#);
+"#
+    );
 }

@@ -8,9 +8,9 @@ pub struct RpcSession {
     pub created_at: i64,
 }
 
-impl RpcSession{
+impl RpcSession {
     pub fn create() -> Self {
-        Self{
+        Self {
             ip_addr: todo!(),
             port: todo!(),
             hash: todo!(),

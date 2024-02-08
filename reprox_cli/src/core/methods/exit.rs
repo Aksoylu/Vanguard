@@ -1,6 +1,6 @@
 use std::process;
 
 /// Terminates CLI app
-pub fn exit(){
+pub fn exit() {
     process::exit(0);
 }

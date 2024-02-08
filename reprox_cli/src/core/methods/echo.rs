@@ -21,6 +21,4 @@ async fn rpc_echo(rpc_client: &RpcClient) -> bool {
 }
 
 // @todo
-fn help(){
-    
-}
+fn help() {}
