@@ -1,38 +1,35 @@
-
 mod core;
-mod utils;
 mod models;
 mod rpc_service;
+mod utils;
 
-use core::http_server::HttpServer;
-use rpc_service::{rpc_server::RPCServer, RPC_ROUTER};
-use utils::{config, routing};
-
+use core::{config::Config, http_server::HttpServer, router::Router};
+use rpc_service::rpc_server::RPCServer;
 
 #[tokio::main]
 async fn main() {
-    let config = config::Environments::load();
-    let routes = routing::Routing::load();
+    let config: Config = Config::load();
+    let routes = Router::load();
 
     let http_server = HttpServer::singleton(
-        &config.clone().http_server_ip_address,
-        &config.clone().http_server_port,
+        config.http_server.ip_address.clone(),
+        config.http_server.port,
         routes.get(),
-    );    
+    );
 
     tokio::spawn(async move {
         http_server.start().await;
-
     });
 
-    if &config.clone().rpc_enabled == &true
-    {
-        let jsonrpc_server = RPCServer::singleton(
-            &config.clone().http_server_ip_address,
-            &config.clone().rpc_server_port,
-            &config.clone().rpc_key,
-        );
-
-        jsonrpc_server.start().await;
+    match config.rpc_server {
+        Some(rpc_config) => {
+            let jsonrpc_server = RPCServer::singleton(
+                config.http_server.ip_address,
+                rpc_config.port,
+                rpc_config.private_key,
+            );
+            jsonrpc_server.start().await;
+        }
+        None => {}
     }
 }
