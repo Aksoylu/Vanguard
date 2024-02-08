@@ -1,5 +1,4 @@
-pub fn print_welcome_banner()
-{
+pub fn print_welcome_banner() {
     let content = r#"
     _______  _______  _______  _______  _______             _______  _       _________
     (  ____ )(  ____ \(  ____ )(  ____ )(  ___  )|\     /|  (  ____ \( \      \__   __/

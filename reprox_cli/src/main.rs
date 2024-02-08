@@ -1,24 +1,24 @@
-use core::interprinter::CommandInterprinter;
-use std::io;
+use core::{interprinter::CommandInterprinter, methods::version::print_cli_version};
 
 use utils::{banner::print_welcome_banner, console::separator};
 
-use crate::utils::{console::{clear_screen, console_read}, version::print_version};
+use crate::utils::console::console_read;
 
-mod utils;
 mod core;
+mod models;
+mod utils;
+mod build;
 
 #[tokio::main]
 async fn main() {
     print_welcome_banner();
-    print_version();
+    print_cli_version();
     separator(5);
-    // todo check connection
 
-    loop
-    {
-        print!(">>> ");
-        let input = console_read();
-        CommandInterprinter::execute(input).await;
+    let mut interprinter = CommandInterprinter::new();
+
+    loop {
+        let input: String = console_read(">>>");
+        interprinter.execute(input).await;
     }
 }
