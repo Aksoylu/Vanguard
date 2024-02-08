@@ -4,10 +4,10 @@ use utils::{banner::print_welcome_banner, console::separator};
 
 use crate::utils::console::console_read;
 
+mod build;
 mod core;
 mod models;
 mod utils;
-mod build;
 
 #[tokio::main]
 async fn main() {

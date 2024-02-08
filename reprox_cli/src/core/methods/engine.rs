@@ -1,41 +1,37 @@
 use serde::de::value::Error;
 
-use crate::{core::{interprinter::CommandInterprinter, rpc_client::RpcClient, settings::EngineSettings}, utils::console::console_read};
+use crate::{
+    core::{interprinter::CommandInterprinter, rpc_client::RpcClient, settings::EngineSettings},
+    utils::console::console_read,
+};
 
-
-
-pub async fn engine(command_interprinter: &mut CommandInterprinter, params : Vec<String>){
+pub async fn engine(command_interprinter: &mut CommandInterprinter, params: Vec<String>) {
     let default_operation: &String = &EngineSettings::DEFAULT_OPERATION.to_string();
     let default_connection_type: &String = &EngineSettings::DEFAULT_CONNECTION_TYPE.to_string();
 
     let operation = params.get(0).unwrap_or(default_operation);
 
-    if operation.eq("establish"){
+    if operation.eq("establish") {
         let connection_type = params.get(1).unwrap_or(&default_connection_type);
-        command_interprinter.rpc_client =  establish_rpc(&connection_type).await;
-    }
-    else if operation.eq("stop"){
+        command_interprinter.rpc_client = establish_rpc(&connection_type).await;
+    } else if operation.eq("stop") {
         stop(&command_interprinter.rpc_client).await;
-    }
-    else if operation.eq("status"){
+    } else if operation.eq("status") {
         status(&command_interprinter.rpc_client).await;
-    }
-    else if operation.eq("help")
-    {
+    } else if operation.eq("help") {
         help(false);
-    }
-    else {
+    } else {
         help(true);
-    }  
+    }
 }
 
-fn help(undefined_command_flag: bool){
-
-    if undefined_command_flag{
+fn help(undefined_command_flag: bool) {
+    if undefined_command_flag {
         println!("Please provide a operation.");
     }
 
-    println!(r#"
+    println!(
+        r#"
         === Command List ===
         Engine:
             * 'engine establish auto'
@@ -50,10 +46,11 @@ fn help(undefined_command_flag: bool){
                 » Shows stats & status about Reprox Engine 
             * engine stop
                 » Stops currently established Reprox Engine 
-    "#);
+    "#
+    );
 }
 
-async fn status(rpc_client:&Option<RpcClient>){
+async fn status(rpc_client: &Option<RpcClient>) {
     match rpc_client {
         Some(rpc) => {
             let result = rpc.send_rpc("status".to_string(), None).await;
@@ -62,14 +59,14 @@ async fn status(rpc_client:&Option<RpcClient>){
             } else {
                 println!("Error: An error occured while communicating with Reprox engine")
             }
-        },
+        }
         None => {
             println!("Error: Reprox engine is not established.\nPlease establish an engine connection using 'Engine establish' first")
-        },
+        }
     }
 }
 
-async fn stop(rpc_client:&Option<RpcClient>){
+async fn stop(rpc_client: &Option<RpcClient>) {
     match rpc_client {
         Some(rpc) => {
             let result = rpc.send_rpc("stop".to_string(), None).await;
@@ -78,15 +75,14 @@ async fn stop(rpc_client:&Option<RpcClient>){
             } else {
                 println!("Error: An error occured while communicating with Reprox engine")
             }
-        },
+        }
         None => {
             println!("Error: Reprox engine is not established.\nPlease establish an engine connection using 'Engine establish' first")
-        },
+        }
     }
 }
 
-async fn establish_rpc(connection_type: &String) -> Option<RpcClient> 
-{
+async fn establish_rpc(connection_type: &String) -> Option<RpcClient> {
     let automatic_connection_type = "automatic".to_string();
     let manual_connection_type = "manual".to_string();
 
@@ -94,7 +90,6 @@ async fn establish_rpc(connection_type: &String) -> Option<RpcClient>
         let rpc_client = connect_rpc_automatically().await;
         return rpc_client;
     } else if connection_type.eq(&automatic_connection_type) {
-
         let ip_addr: String = console_read("Ip Address:");
         let port: String = console_read("Port:");
         let security_hash: String = console_read("Security Hash:");
@@ -123,13 +118,16 @@ async fn connect_rpc_automatically() -> Option<RpcClient> {
     }
 }
 
-async fn connect_rpc_manually(ip_addr: &String, port: &String, security_hash: &String) -> Option<RpcClient> {  
+async fn connect_rpc_manually(
+    ip_addr: &String,
+    port: &String,
+    security_hash: &String,
+) -> Option<RpcClient> {
     if ip_addr.len() < 1 || port.len() < 1 || security_hash.len() < 1 {
         println!("Please provide valid Ip Address, Port Number and Security Hash");
         return None;
     }
 
-      
     match RpcClient::init_manual() {
         Ok(rpc_client) => {
             let result = rpc_client.send_rpc("test".to_string(), None).await;
