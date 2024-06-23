@@ -1,5 +1,5 @@
 use chrono::{DateTime, Utc};
-use jsonrpc_core::IoHandler;
+use jsonrpc_core::{IoHandler, Params};
 use serde_json::to_string;
 
 use crate::{models::rpc_session::RpcSession, utils::{generate_hash::generate_hash, generate_salt::generate_salt, parse_ip_address::parse_ip_address}};
@@ -22,11 +22,13 @@ impl RPCServer {
     pub fn singleton(ip_address: String, port: u16, secure_key: String) -> Self {
         let parsed_ip_address = parse_ip_address(ip_address.clone());
         let endpoint = format!("{}:{}", parsed_ip_address, port);
-
         let mut function_register: IoHandler = IoHandler::default();
 
+        // Register methods from RPC_ROUTER into function_register
         for (function_name, function_body) in RPC_ROUTER.iter() {
-            function_register.add_method(function_name, function_body);
+            function_register.add_method(function_name, move |params:Params| {
+                function_body(params.clone())
+            });
         }
 
         Self {
