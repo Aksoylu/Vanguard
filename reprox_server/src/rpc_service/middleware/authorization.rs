@@ -1,8 +1,6 @@
-use std::sync::Arc;
+use jsonrpc_core::{ Error,Params, Value};
 
-use jsonrpc_core::{params, Error, ErrorCode, Params, Result as RpcResult, Value};
-
-use crate::rpc_service::RpcHandler;
+use crate::utils::text_utility::clear_punctation;
 
 /// Public: This function is an middleware for providing Bearer token authentication to RPC service. 
 /// Remember that authorization token will be written to runtime/.session.json file.
@@ -15,17 +13,18 @@ pub fn authorization(
     handler: impl Fn(Params) -> Result<Value, Error> + 'static
 ) -> impl Fn(Params) -> Result<Value, Error> + 'static {
     move |params: Params| {
-        // Simplified authorization logic
         let auth_token = params.clone().parse::<Value>().ok().and_then(|v| v.get("token").map(|t| t.to_string()));
+      
 
         if let Some(auth_token) = auth_token {
-            if auth_token == authorization_token {
-                // Token is valid, call the actual handler
+            let cleared_auth_token = clear_punctation(auth_token);
+            println!("{}-{}", cleared_auth_token, authorization_token);
+
+            if cleared_auth_token == authorization_token {
                 return handler(params);
             }
         }
         
-        // If token is invalid or missing, return an error
         Err(Error {
             code: jsonrpc_core::ErrorCode::ServerError(401),
             message: "Unauthorized".into(),

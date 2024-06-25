@@ -11,7 +11,7 @@ use super::RPC_ROUTER;
 pub struct RPCServer {
     ip_address: String,
     port: u16,
-    secure_key: String,
+    auth_token: String,
     endpoint: String,
     function_register: IoHandler,
 }
@@ -19,22 +19,22 @@ pub struct RPCServer {
 impl RPCServer {
     const SESSION_PATH: &'static str = "../variables/.session.json";
 
-    pub fn singleton(ip_address: String, port: u16, secure_key: String) -> Self {
+    pub fn singleton(ip_address: String, port: u16, auth_token: String) -> Self {
         let parsed_ip_address = parse_ip_address(ip_address.clone());
         let endpoint = format!("{}:{}", parsed_ip_address, port);
         let mut function_register: IoHandler = IoHandler::default();
 
-        // Register methods from RPC_ROUTER into function_register
         for (function_name, function_body) in RPC_ROUTER.iter() {
-            function_register.add_method(function_name, move |params:Params| {
-                function_body(params.clone())
+            let cloned_handler = function_body.clone();
+            function_register.add_method(function_name, move  |params:Params| {
+                cloned_handler(params.clone())
             });
         }
-
+        
         Self {
             ip_address,
             port,
-            secure_key,
+            auth_token,
             endpoint,
             function_register,
         }
@@ -58,7 +58,7 @@ impl RPCServer {
     ///
     pub fn create_rpc_session(&self){
         let salt = generate_salt();
-        let hash = generate_hash(self.secure_key.clone(), salt);
+        let hash = generate_hash(self.auth_token.clone(), salt);
         let created_at = Utc::now().timestamp();
 
         let session = RpcSession{
