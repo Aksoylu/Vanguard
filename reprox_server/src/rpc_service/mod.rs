@@ -3,6 +3,7 @@ pub mod rpc_server;
 mod controllers;
 mod middleware;
 mod routes;
+mod models;
 
 use jsonrpc_core::{Error, Params, Value};
 use lazy_static::lazy_static;

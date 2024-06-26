@@ -1,9 +1,11 @@
 mod core;
-mod models;
 mod rpc_service;
 mod utils;
+mod config;
+mod settings;
 
-use core::{config::Config, http_server::HttpServer, https_server::HttpsServer, router::Router};
+use config::Config;
+use core::{http_server::HttpServer, https_server::{self, HttpsServer}, router::Router};
 use rpc_service::rpc_server::RPCServer;
 
 #[tokio::main]
@@ -16,6 +18,7 @@ async fn main() {
         config.http_server.port,
         routes.get(),
     );
+
 
     tokio::spawn(async move {
         http_server.start().await;

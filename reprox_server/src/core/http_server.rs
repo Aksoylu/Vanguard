@@ -6,9 +6,9 @@ use hyper::{
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::sync::Mutex;
 
-use crate::utils::parse_ip_address::parse_ip_address;
-
 use hyper::client::HttpConnector;
+
+use crate::utils::network_utility::parse_ip_address;
 
 #[derive(Debug, Clone)]
 pub struct HttpServer {

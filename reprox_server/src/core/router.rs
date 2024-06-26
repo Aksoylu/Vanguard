@@ -1,20 +1,27 @@
 use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, fs::File, io::Read};
 
+use crate::settings::Settings;
+
 #[derive(Debug, Clone)]
 pub struct Router {
     route_table: HashMap<String, String>,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
+pub struct Ssl {
+    pub cert: String,
+    pub private_key: String,
+}
+
+#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct Route {
+    pub protocol: String,
     pub source: String,
     pub target: String,
 }
 
 impl Router {
-    const ROUTER_PATH: &'static str = "../variables/routing.json";
-
     pub fn load() -> Self {
         let mut route_table: HashMap<String, String> = HashMap::new();
 
@@ -29,7 +36,7 @@ impl Router {
     fn read_file() -> Vec<Route> {
         let mut route_list: Vec<Route> = vec![];
 
-        let mut file = match File::open(Router::ROUTER_PATH) {
+        let mut file = match File::open(Settings::ROUTER_PATH) {
             Ok(file) => file,
             Err(_) => {
                 eprintln!("Failed to open routing.json file.");

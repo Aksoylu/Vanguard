@@ -9,10 +9,8 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_rustls::TlsAcceptor;
 
-use crate::utils::{
-    parse_ip_address::parse_ip_address,
-    tls_utility::{configure_tls, load_certs, load_private_key},
-};
+use crate::utils::network_utility::parse_ip_address;
+use crate::utils::tls_utility::{configure_tls, load_certs, load_private_key};
 
 #[derive(Debug, Clone)]
 pub struct HttpsServer {
