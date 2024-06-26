@@ -1,7 +1,7 @@
 use std::{collections::HashMap, sync::Arc};
 use jsonrpc_core::{IoHandler, Params};
 
-use super::{middleware::authorization::authorization, RpcHandler};
+use super::{middleware::authorization::authorization, models::RpcHandler};
 
 use crate::rpc_service::controllers::{
     create_auth_token::create_auth_token_controller,
@@ -12,7 +12,7 @@ pub struct RPCRouter{
     route_map:HashMap<&'static str, RpcHandler>
 }
 
-impl  RPCRouter {
+impl RPCRouter {
     pub fn build(auth_token: String) -> Self{
         let mut map = HashMap::new();
 

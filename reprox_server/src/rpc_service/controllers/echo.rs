@@ -1,4 +1,3 @@
-use hyper::{Body, Request, Response};
 use jsonrpc_core::{Error, Params, Value};
 
 pub fn echo_controller(params: Params) -> Result<Value, Error> {

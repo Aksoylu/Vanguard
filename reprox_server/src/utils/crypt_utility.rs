@@ -1,14 +1,14 @@
 use rand::seq::SliceRandom;
 use sha2::{Digest, Sha256};
 
-pub fn generate_hash(secure_key: String, salt: String) -> String
+pub fn generate_hash(secure_key: String) -> String
 {
-    let secret = secure_key.to_string() + &salt;
+    let secret = secure_key.to_string() + &generate_salt();
 
-    generate_sha_256(&secret)
+    hash_sha_256(&secret)
 }
 
-pub fn generate_salt() -> String {
+fn generate_salt() -> String {
     let size = 32;
     let charset: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789".chars().collect();
     let mut rng = rand::thread_rng();
@@ -20,7 +20,7 @@ pub fn generate_salt() -> String {
     random_string
 }
 
-pub fn generate_sha_256(input: &str) -> String {
+fn hash_sha_256(input: &str) -> String {
     let mut hasher = Sha256::new();
     hasher.update(input.as_bytes());
     let result = hasher.finalize();

@@ -6,11 +6,18 @@ use crate::settings::Settings;
 #[derive(Debug, Deserialize)]
 pub struct Config {
     pub http_server: HttpServerConfig,
+    pub https_server: HttpsServerConfig,
     pub rpc_server: Option<RpcServerConfig>,
 }
 
 #[derive(Debug, Deserialize)]
 pub struct HttpServerConfig {
+    pub ip_address: String,
+    pub port: u16,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct HttpsServerConfig {
     pub ip_address: String,
     pub port: u16,
 }

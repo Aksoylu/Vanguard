@@ -16,18 +16,27 @@ async fn main() {
     let http_server = HttpServer::singleton(
         config.http_server.ip_address.clone(),
         config.http_server.port,
-        routes.get(),
+        routes.get_http_routes(),
     );
-
 
     tokio::spawn(async move {
         http_server.start().await;
     });
 
+    let https_server = HttpsServer::singleton(
+        config.https_server.ip_address.clone(),
+        config.https_server.port,
+        routes.get_https_routes(),
+    );
+
+    tokio::spawn(async move {
+        https_server.start().await;
+    });
+    
     match config.rpc_server {
         Some(rpc_config) => {
             let jsonrpc_server = RPCServer::singleton(
-                config.http_server.ip_address,
+                rpc_config.ip_address,
                 rpc_config.port,
                 rpc_config.private_key,
             );

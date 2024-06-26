@@ -3,7 +3,7 @@ use jsonrpc_core::IoHandler;
 use serde_json::to_string;
 
 use crate::{settings::Settings, utils::{
-    crypt_utility::{generate_hash, generate_salt},
+    crypt_utility::generate_hash,
     network_utility::parse_ip_address,
 }};
 
@@ -56,8 +56,7 @@ impl RPCServer {
     /// * `private_key` - Private key value that specified in `settings.json` file. (`&str`)
     ///
     pub fn create_rpc_session(&self) {
-        let salt = generate_salt();
-        let hash = generate_hash(self.auth_token.clone(), salt);
+        let hash = generate_hash(self.auth_token.clone());
         let created_at = Utc::now().timestamp();
 
         let session = RpcSession {
