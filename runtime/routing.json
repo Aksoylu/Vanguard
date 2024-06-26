@@ -1,0 +1,16 @@
+[
+    {
+        "protocol": "http",
+        "source": "yukal.typhoon.work",
+        "target": "154.53.160.69:9100"
+    },
+    {
+        "protocol": "https",
+        "source": "test.typhoon.work",
+        "target": "154.53.160.69:9100",
+        "ssl": {
+            "cert": "",
+            "private_key": ""
+        }
+    }
+]

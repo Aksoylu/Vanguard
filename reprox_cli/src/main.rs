@@ -8,6 +8,7 @@ mod build;
 mod core;
 mod models;
 mod utils;
+mod settings;
 
 #[tokio::main]
 async fn main() {

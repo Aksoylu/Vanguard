@@ -1,13 +1,12 @@
 use serde::de::value::Error;
 
 use crate::{
-    core::{interprinter::CommandInterprinter, rpc_client::RpcClient, settings::EngineSettings},
-    utils::console::console_read,
+    core::{interprinter::CommandInterprinter, rpc_client::RpcClient}, settings::Settings, utils::console::console_read
 };
 
 pub async fn engine(command_interprinter: &mut CommandInterprinter, params: Vec<String>) {
-    let default_operation: &String = &EngineSettings::DEFAULT_OPERATION.to_string();
-    let default_connection_type: &String = &EngineSettings::DEFAULT_CONNECTION_TYPE.to_string();
+    let default_operation: &String = &Settings::DEFAULT_OPERATION.to_string();
+    let default_connection_type: &String = &Settings::DEFAULT_CONNECTION_TYPE.to_string();
 
     let operation = params.get(0).unwrap_or(default_operation);
 

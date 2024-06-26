@@ -2,7 +2,7 @@ use serde::de::value::Error;
 use serde_json::{from_str, to_string};
 use std::{collections::HashMap, fs::File, io::Read};
 
-use crate::models::rpc_session::RpcSession;
+use crate::{models::rpc_session::RpcSession, settings::Settings};
 
 #[derive()]
 pub struct RpcClient {
@@ -11,10 +11,9 @@ pub struct RpcClient {
 }
 
 impl RpcClient {
-    const SESSION_PATH: &'static str = "../variables/.session.json";
 
     pub fn init_session() -> Result<Self, Error> {
-        match RpcClient::read_rpc_session(RpcClient::SESSION_PATH.to_string()) {
+        match RpcClient::read_rpc_session(Settings::SESSION_PATH.to_string()) {
             Ok(session) => {
                 let endpoint: String = format!("{}:{}", session.ip_addr, session.port);
 
@@ -25,7 +24,7 @@ impl RpcClient {
     }
 
     pub fn init_manual() -> Result<Self, Error> {
-        match RpcClient::read_rpc_session(RpcClient::SESSION_PATH.to_string()) {
+        match RpcClient::read_rpc_session(Settings::SESSION_PATH.to_string()) {
             Ok(session) => {
                 let endpoint: String = format!("{}:{}", session.ip_addr, session.port);
 
