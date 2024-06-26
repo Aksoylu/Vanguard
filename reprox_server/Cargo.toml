@@ -16,7 +16,10 @@ jsonrpc-http-server = "14.0.0"
 chrono = "0.4"
 rand = "0.8"
 sha2 = "0.10"
-
+hyper-rustls = "0.22"
+tokio-rustls = "0.23"
+rustls = "0.20"
+rustls-pemfile = "0.2"
 
 [profile.dev]
 panic = "abort"

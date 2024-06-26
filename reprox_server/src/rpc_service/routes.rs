@@ -1,4 +1,6 @@
 use std::{collections::HashMap, sync::Arc};
+use jsonrpc_core::{IoHandler, Params};
+
 use super::{middleware::authorization::authorization, RpcHandler};
 
 use crate::rpc_service::controllers::{
@@ -6,11 +8,11 @@ use crate::rpc_service::controllers::{
     echo::echo_controller,
 };
 
-pub struct RPCRoutes{
+pub struct RPCRouter{
     route_map:HashMap<&'static str, RpcHandler>
 }
 
-impl  RPCRoutes {
+impl  RPCRouter {
     pub fn build(auth_token: String) -> Self{
         let mut map = HashMap::new();
 
@@ -21,5 +23,16 @@ impl  RPCRoutes {
         Self{
             route_map: map
         }
+    }
+
+    pub fn bind(&self, mut function_register: IoHandler) -> IoHandler{
+        for (function_name, function_body) in self.route_map.iter() {
+            let cloned_handler = function_body.clone();
+            function_register.add_method(function_name, move  |params:Params| {
+                cloned_handler(params.clone())
+            });
+        }
+
+        function_register
     }
 }

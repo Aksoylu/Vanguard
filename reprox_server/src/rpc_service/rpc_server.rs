@@ -6,14 +6,14 @@ use crate::{models::rpc_session::RpcSession, utils::{generate_hash::generate_has
 
 use jsonrpc_http_server::ServerBuilder;
 
-use super::{routes::RPCRoutes, RPC_ROUTER};
+use super::{routes::RPCRouter, RPC_ROUTER};
 
 pub struct RPCServer {
     ip_address: String,
     port: u16,
     auth_token: String,
     endpoint: String,
-    function_register: IoHandler,
+    rpc_registry: IoHandler,
 }
 
 impl RPCServer {
@@ -22,29 +22,24 @@ impl RPCServer {
     pub fn singleton(ip_address: String, port: u16, auth_token: String) -> Self {
         let parsed_ip_address = parse_ip_address(ip_address.clone());
         let endpoint = format!("{}:{}", parsed_ip_address, port);
-        let mut function_register: IoHandler = IoHandler::default();
 
-        let routes = RPCRoutes::build();
-        
-        for (function_name, function_body) in RPC_ROUTER.iter() {
-            let cloned_handler = function_body.clone();
-            function_register.add_method(function_name, move  |params:Params| {
-                cloned_handler(params.clone())
-            });
-        }
+        let router: RPCRouter = RPCRouter::build(auth_token.clone());
+
+        let mut rpc_registry: IoHandler = IoHandler::default();
+        rpc_registry = router.bind(rpc_registry.clone());
         
         Self {
             ip_address,
             port,
             auth_token,
             endpoint,
-            function_register,
+            rpc_registry,
         }
     }
 
     /// Public: This function is repsonsible of booting process of  JRPC Server
     pub async fn start(&self) {
-        let server = ServerBuilder::new(self.function_register.clone())
+        let server = ServerBuilder::new(self.rpc_registry.clone())
             .start_http(&self.endpoint.parse().unwrap())
             .expect("JRPC Server failed to start.");
 

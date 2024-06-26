@@ -3,7 +3,7 @@ mod models;
 mod rpc_service;
 mod utils;
 
-use core::{config::Config, http_server::HttpServer, router::Router};
+use core::{config::Config, http_server::HttpServer, https_server::HttpsServer, router::Router};
 use rpc_service::rpc_server::RPCServer;
 
 #[tokio::main]
