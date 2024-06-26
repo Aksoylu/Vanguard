@@ -1,4 +1,4 @@
-use chrono::{DateTime, Utc};
+use chrono::Utc;
 use jsonrpc_core::{IoHandler, Params};
 use serde_json::to_string;
 
@@ -6,7 +6,7 @@ use crate::{models::rpc_session::RpcSession, utils::{generate_hash::generate_has
 
 use jsonrpc_http_server::ServerBuilder;
 
-use super::RPC_ROUTER;
+use super::{routes::RPCRoutes, RPC_ROUTER};
 
 pub struct RPCServer {
     ip_address: String,
@@ -24,6 +24,8 @@ impl RPCServer {
         let endpoint = format!("{}:{}", parsed_ip_address, port);
         let mut function_register: IoHandler = IoHandler::default();
 
+        let routes = RPCRoutes::build();
+        
         for (function_name, function_body) in RPC_ROUTER.iter() {
             let cloned_handler = function_body.clone();
             function_register.add_method(function_name, move  |params:Params| {
@@ -40,6 +42,7 @@ impl RPCServer {
         }
     }
 
+    /// Public: This function is repsonsible of booting process of  JRPC Server
     pub async fn start(&self) {
         let server = ServerBuilder::new(self.function_register.clone())
             .start_http(&self.endpoint.parse().unwrap())
