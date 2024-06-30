@@ -12,16 +12,18 @@ use tokio_rustls::TlsAcceptor;
 use crate::utils::network_utility::parse_ip_address;
 use crate::utils::tls_utility::{configure_tls, load_certs, load_private_key};
 
-#[derive(Debug, Clone)]
+use super::models::HttpsRoute;
+
+#[derive(Clone)]
 pub struct HttpsServer {
     ip_address: String,
     port: u16,
     socket: SocketAddr,
-    routes: HashMap<String, String>,
+    routes: HashMap<String, HttpsRoute>,
 }
 
 impl HttpsServer {
-    pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, String>) -> Self {
+    pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, HttpsRoute>) -> Self {
         let ip = parse_ip_address(ip_address.clone());
         let socket = SocketAddr::from((ip, port));
 
@@ -75,6 +77,7 @@ impl HttpsServer {
             let (stream, _) = listener.accept().await.unwrap();
             let tls_acceptor = tls_acceptor.clone();
             let http_server = Arc::clone(&http_server);
+
             tokio::spawn(async move {
                 let stream = match tls_acceptor.accept(stream).await {
                     Ok(stream) => stream,
@@ -118,16 +121,22 @@ impl HttpsServer {
             return Ok(response);
         }
 
-        let default_url = "".to_owned();
-        let endpoint_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
+        if self.routes.get(&request_host).is_none() {
+            let response = Response::new(Body::from(
+                "Requested Reprox URL is not configured properly",
+            ));
+            return Ok(response);
+        }
 
-        if endpoint_to_navigate == &default_url {
+        let current_route = self.routes.get(&request_host).unwrap();
+
+        if String::is_empty(&current_route.source) {
             let response =
                 Response::new(Body::from("Requested Reprox redirection URL not found..."));
             return Ok(response);
         }
 
-        let response = self.navigate_url(endpoint_to_navigate, req).await;
+        let response = self.navigate_url(&current_route.target, req).await;
         return response;
     }
 

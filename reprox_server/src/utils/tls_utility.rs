@@ -18,7 +18,7 @@ pub fn create_ssl_context(optional_ssl_path:Option<SslPath>) -> TlsAcceptor{
     let ssl_path = optional_ssl_path.unwrap();
 
 
-    match (load_certs("cert.pem"), load_private_key("key.pem")) {
+    match (load_certs(&ssl_path.cert), load_private_key(&ssl_path.private_key)) {
         (Ok(certs), Ok(key)) => {
             let tls_config = configure_tls(certs, key).unwrap();
             let tls_context = TlsAcceptor::from(Arc::new(tls_config));
@@ -32,7 +32,7 @@ pub fn create_ssl_context(optional_ssl_path:Option<SslPath>) -> TlsAcceptor{
 } 
 
 
-fn load_certs(filename: &str) -> io::Result<Vec<Certificate>> {
+pub fn load_certs(filename: &str) -> io::Result<Vec<Certificate>> {
     let certfile = File::open(filename)?;
     let mut reader = BufReader::new(certfile);
     let certs = certs(&mut reader)
@@ -43,7 +43,7 @@ fn load_certs(filename: &str) -> io::Result<Vec<Certificate>> {
     Ok(certs)
 }
 
-fn load_private_key(filename: &str) -> io::Result<PrivateKey> {
+pub fn load_private_key(filename: &str) -> io::Result<PrivateKey> {
     let keyfile = File::open(filename)?;
     let mut reader = BufReader::new(keyfile);
     let keys = pkcs8_private_keys(&mut reader)
@@ -51,7 +51,7 @@ fn load_private_key(filename: &str) -> io::Result<PrivateKey> {
     Ok(PrivateKey(keys[0].clone()))
 }
 
-fn configure_tls(certs: Vec<Certificate>, key: PrivateKey) -> io::Result<ServerConfig> {
+pub fn configure_tls(certs: Vec<Certificate>, key: PrivateKey) -> io::Result<ServerConfig> {
     let config = ServerConfig::builder()
         .with_safe_defaults()
         .with_no_client_auth()

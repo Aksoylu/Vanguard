@@ -9,8 +9,8 @@
         "source": "test.typhoon.work",
         "target": "154.53.160.69:9100",
         "ssl": {
-            "cert": "",
-            "private_key": ""
+            "cert": "../certs/cert.pem",
+            "private_key": "../certs/privkey.pem"
         }
     }
 ]

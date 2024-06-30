@@ -9,17 +9,18 @@ use tokio::sync::Mutex;
 use hyper::client::HttpConnector;
 
 use crate::utils::network_utility::parse_ip_address;
+use super::models::HttpRoute;
 
 #[derive(Debug, Clone)]
 pub struct HttpServer {
     ip_address: String,
     port: u16,
     socket: SocketAddr,
-    routes: HashMap<String, String>,
+    routes: HashMap<String, HttpRoute>,
 }
 
 impl HttpServer {
-    pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, String>) -> Self {
+    pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, HttpRoute>) -> Self {
         let socket = SocketAddr::from((parse_ip_address(ip_address.clone()), port));
 
         Self {
@@ -35,16 +36,18 @@ impl HttpServer {
 
         let make_svc = make_service_fn(|_conn| {
             let http_server = Arc::clone(&http_server);
-    
+
             async move {
                 Ok::<_, hyper::Error>(service_fn(move |req| {
                     let http_server = Arc::clone(&http_server);
                     async move {
                         let data = http_server.lock().await;
-    
+
                         match data.handle_request(req).await {
                             Ok(response) => Ok::<_, hyper::Error>(response),
-                            Err(_) => Ok::<_, hyper::Error>(Response::new(Body::from("Error processing request"))),
+                            Err(_) => Ok::<_, hyper::Error>(Response::new(Body::from(
+                                "Error processing request",
+                            ))),
                         }
                     }
                 }))
@@ -72,16 +75,22 @@ impl HttpServer {
             return Ok(response);
         }
 
-        let default_url = "".to_owned();
-        let endpoint_to_navigate = self.routes.get(&request_host).unwrap_or(&default_url);
+        if self.routes.get(&request_host).is_none() {
+            let response = Response::new(Body::from(
+                "Requested Reprox URL is not configured properly",
+            ));
+            return Ok(response);
+        }
 
-        if endpoint_to_navigate == &default_url {
+        let current_route = self.routes.get(&request_host).unwrap();
+
+        if String::is_empty(&current_route.source) {
             let response =
                 Response::new(Body::from("Requested Reprox redirection URL not found..."));
             return Ok(response);
         }
 
-        let response = self.navigate_url(endpoint_to_navigate, req).await;
+        let response = self.navigate_url(&current_route.target, req).await;
         return response;
     }
 
