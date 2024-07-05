@@ -9,8 +9,17 @@
         "source": "test.typhoon.work",
         "target": "154.53.160.69:9100",
         "ssl": {
-            "cert": "../certs/cert.pem",
-            "private_key": "../certs/privkey.pem"
+            "cert": "certs/typhoon/cert.pem",
+            "private_key": "certs/typhoon/privkey.pem"
+        }
+    },
+    {
+        "protocol": "https",
+        "source": "app.astro-ai.app",
+        "target": "154.53.160.69:3000",
+        "ssl": {
+            "cert": "certs/typhoon/cert.pem",
+            "private_key": "certs/typhoon/privkey.pem"
         }
     }
 ]
