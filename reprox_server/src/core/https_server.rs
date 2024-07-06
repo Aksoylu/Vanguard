@@ -118,7 +118,7 @@ impl HttpsServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let original_uri = req.uri().clone();
 
-        let mut new_uri = format!("https://{}{}", endpoint_to_navigate, original_uri.path());
+        let mut new_uri = format!("http://{}{}", endpoint_to_navigate, original_uri.path());
         if let Some(query) = original_uri.query() {
             new_uri.push('?');
             new_uri.push_str(query);
