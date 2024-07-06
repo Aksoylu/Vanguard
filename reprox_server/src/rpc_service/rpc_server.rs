@@ -2,10 +2,10 @@ use chrono::Utc;
 use jsonrpc_core::IoHandler;
 use serde_json::to_string;
 
-use crate::{settings::Settings, utils::{
-    crypt_utility::generate_hash,
-    network_utility::parse_ip_address,
-}};
+use crate::{
+    settings::Settings,
+    utils::{crypt_utility::generate_hash, network_utility::parse_ip_address},
+};
 
 use jsonrpc_http_server::ServerBuilder;
 
@@ -75,7 +75,7 @@ impl RPCServer {
                     );
                 }
             }
-            Err(e) => eprintln!("Error on serializing Rpc Session"),
+            Err(_e) => eprintln!("Error on serializing Rpc Session"),
         }
     }
 }

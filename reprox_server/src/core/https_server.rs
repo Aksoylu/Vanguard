@@ -11,8 +11,6 @@ use super::models::HttpsRoute;
 
 #[derive(Clone)]
 pub struct HttpsServer {
-    ip_address: String,
-    port: u16,
     socket: SocketAddr,
     routes: HashMap<String, HttpsRoute>,
 }
@@ -22,12 +20,7 @@ impl HttpsServer {
         let ip = parse_ip_address(ip_address.clone());
         let socket = SocketAddr::from((ip, port));
 
-        Self {
-            ip_address,
-            port,
-            socket,
-            routes,
-        }
+        Self { socket, routes }
     }
 
     pub async fn start(&self) {

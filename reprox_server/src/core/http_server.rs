@@ -8,13 +8,11 @@ use tokio::sync::Mutex;
 
 use hyper::client::HttpConnector;
 
-use crate::utils::network_utility::parse_ip_address;
 use super::models::HttpRoute;
+use crate::utils::network_utility::parse_ip_address;
 
 #[derive(Debug, Clone)]
 pub struct HttpServer {
-    ip_address: String,
-    port: u16,
     socket: SocketAddr,
     routes: HashMap<String, HttpRoute>,
 }
@@ -23,12 +21,7 @@ impl HttpServer {
     pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, HttpRoute>) -> Self {
         let socket = SocketAddr::from((parse_ip_address(ip_address.clone()), port));
 
-        Self {
-            ip_address,
-            port,
-            socket,
-            routes,
-        }
+        Self { socket, routes }
     }
 
     pub async fn start(&self) {

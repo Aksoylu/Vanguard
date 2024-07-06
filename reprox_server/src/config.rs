@@ -1,5 +1,5 @@
-use std::{fs::File, io::Read};
 use serde::Deserialize;
+use std::{fs::File, io::Read};
 
 use crate::settings::Settings;
 
@@ -31,7 +31,6 @@ pub struct RpcServerConfig {
 
 impl Config {
     pub fn load() -> Self {
-
         let file = File::open(Settings::CONFIG_PATH).expect("Unable to open file");
 
         let mut reader = std::io::BufReader::new(file);
