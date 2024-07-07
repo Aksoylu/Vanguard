@@ -1,11 +1,15 @@
+mod config;
 mod core;
 mod rpc_service;
-mod utils;
-mod config;
 mod settings;
+mod utils;
 
 use config::Config;
-use core::{http_server::HttpServer, https_server::{self, HttpsServer}, router::Router};
+use core::{
+    http_server::HttpServer,
+    https_server::HttpsServer,
+    router::Router,
+};
 use rpc_service::rpc_server::RPCServer;
 
 #[tokio::main]
@@ -32,16 +36,17 @@ async fn main() {
     tokio::spawn(async move {
         https_server.start().await;
     });
-    
-    match config.rpc_server {
-        Some(rpc_config) => {
-            let jsonrpc_server = RPCServer::singleton(
-                rpc_config.ip_address,
-                rpc_config.port,
-                rpc_config.private_key,
-            );
-            jsonrpc_server.start().await;
-        }
-        None => {}
+
+    if config.rpc_server.is_some(){
+        let rpc_server_config = config.rpc_server.unwrap();
+
+        let jsonrpc_server = RPCServer::singleton(
+            rpc_server_config.ip_address,
+            rpc_server_config.port,
+            rpc_server_config.private_key,
+        );
+        jsonrpc_server.start().await;
     }
+
+ 
 }

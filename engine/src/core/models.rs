@@ -1,10 +1,9 @@
+use rustls::{Certificate, PrivateKey};
 use serde::{Deserialize, Serialize};
-use rustls::{PrivateKey, Certificate};
-use tokio_rustls::TlsAcceptor;
 
 #[derive(Debug, PartialEq, Clone)]
 
-pub struct Ssl{
+pub struct Ssl {
     pub cert: Vec<Certificate>,
     pub private_key: PrivateKey,
 }
@@ -25,13 +24,13 @@ pub struct HttpRoute {
 pub struct HttpsRoute {
     pub source: String,
     pub target: String,
-    pub ssl_path: SslPath
+    pub ssl_path: SslPath,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
-pub struct JsonRoute{
+pub struct JsonRoute {
     pub protocol: String,
     pub source: String,
     pub target: String,
-    pub ssl: Option<SslPath>
+    pub ssl: Option<SslPath>,
 }

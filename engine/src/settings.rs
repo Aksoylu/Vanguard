@@ -1,6 +1,4 @@
-pub struct Settings {
-    
-}
+pub struct Settings {}
 
 impl Settings {
     pub const CONFIG_PATH: &'static str = "../runtime/settings.json";

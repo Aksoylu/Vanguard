@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use jsonrpc_core::{Error, Params, Value};
+use std::sync::Arc;
 
 pub mod rpc_session;
 

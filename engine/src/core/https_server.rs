@@ -11,8 +11,6 @@ use super::models::HttpsRoute;
 
 #[derive(Clone)]
 pub struct HttpsServer {
-    ip_address: String,
-    port: u16,
     socket: SocketAddr,
     routes: HashMap<String, HttpsRoute>,
 }
@@ -22,19 +20,14 @@ impl HttpsServer {
         let ip = parse_ip_address(ip_address.clone());
         let socket = SocketAddr::from((ip, port));
 
-        Self {
-            ip_address,
-            port,
-            socket,
-            routes,
-        }
+        Self { socket, routes }
     }
 
     pub async fn start(&self) {
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor = create_ssl_context(self.routes.clone()).await;
 
-        println!("Reprox Server started on {:?}", &self.socket);
+        println!("Vanguard Engine Https server started on {:?}", &self.socket);
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
 
         /* LifeCycle */
@@ -95,13 +88,13 @@ impl HttpsServer {
 
         if !self.routes.contains_key(&request_host) {
             let response =
-                Response::new(Body::from("Requested Reprox redirection URL not found..."));
+                Response::new(Body::from("Requested domain has not registered on Vanguard"));
             return Ok(response);
         }
 
-        if self.routes.get(&request_host).is_none() {
+        if !self.routes.contains_key(&request_host){
             let response = Response::new(Body::from(
-                "Requested Reprox URL is not configured properly",
+                "Requested URL is not configured properly. Please contact your system administrator",
             ));
             return Ok(response);
         }
@@ -110,12 +103,11 @@ impl HttpsServer {
 
         if String::is_empty(&current_route.source) {
             let response =
-                Response::new(Body::from("Requested Reprox redirection URL not found..."));
+                Response::new(Body::from("Requested domain has not registered on Vanguard"));
             return Ok(response);
         }
 
-        let response = self.navigate_url(&current_route.target, req).await;
-        return response;
+        self.navigate_url(&current_route.target, req).await
     }
 
     async fn navigate_url(
@@ -125,7 +117,7 @@ impl HttpsServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let original_uri = req.uri().clone();
 
-        let mut new_uri = format!("https://{}{}", endpoint_to_navigate, original_uri.path());
+        let mut new_uri = format!("http://{}{}", endpoint_to_navigate, original_uri.path());
         if let Some(query) = original_uri.query() {
             new_uri.push('?');
             new_uri.push_str(query);
