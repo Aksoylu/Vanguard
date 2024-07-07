@@ -30,9 +30,7 @@ pub async fn create_ssl_context(routes: HashMap<std::string::String, HttpsRoute>
         .with_no_client_auth()
         .with_cert_resolver(Arc::new(sni_resolver));
 
-    let ssl_context = TlsAcceptor::from(Arc::new(tls_config));
-
-    ssl_context
+    TlsAcceptor::from(Arc::new(tls_config))
 }
 
 async fn load_certs(path: &str) -> io::Result<Vec<Certificate>> {

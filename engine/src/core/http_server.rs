@@ -47,11 +47,10 @@ impl HttpServer {
             }
         });
 
-        println!("Reprox Server started on {:?}", &self.socket);
+        println!("Vanguard Engine Http server started on {:?}", &self.socket);
 
         if let Err(e) = Server::bind(&self.socket).serve(make_svc).await {
             eprintln!("Server error: {}", e);
-            return;
         }
     }
 
@@ -64,13 +63,13 @@ impl HttpServer {
 
         if !self.routes.contains_key(&request_host) {
             let response =
-                Response::new(Body::from("Requested Reprox redirection URL not found..."));
+                Response::new(Body::from("Requested domain has not registered on Vanguard"));
             return Ok(response);
         }
 
-        if self.routes.get(&request_host).is_none() {
+        if !self.routes.contains_key(&request_host) {
             let response = Response::new(Body::from(
-                "Requested Reprox URL is not configured properly",
+                "Requested URL is not configured properly. Please contact your system administrator",
             ));
             return Ok(response);
         }
@@ -79,12 +78,11 @@ impl HttpServer {
 
         if String::is_empty(&current_route.source) {
             let response =
-                Response::new(Body::from("Requested Reprox redirection URL not found..."));
+                Response::new(Body::from("Requested domain is not registered on Vanguard Engine."));
             return Ok(response);
         }
 
-        let response = self.navigate_url(&current_route.target, req).await;
-        return response;
+        self.navigate_url(&current_route.target, req).await
     }
 
     async fn navigate_url(

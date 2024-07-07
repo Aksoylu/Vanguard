@@ -27,7 +27,7 @@ impl HttpsServer {
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor = create_ssl_context(self.routes.clone()).await;
 
-        println!("Reprox Server started on {:?}", &self.socket);
+        println!("Vanguard Engine Https server started on {:?}", &self.socket);
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
 
         /* LifeCycle */
@@ -88,13 +88,13 @@ impl HttpsServer {
 
         if !self.routes.contains_key(&request_host) {
             let response =
-                Response::new(Body::from("Requested Reprox redirection URL not found..."));
+                Response::new(Body::from("Requested domain has not registered on Vanguard"));
             return Ok(response);
         }
 
-        if self.routes.get(&request_host).is_none() {
+        if !self.routes.contains_key(&request_host){
             let response = Response::new(Body::from(
-                "Requested Reprox URL is not configured properly",
+                "Requested URL is not configured properly. Please contact your system administrator",
             ));
             return Ok(response);
         }
@@ -103,12 +103,11 @@ impl HttpsServer {
 
         if String::is_empty(&current_route.source) {
             let response =
-                Response::new(Body::from("Requested Reprox redirection URL not found..."));
+                Response::new(Body::from("Requested domain has not registered on Vanguard"));
             return Ok(response);
         }
 
-        let response = self.navigate_url(&current_route.target, req).await;
-        return response;
+        self.navigate_url(&current_route.target, req).await
     }
 
     async fn navigate_url(

@@ -56,26 +56,24 @@ impl RPCServer {
     /// * `private_key` - Private key value that specified in `settings.json` file. (`&str`)
     ///
     pub fn create_rpc_session(&self) {
-        let hash = generate_hash(self.auth_token.clone());
-        let created_at = Utc::now().timestamp();
-
-        let session = RpcSession {
+        let session_data = RpcSession {
             ip_addr: self.ip_address.clone(),
             port: self.port.to_string(),
-            hash,
-            created_at,
+            hash: generate_hash(self.auth_token.clone()),
+            created_at:  Utc::now().timestamp(),
         };
 
-        match to_string(&session) {
-            Ok(json) => {
-                if let Err(_) = std::fs::write(Settings::SESSION_PATH, json) {
-                    eprintln!(
-                        "Unable to write to session file on: {}",
-                        Settings::SESSION_PATH
-                    );
-                }
-            }
-            Err(_e) => eprintln!("Error on serializing Rpc Session"),
+        let serialized_session = match to_string(&session_data) {
+            Ok(json) => json,
+            Err(_e) => "{}".to_string(),
+        };
+
+        let write_result = std::fs::write(Settings::SESSION_PATH, serialized_session);
+        if write_result.is_err(){
+            eprintln!(
+                "Unable to write to session file on: {}",
+                Settings::SESSION_PATH
+            );
         }
     }
 }

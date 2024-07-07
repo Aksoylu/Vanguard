@@ -1,5 +1,6 @@
 use rand::seq::SliceRandom;
 use sha2::{Digest, Sha256};
+use std::fmt::Write;
 
 pub fn generate_hash(secure_key: String) -> String
 {
@@ -25,11 +26,12 @@ fn hash_sha_256(input: &str) -> String {
     hasher.update(input.as_bytes());
     let result = hasher.finalize();
 
-    // Convert the hash result to a hexadecimal string
-    let hash_hex_string: String = result
-        .iter()
-        .map(|byte| format!("{:02x}", byte))
-        .collect();
+
+    let mut hash_hex_string = String::new(); // Her bayt 2 karaktere dönüşeceği için kapasiteyi ayarla
+
+    for byte in result {
+        write!(&mut hash_hex_string, "{:02x}", byte).expect("Unable to write");
+    }
 
     hash_hex_string
 }

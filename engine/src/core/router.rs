@@ -43,33 +43,32 @@ impl Router {
     }
 
     pub fn get_http_routes(&self) -> HashMap<String, HttpRoute> {
-        return self.http_route_table.clone();
+        self.http_route_table.clone()
     }
 
     pub fn get_https_routes(&self) -> HashMap<String, HttpsRoute> {
-        return self.https_route_table.clone();
+        self.https_route_table.clone()
     }
 
     fn read_routing_json() -> Vec<JsonRoute> {
-        let mut file = match File::open(Settings::ROUTER_PATH) {
-            Ok(file) => file,
-            Err(_) => {
-                panic!("Failed to read runtime/routing.json file.");
-            }
-        };
+        let open_file_result = File::open(Settings::ROUTER_PATH);
+        if open_file_result.is_err(){
+            panic!("Failed to read runtime/routing.json file.");
+        }
 
+        let mut file = open_file_result.unwrap();
         let mut file_contents = String::new();
-        if let Err(_) = file.read_to_string(&mut file_contents) {
+        
+        let read_file_result = file.read_to_string(&mut file_contents);
+        if read_file_result.is_err(){
             panic!("Failed to parse runtime/routing.json content.");
         }
 
-        let route_list = match serde_json::from_str(&file_contents) {
-            Ok(person) => person,
+        match serde_json::from_str(&file_contents) {
+            Ok(json_route_vector) => json_route_vector,
             Err(_) => {
                 panic!("An error occured while parsing runtime/routing.json.");
             }
-        };
-
-        route_list
+        }
     }
 }
