@@ -59,6 +59,12 @@ impl Router {
         self.http_route_table.clone()
     }
 
+    pub fn add_http_route(mut self, route_name: String, route_body: HttpRoute) -> Self {
+        self.http_route_table.insert(route_name, route_body);
+
+        self
+    }
+
     pub fn get_https_routes(&self) -> HashMap<String, HttpsRoute> {
         self.https_route_table.clone()
     }
