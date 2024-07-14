@@ -1,5 +1,7 @@
 use std::path::PathBuf;
 
+use tokio::sync::watch;
+
 use crate::{
     constants::Constants,
     core::router::Router,
@@ -47,6 +49,11 @@ impl Runtime {
             rpc_session_path,
             route_path,
         }
+    }
+
+    pub fn update_config(&mut self, new_config: Config, runtime_sub: watch::Sender<()>) {
+        self.config = new_config;
+        let _ = runtime_sub.send(());
     }
 
     fn load_config(config_path: PathBuf) -> Config {

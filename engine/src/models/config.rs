@@ -9,7 +9,7 @@ use super::{
 pub struct Config {
     pub http_server: HttpServerConfig,
     pub https_server: HttpsServerConfig,
-    pub rpc_server: Option<RpcServerConfig>,
+    pub rpc_server: RpcServerConfig,
 }
 
 impl Default for Config {
@@ -38,16 +38,16 @@ impl Config {
             return Err("HTTPS server port is 0".into());
         }
 
-        if let Some(ref rpc_server) = self.rpc_server {
-            if rpc_server.ip_address.is_empty() {
-                return Err("RPC server IP address is empty".into());
-            }
-            if rpc_server.port == 0 {
-                return Err("RPC server port is 0".into());
-            }
-            if rpc_server.private_key.is_empty() {
-                return Err("RPC server private key is empty".into());
-            }
+        if self.rpc_server.ip_address.is_empty(){
+            return Err("RPC server IP address is empty".into());
+        }
+
+        if self.rpc_server.port == 0{
+            return Err("RPC server port is 0".into());
+        }
+
+        if self.rpc_server.private_key.is_empty(){
+            return Err("RPC server private key is empty".into());
         }
 
         Ok(())

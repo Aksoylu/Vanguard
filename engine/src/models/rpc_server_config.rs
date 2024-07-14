@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::Constants;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct RpcServerConfig {
     pub ip_address: String,
     pub port: u16,
