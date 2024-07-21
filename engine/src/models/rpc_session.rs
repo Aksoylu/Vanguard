@@ -23,7 +23,7 @@ impl Default for RpcSession {
             port: Constants::DEFAULT_RPC_PORT,
             private_key: Constants::DEFAULT_PRIVATE_KEY.to_string(),
             created_at: get_current_timestamp(),
-            hash,
+            hash: generate_hash(Constants::DEFAULT_PRIVATE_KEY.to_string()),
         }
     }
 }
@@ -41,10 +41,7 @@ impl RpcSession {
             return Err("RPC Connection private key is empty".into());
         }
         if self.hash.is_empty() {
-            return Err(
-                "RPC Connection hash is empty.\nApplication is vulnerable to security issues"
-                    .into(),
-            );
+            return Err("RPC Connection hash is empty.".into());
         }
 
         Ok(())

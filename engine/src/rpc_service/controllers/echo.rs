@@ -1,9 +1,21 @@
-use jsonrpc_core::{Error, IoHandler, Params, Value};
+use jsonrpc_core::{Error, ErrorCode, Params, Value};
+use std::sync::Arc;
 use std::sync::Mutex;
-use std::{collections::HashMap, sync::Arc};
 
+use crate::rpc_service::models::echo_model::{EchoRequest, EchoResponse};
 use crate::runtime::Runtime;
 
-pub fn echo_controller(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
-    Ok(Value::String(format!("Hello, {:?}", params)))
+pub fn echo(_runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
+    let request = match EchoRequest::new(params) {
+        Ok(req) => req,
+        Err(_) => {
+            return Err(Error {
+                code: ErrorCode::InternalError,
+                message: "Invalid request parameters for JRPC function: echo".into(),
+                data: None,
+            });
+        }
+    };
+
+    Ok(EchoResponse::build(request.get_message()))
 }

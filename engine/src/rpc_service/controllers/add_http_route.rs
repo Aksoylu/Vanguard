@@ -1,28 +1,31 @@
-use crate::{models::route::HttpRoute, runtime::Runtime, utils::rpc_utility::RpcParameter};
+use crate::rpc_service::models::add_http_route_model::{AddHttpRouteRequest, AddHttpRouteResponse};
+use crate::{models::route::HttpRoute, runtime::Runtime};
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;
 use std::sync::Mutex;
+use jsonrpc_core::ErrorCode;
 
 pub fn add_http_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
-    let http_route_name = RpcParameter::extract_string("route_name", params.clone());
-    if http_route_name.is_none() {
-        return Err(Error {
-            code: jsonrpc_core::ErrorCode::ServerError(500),
-            message: "Route name is not valid".into(),
-            data: None,
-        });
-    }
-
+    let request = match AddHttpRouteRequest::new(params) {
+        Ok(req) => req,
+        Err(_) => {
+            return Err(Error {
+                code: ErrorCode::InternalError,
+                message: "Invalid request parameters for JRPC function: add_http_route".into(),
+                data: None,
+            });
+        }
+    };
+    
     let new_route = HttpRoute {
-        source: "xyz".to_owned(),
-        target: "abc".to_owned(),
+        source: request.get_source(),
+        target: request.get_target()
     };
 
-    let rt = runtime.lock().unwrap().router.clone();
+    let runtime_snapshot = runtime.lock().unwrap().router.clone();
+    let updated_runtime_snapshot = runtime_snapshot.add_http_route( new_route);
 
-    let new_rt = rt.add_http_route(http_route_name.unwrap(), new_route);
+    runtime.lock().unwrap().router = updated_runtime_snapshot;
 
-    runtime.lock().unwrap().router = new_rt;
-
-    Ok(Value::String(format!("Success")))
+    Ok(AddHttpRouteResponse::build("ok".to_string(), None))
 }

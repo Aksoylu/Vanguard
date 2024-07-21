@@ -20,5 +20,6 @@ pub struct JsonRoute {
     pub protocol: String,
     pub source: String,
     pub target: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
     pub ssl: Option<SslPath>,
 }

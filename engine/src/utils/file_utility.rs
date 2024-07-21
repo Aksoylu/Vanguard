@@ -35,13 +35,12 @@ where
     Ok(data)
 }
 
-pub fn save_json<T>(file_path: &Path, data: &T) -> Result<(), Box<dyn std::error::Error>>
+pub fn save_json<T>(file_path: &PathBuf, data: &T) -> Result<(), Box<dyn std::error::Error>>
 where
     T: Serialize,
-{
-    let json = serde_json::to_string(data)?;
-    let mut file = File::create(file_path)?;
-    file.write_all(json.as_bytes())?;
+{    
+    let file = File::create(file_path)?;
+    serde_json::to_writer_pretty(file, &data)?;
     Ok(())
 }
 

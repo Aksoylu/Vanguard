@@ -5,8 +5,8 @@ use tokio::sync::watch;
 use crate::{
     constants::Constants,
     core::router::Router,
-    models::{config::Config, route::JsonRoute, rpc_session::RpcSession},
-    utils::file_utility::{get_runtime_path, load_json},
+    models::{config::Config, rpc_session::RpcSession},
+    utils::{crypt_utility::generate_hash, file_utility::{get_runtime_path, load_json}},
 };
 
 pub struct Runtime {
@@ -22,10 +22,9 @@ pub struct Runtime {
 impl Runtime {
     pub fn init() -> Self {
         let runtime_path = get_runtime_path();
-        let config_path = Runtime::get_config_path(&runtime_path);
         let rpc_session_path = Runtime::get_rpc_session_path(&runtime_path);
-        let route_path = Runtime::get_route_path(&runtime_path);
 
+        let config_path = Runtime::get_config_path(&runtime_path);
         let config = Runtime::load_config(config_path.clone());
         if config == Config::default() {
             // TODO: WRITE FILE BACK
@@ -35,16 +34,17 @@ impl Runtime {
         if rpc_session == RpcSession::default() {
             // TODO: WRITE FILE BACK
         }
+        println!("rpc session hash >> {}", rpc_session.hash.clone());
 
-        let router = Runtime::load_router(route_path.clone());
-        if router == Router::default() {
-            // TODO: WRITE FILE BACK
-        }
+
+        let route_path = Runtime::get_route_path(&runtime_path);
+        let router = Router::load(route_path.clone());
 
         Self {
             config,
             rpc_session,
             router,
+
             config_path,
             rpc_session_path,
             route_path,
@@ -88,33 +88,17 @@ impl Runtime {
             return RpcSession::default();
         }
 
-        let rpc_session = read_rpc_session_operation.unwrap();
-        let validation = rpc_session.validate();
+        let mut rpc_session = read_rpc_session_operation.unwrap();
+        rpc_session.hash = generate_hash(rpc_session.private_key.clone());
 
+        let validation = rpc_session.clone().validate();
+        
         if validation.is_ok() {
             return rpc_session;
         } else {
             let error_text = validation.err().unwrap_or_default();
             eprintln!("Invalid Rpc Session: {}\nUsing default", error_text);
             return RpcSession::default();
-        }
-    }
-
-    fn load_router(route_path: PathBuf) -> Router {
-        let read_route_operation = load_json::<Vec<JsonRoute>>(&route_path);
-        if read_route_operation.is_err() {
-            eprintln!("Could not load Router file on Path: {}.\nVanguard will starting up with no routing", route_path.to_str().unwrap_or_default());
-            return Router::default();
-        }
-
-        let route_list = read_route_operation.unwrap();
-        let router = Router::create(route_list);
-        if router.is_ok() {
-            return router.unwrap();
-        } else {
-            let error_text = router.err().unwrap_or_default();
-            eprintln!("Invalid Router Session: {}\nUsing default", error_text);
-            return Router::default();
         }
     }
 
