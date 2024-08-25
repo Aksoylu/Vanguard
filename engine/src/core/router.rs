@@ -7,7 +7,7 @@ use crate::{
     utils::file_utility::{get_runtime_path, load_json, save_json},
 };
 
-#[derive(Clone, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
 pub struct Router {
     http_route_table: HashMap<String, HttpRoute>,
     https_route_table: HashMap<String, HttpsRoute>,
@@ -35,7 +35,8 @@ impl Router {
     pub fn load(load_path: PathBuf) -> Router {
         let read_route_operation = load_json::<Vec<JsonRoute>>(&load_path);
         if read_route_operation.is_err() {
-            eprintln!("Could not load Router file on Path: {}.\nVanguard will starting up with no routing", load_path.to_str().unwrap_or_default());
+            eprintln!("Could not load Router file on Path: '{}'\nVanguard will starting up with no routing", load_path.to_str().unwrap_or_default());
+            eprintln!("{:?}", read_route_operation.err());
             return Router::default();
         }
 
@@ -53,7 +54,7 @@ impl Router {
     pub fn save(&self) {
         let export_data = self.convert_to_json_route_vec();
         let write_operation = save_json(&self.save_path, &export_data);
-        
+
         if write_operation.is_err() {
             let save_path_as_string = &self.save_path.to_str().unwrap_or_default();
             eprintln!(
@@ -80,7 +81,7 @@ impl Router {
                 let new_https_route = HttpsRoute {
                     source: each_route.source.clone(),
                     target: each_route.target.clone(),
-                    ssl_path: each_route.ssl.clone().unwrap_or_default(),
+                    ssl_context: each_route.ssl.clone().unwrap_or_default(),
                 };
 
                 https_route_table.insert(each_route.source.clone(), new_https_route.clone());
@@ -117,20 +118,16 @@ impl Router {
                 protocol: "https".to_string(),
                 source: each_https_route.source.clone(),
                 target: each_https_route.target.clone(),
-                ssl: Some(each_https_route.ssl_path.clone()),
+                ssl: Some(each_https_route.ssl_context.clone()),
             })
         }
 
         json_route_vec
     }
 
-    pub fn get_http_routes(&self) -> HashMap<String, HttpRoute> {
-        self.http_route_table.clone()
-    }
-
     /* Service Functions */
 
-    pub fn list_http_routes(&self) -> Vec<JsonRoute> {
+    pub fn list_routes(&self) -> Vec<JsonRoute> {
         let export_data = self.convert_to_json_route_vec();
 
         export_data
@@ -149,6 +146,19 @@ impl Router {
         self
     }
 
+    pub fn add_https_route(mut self, route_body: HttpsRoute) -> Self {
+        let route_name = route_body.source.clone();
+
+        if self.https_route_table.contains_key(&route_name) {
+            self.https_route_table.remove(&route_name);
+        }
+
+        self.https_route_table.insert(route_name, route_body);
+
+        self.save();
+        self
+    }
+
     pub fn delete_http_route(mut self, source: String) -> Self {
         if self.http_route_table.contains_key(&source) {
             self.http_route_table.remove(&source);
@@ -156,6 +166,19 @@ impl Router {
 
         self.save();
         self
+    }
+
+    pub fn delete_https_route(mut self, source: String) -> Self {
+        if self.https_route_table.contains_key(&source) {
+            self.https_route_table.remove(&source);
+        }
+
+        self.save();
+        self
+    }
+
+    pub fn get_http_routes(&self) -> HashMap<String, HttpRoute> {
+        self.http_route_table.clone()
     }
 
     pub fn get_https_routes(&self) -> HashMap<String, HttpsRoute> {

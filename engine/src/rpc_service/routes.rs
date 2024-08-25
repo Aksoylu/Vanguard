@@ -4,11 +4,13 @@ use std::{collections::HashMap, sync::Arc};
 
 use crate::runtime::Runtime;
 
-use super::controllers::list_http_routes::list_http_routes;
+use super::controllers::add_https_route::add_https_route;
+use super::controllers::list_routes::list_routes;
 use super::{
     controllers::{
         add_http_route::add_http_route, delete_http_route::delete_http_route, echo::echo,
-        upload_ssl_cert::upload_ssl_cert, list_ssl_certs::list_ssl_certs,  delete_ssl_cert::delete_ssl_cert
+        upload_ssl_cert::upload_ssl_cert, list_ssl_certs::list_ssl_certs,  delete_ssl_cert::delete_ssl_cert,
+        delete_https_route::delete_https_route
     },
     middleware::authorization::authorization,
 };
@@ -27,22 +29,26 @@ impl RPCRouter {
 
         route_map.insert("echo", Arc::new(echo) as RpcHandler);
 
-        route_map.insert("list_http_routes", Arc::new(list_http_routes) as RpcHandler);
+        route_map.insert("list_routes", Arc::new(list_routes) as RpcHandler);
         route_map.insert("add_http_route", Arc::new(add_http_route) as RpcHandler);
         route_map.insert("delete_http_route", Arc::new(delete_http_route) as RpcHandler);
+        
+        route_map.insert("add_https_route", Arc::new(add_https_route) as RpcHandler);
+        route_map.insert("delete_https_route", Arc::new(delete_https_route) as RpcHandler);
 
         route_map.insert("upload_ssl_cert", Arc::new(upload_ssl_cert) as RpcHandler);
         route_map.insert("list_ssl_certs", Arc::new(list_ssl_certs) as RpcHandler);
         route_map.insert("delete_ssl_cert", Arc::new(delete_ssl_cert) as RpcHandler);
 
-        // add https route
-        // list https route
-        // delete https route
-
+        
+        // Task: Integrated Web Server Implementation
         // add http content provider (web server)
         // delete http content provider
         // list http content provider
 
+        // Task: Dynamic Life Cycle Implementation
+        // update_settings
+        // get_settings
         // shutdown_http_server
         // shutdown_https_server
         // shutdown_vanguard

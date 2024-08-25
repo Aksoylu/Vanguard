@@ -11,7 +11,6 @@ pub fn authorization(authorization_token: String, params: Params) -> Result<(), 
 
     if let Some(auth_token) = auth_token {
         let cleared_auth_token = clear_punctation(auth_token);
-        println!("{}", cleared_auth_token);
 
         if cleared_auth_token == authorization_token {
             return Ok(());

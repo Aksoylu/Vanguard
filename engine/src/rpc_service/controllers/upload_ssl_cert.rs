@@ -3,10 +3,10 @@ use crate::rpc_service::models::upload_ssl_cert_model::{
 };
 use crate::runtime::Runtime;
 use crate::utils::file_utility::{delete_file, get_ssl_path, write_file};
-use crate::utils::tls_utility::{load_certs, load_private_key, validate_certificate};
+use crate::utils::tls_utility::validate_ssl_context;
+
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Params, Value};
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 pub fn upload_ssl_cert(_runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
@@ -68,29 +68,4 @@ pub fn upload_ssl_cert(_runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<
     }
 
     Ok(UploadSslCertResponse::build("ok".to_string(), None))
-}
-
-fn validate_ssl_context(
-    domain: String,
-    certificate_upload_path: PathBuf,
-    privatekey_upload_path: PathBuf,
-) -> bool {
-    let str_certificate_upload_path = certificate_upload_path.to_str().unwrap_or_default();
-    let str_privatekey_upload_path = privatekey_upload_path.to_str().unwrap_or_default();
-
-    let load_cert_operation = load_certs(str_certificate_upload_path);
-    if load_cert_operation.is_err() {
-        return false;
-    }
-
-    let load_privatekey_operation = load_private_key(str_privatekey_upload_path);
-    if load_privatekey_operation.is_err() {
-        return false;
-    }
-
-    validate_certificate(
-        domain,
-        load_cert_operation.unwrap(),
-        load_privatekey_operation.unwrap(),
-    )
 }

@@ -1,0 +1,276 @@
+{
+	"info": {
+		"_postman_id": "21d7446f-0fcd-4423-9a8b-8f48f5a25584",
+		"name": "VANGUARD",
+		"schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json",
+		"_exporter_id": "7380517"
+	},
+	"item": [
+		{
+			"name": "Echo",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"echo\",\r\n    \"params\": { \r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"message\":\"sa\"\r\n    },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Add Http Route",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"add_http_route\",\r\n    \"params\": {\r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"source\": \"sa\",\r\n        \"target\": \"154.53.160.69:9100\"\r\n    },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Http Route",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"delete_http_route\",\r\n    \"params\": { \r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"source\": \"sa\"\r\n        \r\n        },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "List All Routes",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"list_routes\",\r\n    \"params\": {\"token\": \"{{vanguard_access_token}}\"},\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Upload ssl cert",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"upload_ssl_cert\",\r\n    \"params\": {\r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"domain\":\"www.typhoon.work\",\r\n        \"raw_certificate\": \"LS0tLS1CRUdJTiBDRVJUSUZJQ0FURS0tLS0tCk1JSUU4akNDQTlxZ0F3SUJBZ0lTQkZ5RzcyeGZGNCtEckZKY0ZsNXNuVkMzTUEwR0NTcUdTSWIzRFFFQkN3VUEKTURNeEN6QUpCZ05WQkFZVEFsVlRNUll3RkFZRFZRUUtFdzFNWlhRbmN5QkZibU55ZVhCME1Rd3dDZ1lEVlFRRApFd05TTVRFd0hoY05NalF3TnpBMk1URXpNakV6V2hjTk1qUXhNREEwTVRFek1qRXlXakFiTVJrd0Z3WURWUVFECkV4QjNkM2N1ZEhsd2FHOXZiaTUzYjNKck1JSUJJakFOQmdrcWhraUc5dzBCQVFFRkFBT0NBUThBTUlJQkNnS0MKQVFFQXVJOUxUN2xTN2FPZ25vZ0F5SVQ5dXlCQ20vOWx0YjQ0OG5UTFJXMnV4WVJBUjA5a1hWTVVRK3lBelFwQwpZWjBDVUd6c1loVW55Q1p0bG43Zk95Z29YWjJtc1JMVmhnb3AvQ21zZWJYSTRVbUVOY1p2TGJubE1VdXkveW1SCm5PbzArVTlsWExlWURaTDBrTGNkZk53bFZkYUptaklEaU5tYUtuK0NpV25rVnZvVFB3R1lJcVVQRUx2enVNSEQKTklqYWNYL1NwME9CQkU4L08rbXFWM1Zveld3dGVwZjg5MjZxck91OEV2U1hiRXVhZVRIdkdvbXRCRnNRdUdERApMc2dWVGJ1a3pnVTl0OVJJU1dtOFk5OW5Xa0RETmdYTHR5MWlPNVFCU2hoYzNZQXkwOUFnUmMwenMvUityYllqCm5XbXRURHN5MjFnTW9LN0M3R2lIVHN4Y0t3SURBUUFCbzRJQ0ZqQ0NBaEl3RGdZRFZSMFBBUUgvQkFRREFnV2cKTUIwR0ExVWRKUVFXTUJRR0NDc0dBUVVGQndNQkJnZ3JCZ0VGQlFjREFqQU1CZ05WSFJNQkFmOEVBakFBTUIwRwpBMVVkRGdRV0JCUVVaa1JwOTFNd3FRdTQwbGhUaHIrdm1LcTdRVEFmQmdOVkhTTUVHREFXZ0JURnowYWs2dlRECndIcHNsY1F0c0Y2U0x5Ymp1VEJYQmdnckJnRUZCUWNCQVFSTE1Fa3dJZ1lJS3dZQkJRVUhNQUdHRm1oMGRIQTYKTHk5eU1URXVieTVzWlc1amNpNXZjbWN3SXdZSUt3WUJCUVVITUFLR0YyaDBkSEE2THk5eU1URXVhUzVzWlc1agpjaTV2Y21jdk1Cc0dBMVVkRVFRVU1CS0NFSGQzZHk1MGVYQm9iMjl1TG5kdmNtc3dFd1lEVlIwZ0JBd3dDakFJCkJnWm5nUXdCQWdFd2dnRUdCZ29yQmdFRUFkWjVBZ1FDQklIM0JJSDBBUElBZHdBL0YwdFAxeUpIV0pRZFpSeUUKdmcwUzdaQTNmeCtGYXV2QnZ5aUY3UGhrYmdBQUFaQ0lCOWM5QUFBRUF3QklNRVlDSVFDYnhONHFVVTUvQmVXYQpTNnB5bzBvUXZ1dzZSTGJtdENBSTR2cmoxWlY2OHdJaEFOUS9FYVlrMk9WNy9tRlNKRm5HNmtScGJ3UDZkdGFsCjRVemd1V2szZ0I0a0FIY0FHWmdRY1FudzFsSXVNSURTbmo5a3U0TnVLTXo1RDFLTzd0L09TajhXdE1vQUFBR1EKaUFmWGpBQUFCQU1BU0RCR0FpRUEzY1pjQUMzYWEwVWpkMk45eWJaWVlKdERYeDIwdXpVRFNQazY5RThsRnowQwpJUUNkQ0k1Ujh6V2V3Q1hPRXJCNjJtMjZERFFmLzVYM29PTHdnR0Q0bGRSRFFEQU5CZ2txaGtpRzl3MEJBUXNGCkFBT0NBUUVBT2FaK3JHZThxa0gxd2x4RW5uelpKUkwzT2hTSnRCRFN2UEtsWVkvNWIyT3hsQ0JsdXM2dTF4TG4KYkxpQXFNazdOWnRvek50MXlEZVA5Sjh4RitPK291SDhYOG1Gb1pvWVJzTndkR2lJV25jZDNHSjkvWVArOXVLbwpOK0FKbGNDMzlsQkRhV0JLL0pkb2pPVGFYbjJpTE5PK1hxSjZ2WDFwSnhmZUhIRysraDU5WG9nMW84dm1jUm84Ci83RkhlN2F5SGdXMWN5c3VLSDAyU0pMbkwyRC83SU40YU1hZHB3M2dDT3lPTDRRakxkMlVicmRhSnF6b2RNRWEKVkN3N3pxbm5icUc0RWV3Y2U1VC9KM1V0VkhYRzIra1c4bGtIL3ZIYWpLVzBTejNkRHQvdlJwRXJYbWc0ZmIwRAp1cjhmQ3J3RnBjQjZzQnlQUEN0MUFTSkJWQWpBYUE9PQotLS0tLUVORCBDRVJUSUZJQ0FURS0tLS0tCg==\",\r\n        \"raw_privatekey\": \"LS0tLS1CRUdJTiBQUklWQVRFIEtFWS0tLS0tCk1JSUV2d0lCQURBTkJna3Foa2lHOXcwQkFRRUZBQVNDQktrd2dnU2xBZ0VBQW9JQkFRQzRqMHRQdVZMdG82Q2UKaUFESWhQMjdJRUtiLzJXMXZqanlkTXRGYmE3RmhFQkhUMlJkVXhSRDdJRE5Da0poblFKUWJPeGlGU2ZJSm0yVwpmdDg3S0NoZG5hYXhFdFdHQ2luOEtheDV0Y2poU1lRMXhtOHR1ZVV4UzdML0taR2M2alQ1VDJWY3Q1Z05rdlNRCnR4MTgzQ1ZWMW9tYU1nT0kyWm9xZjRLSmFlUlcraE0vQVpnaXBROFF1L080d2NNMGlOcHhmOUtuUTRFRVR6ODcKNmFwWGRXak5iQzE2bC96M2JxcXM2N3dTOUpkc1M1cDVNZThhaWEwRVd4QzRZTU11eUJWTnU2VE9CVDIzMUVoSgphYnhqMzJkYVFNTTJCY3UzTFdJN2xBRktHRnpkZ0RMVDBDQkZ6VE96OUg2dHRpT2RhYTFNT3pMYldBeWdyc0xzCmFJZE96RndyQWdNQkFBRUNnZ0VBWmtVaFdvQTdiK3ZvS1hENzNpR3o2R21yLzMyN0FzYnlENGlneTB4SU9MTmMKV3llbldmK2JqemdTOTR2ajFPdUlTTURUREZia3dJaHEyYVpjVlErZnJxQ1pxaTNobkhFdGFzbzlCUVN5MkFSQQordnVHeURQbXlUWkZiaGUrMU5FRG9kTlpPOU9Rc3BUb2FQalBva3pyYzNGNnRyTllPaEU2MktubnovV1p6b2U2Ci9kOHFmT2RJNDdSWGxTL3p0Z3FrMFFCTTh6dkZsRWxpV1RKN2ZaeTI3UGJXdmw0TnoxdWF4aTdWMTdrSXUyajIKcjVXVGc0b1l5eGJDRzJXM09ONFYvLzQ0bHBOZFlPN0pGU0c2aVJRMVRHOWhmbnNCUzVSakxVSzBsWTVBNXVDaQpIczZnalNPeUdnMnpKdGNrMFVhT3FKZnFkZFF4a2FHR0tCTkdLWHFaUVFLQmdRRHZCSXFXbmRjQ09QcmU1KzhlClpEWjdoUEJRV1FuYkx6UkN6SldwRFFHVmhkN0lNZ1JJV0dlR2s2OHkvTUI2aTI1SXRMZE5TVldjWWMzZnkrcjIKbTRjdjQ3Unc5YVo0clVSditkTWdTcStTbEREYzJjSlZha093alp2YVliY0NXaFpDWVhUK2pmZXVlQjlFWGpIVgpQclEvVUdvWWlSSW83SXR1Sno2dDFBWFRtUUtCZ1FERnJEbHIyVk9wcm1pcEppWnBHMVpUa0MzMlNHbFo3UVlTCjFVK0VVa0wweXpnMitjTExEbGJsSm9HQlNVM282SVdySmQ2Umd2SU51T28wVWYraXJ6NXNQTDRIQWFhZHBlWE4Kbi9VOXRCVGJyV25ITUk0RU1vbHdRRVVkMnN3c3FEcHJuV2hONEV1QWRNT1JhRHEyNjlhN0RVZmYvM0Njc04raAp2STJtb3B6SVl3S0JnUUNtMGdlY1dldlA3RThFTnVMSTFtN0VSU09wSUl2bGhBdTR0NnVaQXEvaFdUOEZnUXRHCkp4V1NjdzhyeWdiWlFPbW5LeUpvZWMrYnh4TjJxSStFc1Vab1lVZjJNeTJPT25oeW91MzlNc05aemI1UTFsZHgKWUNxQVZrVzU1TXRqZzliWFc4ZlpSdUxnell3ZEhwVXZYWVZXVDF6TlpSWGNwRVFvakpHTnAxYXR1UUtCZ1FDZgpwMDVwY1FwRmpmd3lRZ0hiK3B4cXVaU2x5aTVzMXllRXBveW16dG9OWk9WdVlhT1c1V29CZ213dXc4b05SMkJPCnJ6Tm9TMTY4L3BFSzJQK2pvZTdFOVBwMkpqc3dNUUcrWm1kcEFyMm1BQlhqTDdCRWE1emQ4TXJpSmdtcU4rV1gKYlhjRkR4ZHNGT0t2Mm9NeG9xRzRTaTIzR1ZVVytUUm1LU2d2WWo5SENRS0JnUURrYUVaSmFuamROcE5HQ3Mvbwo0bGEycUVzNmxYcXJSTm1JT2U4OUtxZFVtS1o3STE0Vkp2blpqdDJZcUsvcjNvcGZIVHlmbEttN2h0K1BHVlYyCnlHcmZrUlNHSy8rR2tnVkMrWWtMamEzRFk5TlRwbFNNOUlUYlltMTNFUlpKdCtBY3pjaCt3NXUzN01GeFB0RWIKOHlhcHdJOUU4TEgzaVlVV1JxaU9yMGd2YlE9PQotLS0tLUVORCBQUklWQVRFIEtFWS0tLS0tCg==\"\r\n        },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				},
+				"description": "raw: one-line base64 content"
+			},
+			"response": []
+		},
+		{
+			"name": "Delete ssl cert",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"delete_ssl_cert\",\r\n    \"params\": {\r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"domain\":\"www.typhoon.work\"\r\n    },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				},
+				"description": "raw: one-line base64 content"
+			},
+			"response": []
+		},
+		{
+			"name": "Add Https Route Copy",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"add_https_route\",\r\n    \"params\": {\r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"source\": \"www.typhoon.work\",\r\n        \"target\": \"154.53.160.69:9100\"\r\n    },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				}
+			},
+			"response": []
+		},
+		{
+			"name": "Delete Https Route",
+			"request": {
+				"method": "POST",
+				"header": [
+					{
+						"key": "Authorization",
+						"value": "Bearer super_secure_key",
+						"type": "text"
+					}
+				],
+				"body": {
+					"mode": "raw",
+					"raw": "{\r\n    \"jsonrpc\": \"2.0\",\r\n    \"method\": \"delete_https_route\",\r\n    \"params\": { \r\n        \"token\": \"{{vanguard_access_token}}\",\r\n        \"source\": \"sa\"\r\n        \r\n        },\r\n    \"id\": 1\r\n}",
+					"options": {
+						"raw": {
+							"language": "json"
+						}
+					}
+				},
+				"url": {
+					"raw": "127.0.0.1:4242",
+					"host": [
+						"127",
+						"0",
+						"0",
+						"1"
+					],
+					"port": "4242"
+				}
+			},
+			"response": []
+		}
+	]
+}
