@@ -1,11 +1,7 @@
-use std::collections::HashMap;
-
-use crate::models::route::HttpRoute;
 use crate::utils::rpc_utility::RpcParameter;
 use jsonrpc_core::{Error, Params, Value};
 use serde::Deserialize;
 use serde::Serialize;
-use serde_json::value;
 
 pub struct EchoRequest {
     message: String,
@@ -31,7 +27,6 @@ impl EchoRequest {
     pub fn get_message(&self) -> String {
         self.message.clone()
     }
-
 }
 
 #[derive(Serialize, Deserialize)]

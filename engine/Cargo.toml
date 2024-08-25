@@ -23,6 +23,7 @@ tokio-rustls = "0.23"
 rustls = "0.20"
 rustls-pemfile = "0.2"
 dirs = "4.0.0"
+base64 = "0.21"
 
 [profile.dev]
 panic = "abort"

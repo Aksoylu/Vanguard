@@ -24,7 +24,7 @@ impl HttpsServer {
 
     pub async fn start(&self) {
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
-        let ssl_context: TlsAcceptor = create_ssl_context(self.routes.clone()).await;
+        let ssl_context: TlsAcceptor = create_ssl_context(self.routes.clone());
 
         println!("Vanguard Engine Https server started on {:?}", &self.socket);
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
