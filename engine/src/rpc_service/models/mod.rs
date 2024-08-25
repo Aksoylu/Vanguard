@@ -1,6 +1,8 @@
-use jsonrpc_core::{Error, Params, Value};
-use std::sync::Arc;
+pub mod echo_model;
+pub mod add_http_route_model;
+pub mod get_http_routes_model;
+pub mod delete_http_route_model;
 
-pub mod rpc_session;
-
-pub type RpcHandler = Arc<dyn Fn(Params) -> Result<Value, Error> + Sync + Send>;
+pub mod upload_ssl_cert_model;
+pub mod list_ssl_cert_model;
+pub mod delete_ssl_cert_model;

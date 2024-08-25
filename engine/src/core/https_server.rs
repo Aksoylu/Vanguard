@@ -4,10 +4,9 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_rustls::TlsAcceptor;
 
+use crate::models::route::HttpsRoute;
 use crate::utils::network_utility::parse_ip_address;
 use crate::utils::tls_utility::create_ssl_context;
-
-use super::models::HttpsRoute;
 
 #[derive(Clone)]
 pub struct HttpsServer {
@@ -25,7 +24,7 @@ impl HttpsServer {
 
     pub async fn start(&self) {
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
-        let ssl_context: TlsAcceptor = create_ssl_context(self.routes.clone()).await;
+        let ssl_context: TlsAcceptor = create_ssl_context(self.routes.clone());
 
         println!("Vanguard Engine Https server started on {:?}", &self.socket);
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
@@ -87,12 +86,13 @@ impl HttpsServer {
             .map_or_else(|| "/".to_string(), |host_value| host_value.to_string());
 
         if !self.routes.contains_key(&request_host) {
-            let response =
-                Response::new(Body::from("Requested domain has not registered on Vanguard"));
+            let response = Response::new(Body::from(
+                "Requested domain has not registered on Vanguard",
+            ));
             return Ok(response);
         }
 
-        if !self.routes.contains_key(&request_host){
+        if !self.routes.contains_key(&request_host) {
             let response = Response::new(Body::from(
                 "Requested URL is not configured properly. Please contact your system administrator",
             ));
@@ -102,8 +102,9 @@ impl HttpsServer {
         let current_route = self.routes.get(&request_host).unwrap();
 
         if String::is_empty(&current_route.source) {
-            let response =
-                Response::new(Body::from("Requested domain has not registered on Vanguard"));
+            let response = Response::new(Body::from(
+                "Requested domain has not registered on Vanguard",
+            ));
             return Ok(response);
         }
 
