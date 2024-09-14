@@ -3,6 +3,7 @@ use serde::Serialize;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
+use mime_guess::{from_path, Mime};
 
 use crate::constants::Constants;
 
@@ -55,7 +56,6 @@ where
     Ok(())
 }
 
-pub fn update_runtime_file() {}
 
 /// Writes the given content to a file.
 ///
@@ -104,22 +104,62 @@ pub fn list_all_files(parent_path: PathBuf) -> Vec<String> {
     file_names
 }
 
-pub fn is_file_exist(file_path: PathBuf) -> bool{
+pub fn is_file_exist(file_path: &PathBuf) -> bool{
     let path = PathBuf::from(file_path);
-    path.exists()
-}
 
-pub fn get_pathbuf_filename(file_path: PathBuf) -> Option<String>{
-    let get_filename_operation = file_path.file_name();
-
-    if get_filename_operation.is_none(){
-        return None
+    if !path.exists(){
+        return false;
     }
 
-    let filename = get_filename_operation.unwrap().to_string_lossy();
+    let read_metadata_operation = fs::metadata(path);
+    if read_metadata_operation.is_err(){
+        return false;
+    }
     
-    Some(filename.to_lowercase())
+    read_metadata_operation.unwrap().is_file()
 }
+
+
+pub fn is_directory_exist(file_path: &PathBuf) -> bool{
+    let path = PathBuf::from(file_path);
+
+    if !path.exists(){
+        return false;
+    }
+
+    let read_metadata_operation = fs::metadata(path);
+    if read_metadata_operation.is_err(){
+        return false;
+    }
+    
+    read_metadata_operation.unwrap().is_dir()
+}
+
+pub async fn read_file_as_binary(file_path: &PathBuf) -> Option<Vec<u8>>{
+    let file = File::open(file_path);
+    if file.is_err(){
+        return None;
+    }
+    
+    let mut hex_content: Vec<u8> = vec![];
+    
+    let read_operation = file.unwrap().read_to_end(&mut hex_content);
+    if read_operation.is_err(){
+        return None;
+    }
+
+    return Some(hex_content);
+}
+
+/// Detects a MIME type by file extension.
+/// MIME type means http response type that sent to server. If could not detect, returns "application/octet-stream" as default
+/// # Returns
+///
+/// * `Mime` on success.
+pub fn get_content_type(file_path: &PathBuf) -> Mime {
+    from_path(file_path).first_or_octet_stream()
+}
+
 
 fn create_path(path: &PathBuf) {
     let create_operation = fs::create_dir_all(path);

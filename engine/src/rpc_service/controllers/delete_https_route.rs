@@ -1,5 +1,5 @@
-use crate::rpc_service::models::delete_http_route_model::{
-    DeleteHttpRouteRequest, DeleteHttpRouteResponse,
+use crate::rpc_service::models::delete_https_route_model::{
+    DeleteHttpsRouteRequest, DeleteHttpsRouteResponse,
 };
 use crate::runtime::Runtime;
 use jsonrpc_core::ErrorCode;
@@ -8,7 +8,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub fn delete_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
-    let request = match DeleteHttpRouteRequest::new(params) {
+    let request = match DeleteHttpsRouteRequest::new(params) {
         Ok(req) => req,
         Err(_) => {
             return Err(Error {
@@ -23,5 +23,5 @@ pub fn delete_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Resul
     let updated_runtime_snapshot = runtime_snapshot.delete_https_route(request.get_source());
     runtime.lock().unwrap().router = updated_runtime_snapshot;
 
-    Ok(DeleteHttpRouteResponse::build())
+    Ok(DeleteHttpsRouteResponse::build())
 }
