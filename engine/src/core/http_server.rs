@@ -3,18 +3,16 @@ use hyper::{
     service::{make_service_fn, service_fn},
     Body, Client, Request, Response, Server, StatusCode,
 };
-use rand::seq::index;
+
 use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
 
 use hyper::client::HttpConnector;
 
 use crate::{
-    models::route::{HttpRoute, IwsRoute},
-    utils::{
-        file_utility::{get_content_type, is_directory_exist, is_file_exist, read_file_as_binary},
-        network_utility::parse_ip_address,
-    },
+    models::route::{HttpRoute, IwsRoute}, render::dir_index_page::DirIndexPage, utils::{
+        directory_utility::is_directory_exist, file_utility::{get_content_type, is_file_exist, read_file_as_binary}, network_utility::parse_ip_address
+    }
 };
 
 #[derive(Debug, Clone)]
@@ -146,7 +144,7 @@ impl HttpServer {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
         
         let mut absolute_path: PathBuf = PathBuf::from(serving_path);
-        absolute_path.push(url_path);
+        absolute_path.push(url_path.clone());
 
         if is_file_exist(&absolute_path) {
             let file_content: Option<Vec<u8>> = read_file_as_binary(&absolute_path).await;
@@ -183,7 +181,8 @@ impl HttpServer {
                         .unwrap());
                 }
             }
-            let dir_content = self.render_dir_page(absolute_path);
+
+            let dir_content = self.render_dir_index_page(&absolute_path, &url_path);
             return Ok(Response::builder()
                 .header("Content-Type", "text/html")
                 .body(Body::from(dir_content))
@@ -196,10 +195,9 @@ impl HttpServer {
             .unwrap());
     }
 
-    // todo
-    fn render_dir_page(&self, dir_path: PathBuf) -> Vec<u8> {
-        let content: Vec<u8> = vec![];
+    fn render_dir_index_page(&self, dir_path: &PathBuf, url_path: &str) -> String {
+        let content = DirIndexPage::new(dir_path, url_path);
 
-        content
+        content.render()
     }
 }

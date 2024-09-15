@@ -25,6 +25,7 @@ rustls-pemfile = "0.2"
 dirs = "4.0.0"
 base64 = "0.21"
 mime_guess = "2.0"
+tera = "1.18"
 
 [profile.dev]
 panic = "abort"

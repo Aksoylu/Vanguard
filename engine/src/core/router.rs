@@ -4,7 +4,7 @@ use std::{collections::HashMap, path::PathBuf};
 use crate::{
     constants::Constants,
     models::route::{HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
-    utils::file_utility::{get_runtime_path, load_json, save_json},
+    utils::{directory_utility::get_runtime_path, file_utility::{load_json, save_json}},
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]

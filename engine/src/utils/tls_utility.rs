@@ -13,7 +13,7 @@ use std::io::{self, BufReader};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use super::file_utility::get_ssl_path;
+use super::directory_utility::get_ssl_path;
 
 #[derive(PartialEq, Serialize, Deserialize, Clone, Copy)]
 pub enum SSlFileType {

@@ -4,6 +4,8 @@ mod models;
 mod rpc_service;
 mod runtime;
 mod utils;
+mod render;
+mod resources;
 
 use core::{http_server::HttpServer, https_server::HttpsServer};
 use std::sync::Arc;

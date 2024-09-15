@@ -4,7 +4,8 @@ use std::sync::Mutex;
 
 use crate::rpc_service::models::list_ssl_cert_model::{ListSslCertResponse, SslCertEntity};
 use crate::runtime::Runtime;
-use crate::utils::file_utility::{get_ssl_path, list_all_files};
+use crate::utils::directory_utility::get_ssl_path;
+use crate::utils::file_utility::list_all_files;
 use crate::utils::tls_utility::detect_file_type;
 
 pub fn list_ssl_certs(runtime: Arc<Mutex<Runtime>>, _params: Params) -> Result<Value, Error> {

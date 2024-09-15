@@ -1,7 +1,8 @@
 use crate::models::route::SecureIwsRoute;
 use crate::models::ssl_context::SslContext;
 use crate::rpc_service::models::add_secure_iws_model::{AddSecureIwsRequest, AddSecureIwsResponse};
-use crate::utils::file_utility::{get_ssl_path, is_file_exist};
+use crate::utils::directory_utility::get_ssl_path;
+use crate::utils::file_utility::is_file_exist;
 use crate::utils::tls_utility::validate_ssl_context;
 use crate::runtime::Runtime;
 use jsonrpc_core::{Error, Params, Value};

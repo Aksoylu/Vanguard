@@ -2,8 +2,9 @@ use crate::rpc_service::models::delete_ssl_cert_model::{
     DeleteSSlCertRequest, DeleteSSlCertResponse,
 };
 use crate::runtime::Runtime;
+use crate::utils::directory_utility::get_ssl_path;
 use crate::utils::file_utility::{
-    delete_file, get_ssl_path, is_file_exist
+    delete_file, is_file_exist
 };
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Params, Value};

@@ -1,0 +1,1 @@
+pub mod vanguard_logo;

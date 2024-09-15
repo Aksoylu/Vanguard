@@ -6,7 +6,7 @@ use crate::{
     constants::Constants,
     core::router::Router,
     models::{config::Config, rpc_session::RpcSession},
-    utils::{crypt_utility::generate_hash, file_utility::{get_runtime_path, load_json}},
+    utils::{crypt_utility::generate_hash, directory_utility::get_runtime_path, file_utility::load_json},
 };
 
 pub struct Runtime {
