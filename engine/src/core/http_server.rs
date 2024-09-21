@@ -10,7 +10,7 @@ use tokio::sync::Mutex;
 use hyper::client::HttpConnector;
 
 use crate::{
-    models::route::{HttpRoute, IwsRoute}, render::dir_index_page::DirIndexPage, utils::{
+    models::route::{HttpRoute, IwsRoute}, render::{dir_index_page::DirIndexPage, not_found_page::NotFoundPage}, utils::{
         directory_utility::is_directory_exist, file_utility::{get_content_type, is_file_exist, read_file_as_binary}, network_utility::parse_ip_address
     }
 };
@@ -189,14 +189,21 @@ impl HttpServer {
                 .unwrap());
         }
 
+        let not_found_content = self.render_not_found_page(&url_path);
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
-            .body(Body::from("404 - Not Found"))
+            .body(Body::from(not_found_content))
             .unwrap());
     }
 
     fn render_dir_index_page(&self, dir_path: &PathBuf, url_path: &str) -> String {
         let content = DirIndexPage::new(dir_path, url_path);
+
+        content.render()
+    }
+
+    fn render_not_found_page(&self, url_path: &str) -> String {
+        let content = NotFoundPage::new(url_path);
 
         content.render()
     }
