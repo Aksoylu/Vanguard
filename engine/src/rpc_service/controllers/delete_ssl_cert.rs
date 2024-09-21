@@ -2,12 +2,12 @@ use crate::rpc_service::models::delete_ssl_cert_model::{
     DeleteSSlCertRequest, DeleteSSlCertResponse,
 };
 use crate::runtime::Runtime;
+use crate::utils::directory_utility::get_ssl_path;
 use crate::utils::file_utility::{
-    delete_file, get_pathbuf_filename, get_ssl_path, is_file_exist, list_all_files,
+    delete_file, is_file_exist
 };
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Params, Value};
-use std::path::PathBuf;
 use std::sync::{Arc, Mutex};
 
 pub fn delete_ssl_cert(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
@@ -59,6 +59,12 @@ pub fn delete_ssl_cert(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
                 "Ssl private key '{}' is currently used by domain: {}. Please delete related Https route before deleting ssl private key",
                 private_key_file_name.clone(), domain_name.clone()
             );
+
+            return Err(Error {
+                code: ErrorCode::InternalError,
+                message: error_message.into(),
+                data: None,
+            });
         }
     }
 
@@ -69,7 +75,7 @@ pub fn delete_ssl_cert(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
     let mut cert_file_path = ssl_path.clone();
     cert_file_path.push(cert_file_name.clone());
 
-    if is_file_exist(cert_file_path.clone()) {
+    if is_file_exist(&cert_file_path) {
         delete_file(cert_file_path);
         deleted_files.push(cert_file_name)
     }
@@ -78,7 +84,7 @@ pub fn delete_ssl_cert(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
     let mut private_key_path = ssl_path.clone();
     private_key_path.push(private_key_file_name.clone());
 
-    if is_file_exist(private_key_path.clone()) {
+    if is_file_exist(&private_key_path) {
         delete_file(private_key_path);
         deleted_files.push(private_key_file_name)
     }

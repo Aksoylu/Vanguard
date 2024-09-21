@@ -1,26 +1,41 @@
 use hyper::{
     header,
     service::{make_service_fn, service_fn},
-    Body, Client, Request, Response, Server,
+    Body, Client, Request, Response, Server, StatusCode,
 };
-use std::{collections::HashMap, net::SocketAddr, sync::Arc};
+
+use std::{collections::HashMap, net::SocketAddr, path::PathBuf, sync::Arc};
 use tokio::sync::Mutex;
 
 use hyper::client::HttpConnector;
 
-use crate::{models::route::HttpRoute, utils::network_utility::parse_ip_address};
+use crate::{
+    models::route::{HttpRoute, IwsRoute}, render::{dir_index_page::DirIndexPage, not_found_page::NotFoundPage}, utils::{
+        directory_utility::is_directory_exist, file_utility::{get_content_type, is_file_exist, read_file_as_binary}, network_utility::parse_ip_address
+    }
+};
 
 #[derive(Debug, Clone)]
 pub struct HttpServer {
     socket: SocketAddr,
-    routes: HashMap<String, HttpRoute>,
+    http_routes: HashMap<String, HttpRoute>,
+    iws_routes: HashMap<String, IwsRoute>,
 }
 
 impl HttpServer {
-    pub fn singleton(ip_address: String, port: u16, routes: HashMap<String, HttpRoute>) -> Self {
+    pub fn singleton(
+        ip_address: String,
+        port: u16,
+        http_routes: HashMap<String, HttpRoute>,
+        iws_routes: HashMap<String, IwsRoute>,
+    ) -> Self {
         let socket = SocketAddr::from((parse_ip_address(ip_address.clone()), port));
 
-        Self { socket, routes }
+        Self {
+            socket,
+            http_routes,
+            iws_routes,
+        }
     }
 
     pub async fn start(&self) {
@@ -60,30 +75,39 @@ impl HttpServer {
             .and_then(|host| host.to_str().ok())
             .map_or_else(|| "/".to_string(), |host_value| host_value.to_string());
 
-        if !self.routes.contains_key(&request_host) {
-            let response = Response::new(Body::from(
-                "Requested domain has not registered on Vanguard",
-            ));
-            return Ok(response);
+        /* Forwarding HTTP requests */
+        if self.http_routes.contains_key(&request_host) {
+            let current_http_route = self.http_routes.get(&request_host).unwrap();
+
+            if String::is_empty(&current_http_route.source) {
+                let response = Response::new(Body::from(
+                    "Requested domain is not registered on Vanguard Engine.",
+                ));
+                return Ok(response);
+            }
+
+            return self.navigate_url(&current_http_route.target, req).await;
         }
 
-        if !self.routes.contains_key(&request_host) {
-            let response = Response::new(Body::from(
-                "Requested URL is not configured properly. Please contact your system administrator",
-            ));
-            return Ok(response);
+        /* Processing IWS requests */
+        if self.iws_routes.contains_key(&request_host) {
+            let current_iws_route = self.iws_routes.get(&request_host).unwrap();
+
+            if String::is_empty(&current_iws_route.source) {
+                let response = Response::new(Body::from(
+                    "Requested domain is not registered on Vanguard Engine.",
+                ));
+                return Ok(response);
+            }
+
+            return self
+                .serve_from_disk(&current_iws_route.serving_path, req)
+                .await;
         }
 
-        let current_route = self.routes.get(&request_host).unwrap();
-
-        if String::is_empty(&current_route.source) {
-            let response = Response::new(Body::from(
-                "Requested domain is not registered on Vanguard Engine.",
-            ));
-            return Ok(response);
-        }
-
-        self.navigate_url(&current_route.target, req).await
+        return Ok(Response::new(Body::from(
+            "Requested domain has not registered on Vanguard",
+        )));
     }
 
     async fn navigate_url(
@@ -110,5 +134,77 @@ impl HttpServer {
         let response = client.request(new_request).await?;
 
         Ok(response)
+    }
+
+    async fn serve_from_disk(
+        &self,
+        serving_path: &String,
+        req: Request<Body>,
+    ) -> Result<Response<Body>, hyper::Error> {
+        let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
+        
+        let mut absolute_path: PathBuf = PathBuf::from(serving_path);
+        absolute_path.push(url_path.clone());
+
+        if is_file_exist(&absolute_path) {
+            let file_content: Option<Vec<u8>> = read_file_as_binary(&absolute_path).await;
+            if file_content.is_none() {
+                return Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from("500 - Internal Server Error"))
+                    .unwrap());
+            }
+
+            let content_type = get_content_type(&absolute_path);
+
+            return Ok(Response::builder()
+                .header("Content-Type", content_type.as_ref()) // Set the Content-Type header
+                .body(Body::from(file_content.unwrap()))
+                .unwrap());
+        }
+
+        /* If directory exist;
+                If Index.html exist, render index.html as text
+                If Index.html not exist, get directory childs, prepare a html content and render as text
+         */
+        if is_directory_exist(&absolute_path) {
+
+            let mut index_html_path = absolute_path.clone();
+            index_html_path = index_html_path.join(PathBuf::from("index.html"));
+
+            if is_file_exist(&index_html_path) {
+                let file_content = read_file_as_binary(&index_html_path).await;
+                if file_content.is_some() {
+                    return Ok(Response::builder()
+                        .header("Content-Type", "text/html")
+                        .body(Body::from(file_content.unwrap()))
+                        .unwrap());
+                }
+            }
+
+            let dir_content = self.render_dir_index_page(&absolute_path, &url_path);
+            return Ok(Response::builder()
+                .header("Content-Type", "text/html")
+                .body(Body::from(dir_content))
+                .unwrap());
+        }
+
+        let not_found_content = self.render_not_found_page(&url_path);
+        return Ok(Response::builder()
+            .status(StatusCode::NOT_FOUND)
+            .body(Body::from(not_found_content))
+            .unwrap());
+    }
+
+    fn render_dir_index_page(&self, dir_path: &PathBuf, url_path: &str) -> String {
+        let content = DirIndexPage::new(dir_path, url_path);
+
+        content.render()
+    }
+
+    fn render_not_found_page(&self, url_path: &str) -> String {
+        let content = NotFoundPage::new(url_path);
+
+        content.render()
     }
 }

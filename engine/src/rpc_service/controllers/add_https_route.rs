@@ -1,8 +1,11 @@
 use crate::models::route::HttpsRoute;
 use crate::models::ssl_context::SslContext;
-use crate::rpc_service::models::add_http_route_model::{AddHttpRouteRequest, AddHttpRouteResponse};
+use crate::rpc_service::models::add_https_route_model::{
+    AddHttpsRouteRequest, AddHttpsRouteResponse,
+};
 use crate::runtime::Runtime;
-use crate::utils::file_utility::{get_ssl_path, is_file_exist};
+use crate::utils::directory_utility::get_ssl_path;
+use crate::utils::file_utility::is_file_exist;
 use crate::utils::tls_utility::validate_ssl_context;
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Params, Value};
@@ -10,7 +13,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 pub fn add_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
-    let request = match AddHttpRouteRequest::new(params) {
+    let request = match AddHttpsRouteRequest::new(params) {
         Ok(req) => req,
         Err(_) => {
             return Err(Error {
@@ -31,7 +34,7 @@ pub fn add_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
     /* Check is SSL certficate exist on file system */
     let mut cert_path = ssl_path.clone();
     cert_path.push(cert_file_name.clone());
-    if !is_file_exist(cert_path.clone()) {
+    if !is_file_exist(&cert_path) {
         return Err(Error {
             code: ErrorCode::InternalError,
             message: format!(
@@ -46,7 +49,7 @@ pub fn add_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
     /* Check is SSL private key exist on file system  */
     let mut private_key_path = ssl_path.clone();
     private_key_path.push(private_key_file_name.clone());
-    if !is_file_exist(private_key_path.clone()) {
+    if !is_file_exist(&private_key_path) {
         return Err(Error {
             code: ErrorCode::InternalError,
             message: format!(
@@ -58,7 +61,7 @@ pub fn add_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
         });
     }
 
-    /* Check is valid */
+    /* Check  ssl ceretificate is valid and compatible with given domain & IP address */
     let validate_ssl_context_operation =
         validate_ssl_context(source.clone(), cert_path.clone(), private_key_path.clone());
 
@@ -85,5 +88,5 @@ pub fn add_https_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<V
 
     runtime.lock().unwrap().router = updated_runtime_snapshot;
 
-    Ok(AddHttpRouteResponse::build("ok".to_string(), None))
+    Ok(AddHttpsRouteResponse::build("ok".to_string(), None))
 }

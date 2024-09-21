@@ -4,16 +4,17 @@ mod models;
 mod rpc_service;
 mod runtime;
 mod utils;
+mod render;
+mod resources;
 
 use core::{http_server::HttpServer, https_server::HttpsServer};
 use std::sync::Arc;
 use std::sync::Mutex;
 
-use tokio::sync::{ watch};
 use rpc_service::rpc_server::RPCServer;
 use runtime::Runtime;
-    // TODO: make runtime dynamically changable with jrpc
-    // TODO: make runtime uses constant paths. If not exist, create folders and files by using defaults
+// TODO: make runtime dynamically changable with jrpc
+// TODO: make runtime uses constant paths. If not exist, create folders and files by using defaults
 #[tokio::main]
 async fn main() {
     let runtime = Arc::new(Mutex::new(Runtime::init()));
@@ -25,7 +26,8 @@ async fn main() {
         HttpServer::singleton(
             rt.config.http_server.ip_address.clone(),
             rt.config.http_server.port,
-            rt.router.get_http_routes()
+            rt.router.get_http_routes(),
+            rt.router.get_iws_routes(),
         )
     };
 
@@ -54,15 +56,15 @@ async fn main() {
             rt.config.rpc_server.ip_address.clone(),
             rt.config.rpc_server.port,
             rt.config.rpc_server.private_key.clone(),
-            runtime.clone()
+            runtime.clone(),
         )
-    }.await;
+    }
+    .await;
 
     tokio::spawn(async move {
         jsonrpc_server.start().await;
     });
 
-     
     // Keep the main task running (adjust as necessary for your application)
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
