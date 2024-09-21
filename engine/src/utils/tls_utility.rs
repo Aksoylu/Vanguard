@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 
-use crate::models::route::HttpsRoute;
+use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader};
@@ -44,12 +44,14 @@ pub fn get_certificate_type(content: String) -> SSlFileType {
 
     SSlFileType::Invalid
 }
-pub fn create_ssl_context(routes: HashMap<std::string::String, HttpsRoute>) -> TlsAcceptor {
+
+/// todo: Impl secure iws route 
+pub fn create_ssl_context(https_routes: HashMap<String, HttpsRoute>, secure_iws_routes: HashMap<String, SecureIwsRoute>) -> TlsAcceptor {
     let mut sni_resolver = ResolvesServerCertUsingSni::new();
 
     let ssl_path = get_ssl_path();
 
-    for (source, https_route) in routes {
+    for (source, https_route) in https_routes {
         let mut ssl_certificate_path = ssl_path.clone();
         ssl_certificate_path.push(https_route.ssl_context.cert.clone());
 

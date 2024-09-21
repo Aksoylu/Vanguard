@@ -6,7 +6,7 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_rustls::TlsAcceptor;
 
-use crate::models::route::{HttpsRoute, IwsRoute, SecureIwsRoute};
+use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use crate::render::dir_index_page::DirIndexPage;
 use crate::render::internal_error_page::InternalErrorPage;
 use crate::render::not_found_page::NotFoundPage;
@@ -41,7 +41,8 @@ impl HttpsServer {
 
     pub async fn start(&self) {
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
-        let ssl_context: TlsAcceptor = create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
+        let ssl_context: TlsAcceptor =
+            create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
 
         println!("Vanguard Engine Https server started on {:?}", &self.socket);
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
@@ -79,7 +80,7 @@ impl HttpsServer {
                 let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
                 async move {
                     let data: tokio::sync::MutexGuard<HttpsServer> = https_server.lock().await;
-                    
+
                     match data.handle_request(req).await {
                         Ok(response) => Ok::<_, hyper::Error>(response),
                         Err(err) => {
@@ -187,8 +188,8 @@ impl HttpsServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
 
-        let mut absolute_path: PathBuf = PathBuf::from(serving_path);
-        absolute_path.push(url_path.clone());
+        let mut absolute_path = PathBuf::from(serving_path);
+        absolute_path.push(url_path);
 
         if is_file_exist(&absolute_path) {
             let file_content: Option<Vec<u8>> = read_file_as_binary(&absolute_path).await;

@@ -42,6 +42,7 @@ async fn main() {
             rt.config.https_server.ip_address.clone(),
             rt.config.https_server.port,
             rt.router.get_https_routes(),
+            rt.router.get_secure_iws_routes()
         )
     };
 

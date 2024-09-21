@@ -10,9 +10,13 @@ use tokio::sync::Mutex;
 use hyper::client::HttpConnector;
 
 use crate::{
-    models::route::{HttpRoute, IwsRoute}, render::{dir_index_page::DirIndexPage, not_found_page::NotFoundPage}, utils::{
-        directory_utility::is_directory_exist, file_utility::{get_content_type, is_file_exist, read_file_as_binary}, network_utility::parse_ip_address
-    }
+    models::route::{HttpRoute, IwsRoute},
+    render::{dir_index_page::DirIndexPage, not_found_page::NotFoundPage},
+    utils::{
+        directory_utility::is_directory_exist,
+        file_utility::{get_content_type, is_file_exist, read_file_as_binary},
+        network_utility::parse_ip_address,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -142,9 +146,9 @@ impl HttpServer {
         req: Request<Body>,
     ) -> Result<Response<Body>, hyper::Error> {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
-        
+
         let mut absolute_path: PathBuf = PathBuf::from(serving_path);
-        absolute_path.push(url_path.clone());
+        absolute_path.push(url_path);
 
         if is_file_exist(&absolute_path) {
             let file_content: Option<Vec<u8>> = read_file_as_binary(&absolute_path).await;
@@ -164,11 +168,10 @@ impl HttpServer {
         }
 
         /* If directory exist;
-                If Index.html exist, render index.html as text
-                If Index.html not exist, get directory childs, prepare a html content and render as text
-         */
+               If Index.html exist, render index.html as text
+               If Index.html not exist, get directory childs, prepare a html content and render as text
+        */
         if is_directory_exist(&absolute_path) {
-
             let mut index_html_path = absolute_path.clone();
             index_html_path = index_html_path.join(PathBuf::from("index.html"));
 
