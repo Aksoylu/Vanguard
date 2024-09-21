@@ -1,6 +1,6 @@
-use std::fs::{self, File};
-use std::path::PathBuf;
 use crate::constants::Constants;
+use std::fs::{self};
+use std::path::PathBuf;
 
 pub fn get_ssl_path() -> PathBuf {
     let mut ssl_path = get_runtime_path();
@@ -31,18 +31,18 @@ pub fn get_runtime_path() -> PathBuf {
     path
 }
 
-pub fn is_directory_exist(file_path: &PathBuf) -> bool{
+pub fn is_directory_exist(file_path: &PathBuf) -> bool {
     let path = PathBuf::from(file_path);
 
-    if !path.exists(){
+    if !path.exists() {
         return false;
     }
 
     let read_metadata_operation = fs::metadata(path);
-    if read_metadata_operation.is_err(){
+    if read_metadata_operation.is_err() {
         return false;
     }
-    
+
     read_metadata_operation.unwrap().is_dir()
 }
 
@@ -65,28 +65,28 @@ pub fn list_directory_content(parent_path: &PathBuf) -> Option<(Vec<String>, Vec
     }
 
     let read_directory_operation = fs::read_dir(parent_path);
-    if read_directory_operation.is_err(){
+    if read_directory_operation.is_err() {
         return None;
     }
 
     let dir_data = read_directory_operation.ok();
-    if dir_data.is_none(){
+    if dir_data.is_none() {
         return None;
     }
 
     let dir_entry = dir_data.unwrap();
-    for entity in dir_entry{
-        if entity.is_ok(){
+    for entity in dir_entry {
+        if entity.is_ok() {
             let entity_path = entity.unwrap().path();
-            let entity_name =  entity_path.file_name()
+            let entity_name = entity_path
+                .file_name()
                 .and_then(|name| name.to_str()) // Convert `OsStr` to `&str`
                 .map(|s| s.to_string());
 
-            if entity_name.is_some(){
-                if entity_path.is_dir(){
+            if entity_name.is_some() {
+                if entity_path.is_dir() {
                     directories.push(entity_name.unwrap());
-                }
-                else {
+                } else {
                     files.push(entity_name.unwrap());
                 }
             }

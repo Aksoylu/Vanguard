@@ -1,11 +1,11 @@
 mod constants;
 mod core;
 mod models;
+mod render;
+mod resources;
 mod rpc_service;
 mod runtime;
 mod utils;
-mod render;
-mod resources;
 
 use core::{http_server::HttpServer, https_server::HttpsServer};
 use std::sync::Arc;
@@ -13,8 +13,7 @@ use std::sync::Mutex;
 
 use rpc_service::rpc_server::RPCServer;
 use runtime::Runtime;
-// TODO: make runtime dynamically changable with jrpc
-// TODO: make runtime uses constant paths. If not exist, create folders and files by using defaults
+
 #[tokio::main]
 async fn main() {
     let runtime = Arc::new(Mutex::new(Runtime::init()));
@@ -42,7 +41,7 @@ async fn main() {
             rt.config.https_server.ip_address.clone(),
             rt.config.https_server.port,
             rt.router.get_https_routes(),
-            rt.router.get_secure_iws_routes()
+            rt.router.get_secure_iws_routes(),
         )
     };
 

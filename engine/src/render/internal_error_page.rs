@@ -1,13 +1,10 @@
-use std::path::PathBuf;
 use tera::{Context, Tera};
 
 use crate::resources::vanguard_logo::VanguardLogo;
 
 pub struct InternalErrorPage {
     url_path: String,
-    reason: String,
-
-    context: Option<Context>
+    context: Option<Context>,
 }
 
 impl InternalErrorPage {
@@ -37,7 +34,6 @@ impl InternalErrorPage {
 
         InternalErrorPage {
             url_path: format!("/{}", url_path),
-            reason: String::from(reason),
             context: Some(context),
         }
     }
@@ -62,6 +58,7 @@ impl InternalErrorPage {
             style="text-decoration:underline; color:#337be8; margin-top:-1.5rem; cursor:pointer"
             onclick="history.back()"
         >&#8592; Return Back
-        </p>"#.to_string()
+        </p>"#
+            .to_string()
     }
 }
