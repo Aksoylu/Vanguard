@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 
-use crate::models::route::HttpsRoute;
+use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use std::collections::HashMap;
 use std::fs::File;
 use std::io::{self, BufReader};
@@ -44,17 +44,52 @@ pub fn get_certificate_type(content: String) -> SSlFileType {
 
     SSlFileType::Invalid
 }
-pub fn create_ssl_context(routes: HashMap<std::string::String, HttpsRoute>) -> TlsAcceptor {
-    let mut sni_resolver = ResolvesServerCertUsingSni::new();
 
+/// todo: Impl secure iws route
+pub fn create_ssl_context(
+    https_routes: HashMap<String, HttpsRoute>,
+    secure_iws_routes: HashMap<String, SecureIwsRoute>,
+) -> TlsAcceptor {
+    let mut sni_resolver = ResolvesServerCertUsingSni::new();
     let ssl_path = get_ssl_path();
 
-    for (source, https_route) in routes {
+    /* Loop for creating sni resolving for all https routes */
+    for (source, https_route) in https_routes {
         let mut ssl_certificate_path = ssl_path.clone();
         ssl_certificate_path.push(https_route.ssl_context.cert.clone());
 
         let mut ssl_private_key_path = ssl_path.clone();
         ssl_private_key_path.push(https_route.ssl_context.private_key.clone());
+
+        let load_cert_operation = load_certs(ssl_certificate_path.clone());
+        if load_cert_operation.is_err() {
+            panic!(
+                "Could not found SSL Certificate on path: {} ",
+                ssl_certificate_path.to_string_lossy()
+            );
+        }
+
+        let load_private_key_operation = load_private_key(ssl_private_key_path.clone());
+        if load_private_key_operation.is_err() {
+            panic!(
+                "Could not found SSL Private Key on path: {} ",
+                ssl_private_key_path.to_string_lossy()
+            );
+        }
+
+        let certs: Vec<Certificate> = load_cert_operation.unwrap();
+        let key: PrivateKey = load_private_key_operation.unwrap();
+        let certified_key = create_certified_key(certs, key);
+        sni_resolver.add(source.as_str(), certified_key).unwrap();
+    }
+
+    /* Loop for creating sni resolving for all secure IWS routes */
+    for (source, secure_iws_route) in secure_iws_routes {
+        let mut ssl_certificate_path = ssl_path.clone();
+        ssl_certificate_path.push(secure_iws_route.ssl_context.cert.clone());
+
+        let mut ssl_private_key_path = ssl_path.clone();
+        ssl_private_key_path.push(secure_iws_route.ssl_context.private_key.clone());
 
         let load_cert_operation = load_certs(ssl_certificate_path.clone());
         if load_cert_operation.is_err() {

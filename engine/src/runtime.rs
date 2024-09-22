@@ -40,6 +40,12 @@ impl Runtime {
         let route_path = Runtime::get_route_path(&runtime_path);
         let router = Router::load(route_path.clone());
 
+        println!("route_path > {:?}", route_path);
+        println!("config_path > {:?}", config_path);
+
+        println!("config > {:?}", config);
+        println!("router > {:?}", router);
+
         Self {
             config,
             rpc_session,

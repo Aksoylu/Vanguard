@@ -10,9 +10,16 @@ use tokio::sync::Mutex;
 use hyper::client::HttpConnector;
 
 use crate::{
-    models::route::{HttpRoute, IwsRoute}, render::{dir_index_page::DirIndexPage, not_found_page::NotFoundPage}, utils::{
-        directory_utility::is_directory_exist, file_utility::{get_content_type, is_file_exist, read_file_as_binary}, network_utility::parse_ip_address
-    }
+    models::route::{HttpRoute, IwsRoute},
+    render::{
+        dir_index_page::DirIndexPage, internal_error_page::InternalErrorPage,
+        not_found_page::NotFoundPage,
+    },
+    utils::{
+        directory_utility::is_directory_exist,
+        file_utility::{get_content_type, is_file_exist, read_file_as_binary},
+        network_utility::parse_ip_address,
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -52,9 +59,11 @@ impl HttpServer {
 
                         match data.handle_request(req).await {
                             Ok(response) => Ok::<_, hyper::Error>(response),
-                            Err(_) => Ok::<_, hyper::Error>(Response::new(Body::from(
-                                "Error processing request",
-                            ))),
+                            Err(err) => {
+                                return Ok::<_, hyper::Error>(Response::new(Body::from(
+                                    InternalErrorPage::new("/", format!("{:?}", err).as_str()).render(),
+                                )));
+                            },
                         }
                     }
                 }))
@@ -79,35 +88,51 @@ impl HttpServer {
         if self.http_routes.contains_key(&request_host) {
             let current_http_route = self.http_routes.get(&request_host).unwrap();
 
-            if String::is_empty(&current_http_route.source) {
-                let response = Response::new(Body::from(
-                    "Requested domain is not registered on Vanguard Engine.",
-                ));
-                return Ok(response);
+            if !String::is_empty(&current_http_route.source) {
+                return self.navigate_url(&current_http_route.target, req).await;
             }
 
-            return self.navigate_url(&current_http_route.target, req).await;
+            let internal_server_error_content = self.render_internal_server_error(
+                &request_host,
+                "Requested domain/target is not assigned to a valid HTTPS source",
+            );
+
+            return Ok(Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::from(internal_server_error_content))
+                .unwrap());
         }
 
         /* Processing IWS requests */
         if self.iws_routes.contains_key(&request_host) {
             let current_iws_route = self.iws_routes.get(&request_host).unwrap();
 
-            if String::is_empty(&current_iws_route.source) {
-                let response = Response::new(Body::from(
-                    "Requested domain is not registered on Vanguard Engine.",
-                ));
-                return Ok(response);
+            if !String::is_empty(&current_iws_route.source) {
+                return self
+                    .serve_from_disk(&current_iws_route.serving_path, req)
+                    .await;
             }
 
-            return self
-                .serve_from_disk(&current_iws_route.serving_path, req)
-                .await;
+            let internal_server_error_content = self.render_internal_server_error(
+                &request_host,
+                "Requested domain has not registered on Vanguard",
+            );
+
+            return Ok(Response::builder()
+                .status(StatusCode::INTERNAL_SERVER_ERROR)
+                .body(Body::from(internal_server_error_content))
+                .unwrap());
         }
 
-        return Ok(Response::new(Body::from(
+        let internal_server_error_content = self.render_internal_server_error(
+            &request_host,
             "Requested domain has not registered on Vanguard",
-        )));
+        );
+
+        Ok(Response::builder()
+            .status(StatusCode::INTERNAL_SERVER_ERROR)
+            .body(Body::from(internal_server_error_content))
+            .unwrap())
     }
 
     async fn navigate_url(
@@ -142,9 +167,9 @@ impl HttpServer {
         req: Request<Body>,
     ) -> Result<Response<Body>, hyper::Error> {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
-        
+
         let mut absolute_path: PathBuf = PathBuf::from(serving_path);
-        absolute_path.push(url_path.clone());
+        absolute_path.push(url_path);
 
         if is_file_exist(&absolute_path) {
             let file_content: Option<Vec<u8>> = read_file_as_binary(&absolute_path).await;
@@ -164,11 +189,10 @@ impl HttpServer {
         }
 
         /* If directory exist;
-                If Index.html exist, render index.html as text
-                If Index.html not exist, get directory childs, prepare a html content and render as text
-         */
+               If Index.html exist, render index.html as text
+               If Index.html not exist, get directory childs, prepare a html content and render as text
+        */
         if is_directory_exist(&absolute_path) {
-
             let mut index_html_path = absolute_path.clone();
             index_html_path = index_html_path.join(PathBuf::from("index.html"));
 
@@ -189,7 +213,7 @@ impl HttpServer {
                 .unwrap());
         }
 
-        let not_found_content = self.render_not_found_page(&url_path);
+        let not_found_content = self.render_not_found_error(&url_path);
         return Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::from(not_found_content))
@@ -202,8 +226,14 @@ impl HttpServer {
         content.render()
     }
 
-    fn render_not_found_page(&self, url_path: &str) -> String {
+    fn render_not_found_error(&self, url_path: &str) -> String {
         let content = NotFoundPage::new(url_path);
+
+        content.render()
+    }
+
+    fn render_internal_server_error(&self, url_path: &str, reason: &str) -> String {
+        let content = InternalErrorPage::new(url_path, reason);
 
         content.render()
     }
