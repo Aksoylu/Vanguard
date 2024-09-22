@@ -9,7 +9,7 @@ Welcome to Vanguard's official Github Page
 | SSL/TLS Support          | Ability for parsing SSL certificates and providing TLS handshake                                      | ✅ Done        |
 | HTTPS Support            | Fully implementation for HTTPS navigation by domain, app endpoint, and SSL cert & private key         | ✅ Done        |
 | Dynamic Data & Engine Config Support   | A runtime config path implementation. Works in Vanguard's lifecycle. Has observers to local storage upgrade on any real-time changes | ✅ Done  |
-| Integrated Web Server    | An Integrated web server provides ability to serve a directory with its all contents without any external web server solution. Also allows domain & DNS bindings | ⌛ In Progress  |
-| Warning & Error Logging  | A feature which responsible of realtime logging of Vanguard system errors & warnings. Logs can be viewed on filesystem or listening realtime by engine's endpoint | ⚠️ Not Started Yet |
+| Integrated Web Server    | An Integrated web server provides ability to serve a directory with its all contents without any external web server solution. Also allows domain & DNS bindings | ✅ Done  |
+| Warning & Error Logging  | A feature which responsible of realtime logging of Vanguard system errors & warnings. Logs can be viewed on filesystem or listening realtime by engine's endpoint |  ⌛ In Progress |
 | CLI Application   | A shell (CLI application) for controlling Vanguard Engine (server) realtime | ⚠️ Not Started Yet |
 | GUI Application   | A web based control panel (GUI application) for controlling Vanguard Engine (server)  realtime  | ⚠️ Not Started Yet |
