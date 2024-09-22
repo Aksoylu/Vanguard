@@ -10,6 +10,7 @@ use tokio::sync::Mutex;
 use hyper::client::HttpConnector;
 
 use crate::{
+    core::log_service::LogService,
     models::route::{HttpRoute, IwsRoute},
     render::{
         dir_index_page::DirIndexPage, internal_error_page::InternalErrorPage,
@@ -61,19 +62,23 @@ impl HttpServer {
                             Ok(response) => Ok::<_, hyper::Error>(response),
                             Err(err) => {
                                 return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                    InternalErrorPage::new("/", format!("{:?}", err).as_str()).render(),
+                                    InternalErrorPage::new("/", format!("{:?}", err).as_str())
+                                        .render(),
                                 )));
-                            },
+                            }
                         }
                     }
                 }))
             }
         });
 
-        println!("Vanguard Engine Http server started on {:?}", &self.socket);
+        LogService::success(format!(
+            "Vanguard Engine Http server started on {:?}",
+            &self.socket
+        ));
 
         if let Err(e) = Server::bind(&self.socket).serve(make_svc).await {
-            eprintln!("Server error: {}", e);
+            LogService::error(format!("Vanguard Engine Http server error {:?}", e));
         }
     }
 
@@ -84,13 +89,30 @@ impl HttpServer {
             .and_then(|host| host.to_str().ok())
             .map_or_else(|| "/".to_string(), |host_value| host_value.to_string());
 
-        /* Forwarding HTTP requests */
-        if self.http_routes.contains_key(&request_host) {
-            let current_http_route = self.http_routes.get(&request_host).unwrap();
+        LogService::output(format!("HTTP outband request received: {:?}", &req));
+        LogService::output(format!("HTTP outband request host: {:?}", &request_host));
 
-            if !String::is_empty(&current_http_route.source) {
+        /* Forwarding HTTP requests */
+        LogService::output("Looking for Http route table:");
+        if self.http_routes.contains_key(&request_host) {
+            LogService::success(format!(
+                "HTTP outband request source found in http route registry:  {:?}",
+                &request_host
+            ));
+
+            let current_http_route = self.http_routes.get(&request_host).unwrap();
+            if !String::is_empty(&current_http_route.target) {
+                LogService::success(format!(
+                    "HTTP outband request source ({}) is known. Forwarding request to {}",
+                    &current_http_route.source, &current_http_route.target
+                ));
                 return self.navigate_url(&current_http_route.target, req).await;
             }
+
+            LogService::error(format!(
+                "HTTP outband request source ({}) as domain/target is is unknown",
+                &current_http_route.source
+            ));
 
             let internal_server_error_content = self.render_internal_server_error(
                 &request_host,
@@ -101,17 +123,38 @@ impl HttpServer {
                 .status(StatusCode::INTERNAL_SERVER_ERROR)
                 .body(Body::from(internal_server_error_content))
                 .unwrap());
+        } else {
+            LogService::output(format!(
+                "HTTP outband request not registered in Http Route table {:?}",
+                &request_host
+            ));
         }
 
         /* Processing IWS requests */
+        LogService::output("Looking for IWS route table:");
         if self.iws_routes.contains_key(&request_host) {
+            LogService::success(format!(
+                "HTTP outband request source found in IWS registry:  {:?}",
+                &request_host
+            ));
+
             let current_iws_route = self.iws_routes.get(&request_host).unwrap();
 
-            if !String::is_empty(&current_iws_route.source) {
+            if !is_directory_exist(&PathBuf::from(current_iws_route.serving_path.to_string())) {
+                LogService::success(format!(
+                    "HTTP outband request source is serving on IWS registry path: {}",
+                    &current_iws_route.serving_path
+                ));
+
                 return self
                     .serve_from_disk(&current_iws_route.serving_path, req)
                     .await;
             }
+
+            LogService::error(format!(
+                "HTTP outband request source ({}) as domain/target is is unknown",
+                &request_host
+            ));
 
             let internal_server_error_content = self.render_internal_server_error(
                 &request_host,
@@ -123,6 +166,12 @@ impl HttpServer {
                 .body(Body::from(internal_server_error_content))
                 .unwrap());
         }
+
+        /* Handle not found */
+        LogService::output(format!(
+            "Http outband request host {:?} not found in IWS or HTTP Route table.",
+            &request_host
+        ));
 
         let internal_server_error_content = self.render_internal_server_error(
             &request_host,
