@@ -2,7 +2,7 @@ pub struct Constants {}
 
 impl Constants {
     pub const WIN_RUNTIME_PATH: &'static str = "C:\\ProgramData\\Vanguard";
-    pub const LINUX_RUNTIME_PATH: &'static str = "/etc/vanguard";
+    pub const LINUX_RUNTIME_PATH: &'static str = "/etc/Vanguard";
     pub const OSX_RUNTIME_PATH: &'static str = "Library/Application Support/Vanguard";
 
     pub const SETTINGS_FILENAME: &'static str = "settings.json";

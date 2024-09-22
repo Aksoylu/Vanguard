@@ -9,7 +9,7 @@ pub fn get_ssl_path() -> PathBuf {
     if !ssl_path.exists() {
         create_path(&ssl_path);
     }
-
+    
     ssl_path
 }
 
