@@ -61,12 +61,10 @@ async fn main() {
     }
     .await;
 
-    tokio::spawn(async move {
-        jsonrpc_server.start().await;
-    });
-
+    jsonrpc_server.start().await;
+    /* 
     // Keep the main task running (adjust as necessary for your application)
     loop {
         tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-    }
+    }*/
 }
