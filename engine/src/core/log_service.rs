@@ -5,22 +5,22 @@ pub struct LogService {}
 impl LogService {
     /// Gets both of &str and String
     pub fn error<T: AsRef<str>>(text: T) {
-        println!("\nERROR >> {}\n", text.as_ref().red());
+        println!("\n{} >> {}", "ERROR".red(), text.as_ref());
     }
 
     /// Gets both of &str and String
     pub fn success<T: AsRef<str>>(text: T) {
-        println!("\nSUCCESS >> {}\n", text.as_ref().green());
+        println!("\n{} >> {}", "SUCCESS".green(), text.as_ref());
     }
 
     /// Gets both of &str and String
     pub fn warning<T: AsRef<str>>(text: T) {
-        println!("\nWARNING >> {}\n", text.as_ref());
+        println!("\n{} >> {}", "WARNING".yellow(), text.as_ref());
     }
 
     /// Gets both of &str and String
     pub fn info<T: AsRef<str>>(text: T) {
-        println!("\nINFO >> {}\n", text.as_ref().yellow());
+        println!("\n{} >> {}\n", "INFO".blue(), text.as_ref());
     }
 
     /// Gets both of &str and String

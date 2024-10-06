@@ -27,6 +27,7 @@ base64 = "0.21"
 mime_guess = "2.0"
 tera = "1.18"
 colored = "2.0"
+prettytable-rs = "^0.10"
 
 [profile.dev]
 panic = "abort"

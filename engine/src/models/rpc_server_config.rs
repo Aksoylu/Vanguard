@@ -18,3 +18,9 @@ impl Default for RpcServerConfig {
         }
     }
 }
+
+impl RpcServerConfig {
+    pub fn get_endpoint(&self) -> String{
+        format!("{}:{}", self.ip_address, self.port)
+    }
+}

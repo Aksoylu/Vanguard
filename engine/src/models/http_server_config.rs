@@ -15,4 +15,11 @@ impl Default for HttpServerConfig {
             port: Constants::DEFAULT_HTTP_PORT,
         }
     }
+
+}
+
+impl HttpServerConfig{
+    pub fn get_endpoint(&self) -> String{
+        format!("{}:{}", self.ip_address, self.port)
+    }
 }
