@@ -13,9 +13,11 @@ use std::sync::Mutex;
 
 use rpc_service::rpc_server::RPCServer;
 use runtime::Runtime;
+use utils::text_utility::print_banner;
 
 #[tokio::main]
 async fn main() {
+    print_banner();
     let runtime = Arc::new(Mutex::new(Runtime::init()));
 
     let http_runtime = runtime.clone();
@@ -62,9 +64,4 @@ async fn main() {
     .await;
 
     jsonrpc_server.start().await;
-    /* 
-    // Keep the main task running (adjust as necessary for your application)
-    loop {
-        tokio::time::sleep(tokio::time::Duration::from_secs(60)).await;
-    }*/
 }

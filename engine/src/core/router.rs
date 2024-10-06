@@ -41,8 +41,6 @@ impl Router {
     pub fn load(load_path: PathBuf) -> Router {
         let read_route_operation = load_json::<Vec<JsonRoute>>(&load_path);
         if read_route_operation.is_err() {
-            eprintln!("Could not load Router file on Path: '{}'\nVanguard will starting up with no routing", load_path.to_str().unwrap_or_default());
-            eprintln!("{:?}", read_route_operation.err());
             return Router::default();
         }
 
