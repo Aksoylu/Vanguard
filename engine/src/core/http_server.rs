@@ -101,28 +101,30 @@ impl HttpServer {
             ));
 
             let current_http_route = self.http_routes.get(&request_host).unwrap();
-            if !String::is_empty(&current_http_route.target) {
-                LogService::success(format!(
-                    "HTTP outband request source ({}) is known. Forwarding request to {}",
-                    &current_http_route.source, &current_http_route.target
+
+            if String::is_empty(&current_http_route.source) {
+                LogService::error(format!(
+                    "HTTP outband request source ({}) as domain/target is is unknown",
+                    &current_http_route.source
                 ));
-                return self.navigate_url(&current_http_route.target, req).await;
+
+                let internal_server_error_content = self.render_internal_server_error(
+                    &request_host,
+                    "Requested domain/target is not assigned to a valid HTTPS source",
+                );
+
+                return Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from(internal_server_error_content))
+                    .unwrap());
             }
 
-            LogService::error(format!(
-                "HTTP outband request source ({}) as domain/target is is unknown",
-                &current_http_route.source
+            LogService::success(format!(
+                "HTTP outband request source ({}) is known. Forwarding request to {}",
+                &current_http_route.source, &current_http_route.target
             ));
 
-            let internal_server_error_content = self.render_internal_server_error(
-                &request_host,
-                "Requested domain/target is not assigned to a valid HTTPS source",
-            );
-
-            return Ok(Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(internal_server_error_content))
-                .unwrap());
+            return self.navigate_url(&current_http_route.target, req).await;
         } else {
             LogService::output(format!(
                 "HTTP outband request not registered in Http Route table {:?}",
@@ -141,30 +143,38 @@ impl HttpServer {
             let current_iws_route = self.iws_routes.get(&request_host).unwrap();
 
             if !is_directory_exist(&PathBuf::from(current_iws_route.serving_path.to_string())) {
-                LogService::success(format!(
-                    "HTTP outband request source is serving on IWS registry path: {}",
-                    &current_iws_route.serving_path
+                LogService::error(format!(
+                    "HTTP outband request source ({}) as domain/target is is unknown",
+                    &request_host
                 ));
-
-                return self
-                    .serve_from_disk(&current_iws_route.serving_path, req)
-                    .await;
+    
+                let internal_server_error_content = self.render_internal_server_error(
+                    &request_host,
+                    "Requested domain has not registered on Vanguard",
+                );
+    
+                return Ok(Response::builder()
+                    .status(StatusCode::INTERNAL_SERVER_ERROR)
+                    .body(Body::from(internal_server_error_content))
+                    .unwrap());
             }
 
-            LogService::error(format!(
-                "HTTP outband request source ({}) as domain/target is is unknown",
-                &request_host
+
+                
+            LogService::success(format!(
+                "HTTP outband request source is serving on IWS registry path: {}",
+                &current_iws_route.serving_path
             ));
 
-            let internal_server_error_content = self.render_internal_server_error(
-                &request_host,
-                "Requested domain has not registered on Vanguard",
-            );
-
-            return Ok(Response::builder()
-                .status(StatusCode::INTERNAL_SERVER_ERROR)
-                .body(Body::from(internal_server_error_content))
-                .unwrap());
+            return self
+                .serve_from_disk(&current_iws_route.serving_path, req)
+                .await;
+        }
+        else {
+            LogService::output(format!(
+                "HTTP outband request not registered in IWS Route table {:?}",
+                &request_host
+            ));
         }
 
         /* Handle not found */
