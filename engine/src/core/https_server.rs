@@ -15,6 +15,8 @@ use crate::utils::file_utility::{get_content_type, is_file_exist, read_file_as_b
 use crate::utils::network_utility::parse_ip_address;
 use crate::utils::tls_utility::create_ssl_context;
 
+use super::log_service::LogService;
+
 #[derive(Clone)]
 pub struct HttpsServer {
     socket: SocketAddr,
@@ -40,13 +42,15 @@ impl HttpsServer {
     }
 
     pub async fn start(&self) {
-        println!("Vanguard Engine Https server started on {:?}", &self.socket);
+        LogService::success(format!(
+            "Vanguard Engine Https server started on {:?}",
+            &self.socket
+        ));
 
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor =
             create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
 
-        
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
 
         /* LifeCycle */

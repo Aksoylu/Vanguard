@@ -2,7 +2,7 @@ use std::sync::Arc;
 use jsonrpc_core::IoHandler;
 use std::sync::Mutex;
 
-use crate::{runtime::Runtime, utils::network_utility::parse_ip_address};
+use crate::{core::log_service::LogService, runtime::Runtime, utils::network_utility::parse_ip_address};
 
 use jsonrpc_http_server::ServerBuilder;
 
@@ -43,8 +43,10 @@ impl RPCServer {
             .start_http(&self.endpoint.parse().unwrap())
             .expect("JRPC Server failed to start.");
 
-        println!("JRPC Server running on {}", &self.endpoint);
-
+        LogService::success(format!(
+            "Vanguard Engine JRPC server started on {}",
+            &self.endpoint
+        ));
         server.wait();
     }
 
