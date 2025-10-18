@@ -19,7 +19,7 @@ use utils::text_utility::print_banner;
 async fn main() {
     print_banner();
     let runtime = Arc::new(Mutex::new(Runtime::init()));
-
+    
     let http_runtime = runtime.clone();
     let http_server = {
         let rt = http_runtime.lock().unwrap();

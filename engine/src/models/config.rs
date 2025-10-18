@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 use super::{
     http_server_config::HttpServerConfig, https_server_config::HttpsServerConfig,
     rpc_server_config::RpcServerConfig,
+    logger_config::LoggerConfig
 };
 
 #[derive(Debug, Deserialize, Serialize, PartialEq)]
@@ -10,6 +11,7 @@ pub struct Config {
     pub http_server: HttpServerConfig,
     pub https_server: HttpsServerConfig,
     pub rpc_server: RpcServerConfig,
+    pub logger: LoggerConfig
 }
 
 impl Default for Config {
@@ -18,6 +20,7 @@ impl Default for Config {
             http_server: Default::default(),
             https_server: Default::default(),
             rpc_server: Default::default(),
+            logger: Default::default()
         }
     }
 }

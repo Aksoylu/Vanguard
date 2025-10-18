@@ -1,12 +1,12 @@
 extern crate prettytable;
 use colored::Colorize;
 use prettytable::{format, row, Table};
-
 use std::path::PathBuf;
 
+use crate::core::log_service::LOGGER;
 use crate::{
     constants::Constants,
-    core::router::Router,
+    core::{log_service::LogService, router::Router},
     models::{config::Config, rpc_session::RpcSession},
     utils::{
         crypt_utility::generate_hash,
@@ -49,6 +49,10 @@ impl Runtime {
         let route_path = Runtime::get_route_path(&runtime_path);
         let router = Router::load(route_path.clone());
         let is_routes_loaded_successfully = router != Router::default();
+
+        // Initialization of global logger by replacing the default one
+        let mut logger = LOGGER.write().unwrap();
+        *logger = LogService::init(config.logger.clone());
 
         if !is_config_loaded_successfully {
             // TODO: WRITE FILE BACK
@@ -152,6 +156,16 @@ impl Runtime {
             pathbuf_to_string(&get_runtime_path())
         ]);
 
+        // todo \\
+        table.add_row(row![
+            "Logger Settings",
+            format!(
+                "Logs will saved to path '{}' with maximum file size {}. Keeping last {} logs.",
+                "[Active]".green(),
+                &self.config.https_server.get_endpoint().underline()
+            )
+        ]);
+
         table.add_row(row![
             "Router File",
             format!(
@@ -196,7 +210,7 @@ impl Runtime {
             "Secure Integrated Web Server Routes",
             format!("Serving [{:?}]", &self.router.get_secure_iws_routes().len())
         ]);
-        
+
         table.add_row(row![
             "JRPC Authentication Token",
             &self.rpc_session.hash.underline()

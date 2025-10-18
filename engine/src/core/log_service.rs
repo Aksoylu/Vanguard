@@ -1,30 +1,49 @@
-use colored::*; // Bring all colored features into scope
+use flexi_logger::{Age, Cleanup, Criterion, FileSpec, Logger as FlexiLogger, Naming};
+use log::{debug, error, info, warn};
+use once_cell::sync::Lazy;
+use std::fmt::Debug;
+use std::sync::{Arc, RwLock};
 
-pub struct LogService {}
+use crate::models::logger_config::LoggerConfig;
+
+// Global Logger Instance: Initially empty default config, updated in Runtime init
+pub static LOGGER: Lazy<Arc<RwLock<LogService>>> =
+    Lazy::new(|| Arc::new(RwLock::new(LogService::init(LoggerConfig::default()))));
+
+#[derive(Debug, Clone)]
+pub struct LogService;
 
 impl LogService {
-    /// Gets both of &str and String
-    pub fn error<T: AsRef<str>>(text: T) {
-        println!("\n{} >> {}", "ERROR".red(), text.as_ref());
+    pub fn init(logger_config: LoggerConfig) -> Self {
+        FlexiLogger::try_with_str("info")
+            .unwrap()
+            .log_to_file(
+                FileSpec::default()
+                    .directory("logs")
+                    .basename("vanguard")
+                    .suffix("log"),
+            )
+            .rotate(
+                Criterion::AgeOrSize(Age::Day, logger_config.log_file_size), // Daily and splitted by given log_file_size
+                Naming::Timestamps, // Example file name: vanguard_2025-10-17_14-30-00.log
+                Cleanup::KeepLogFiles(logger_config.keep_last_logs),
+            )
+            .start()
+            .unwrap();
+
+        Self
     }
 
-    /// Gets both of &str and String
-    pub fn success<T: AsRef<str>>(text: T) {
-        println!("\n{} >> {}", "SUCCESS".green(), text.as_ref());
+    pub fn info<T: AsRef<str>>(&self, msg: T) {
+        info!("{}", msg.as_ref());
     }
-
-    /// Gets both of &str and String
-    pub fn warning<T: AsRef<str>>(text: T) {
-        println!("\n{} >> {}", "WARNING".yellow(), text.as_ref());
+    pub fn warn<T: AsRef<str>>(&self, msg: T) {
+        warn!("{}", msg.as_ref());
     }
-
-    /// Gets both of &str and String
-    pub fn info<T: AsRef<str>>(text: T) {
-        println!("\n{} >> {}\n", "INFO".blue(), text.as_ref());
+    pub fn error<T: AsRef<str>>(&self, msg: T) {
+        error!("{}", msg.as_ref());
     }
-
-    /// Gets both of &str and String
-    pub fn output<T: AsRef<str>>(text: T) {
-        println!("\nOUTPUT >> {}\n", text.as_ref());
+    pub fn debug<T: AsRef<str>>(&self, msg: T) {
+        debug!("{}", msg.as_ref());
     }
 }

@@ -9,6 +9,11 @@ impl Constants {
     pub const SESSION_FILENAME: &'static str = ".session.json";
     pub const ROUTER_FILENAME: &'static str = "routing.json";
 
+    pub const DEFAULT_LOG_DIR_NAME: &'static str = "logs";
+    pub const DEFAULT_LOG_LEVELS: &'static str = "ERROR,INFO,WARNING";
+    pub const DEFAULT_LOG_FILE_SIZE: u64 = 10_000_000; // 10 MB
+    pub const DEFAULT_KEEP_LAST_LOGS: usize = 7;
+
     pub const DEFAULT_HTTP_IP: &'static str = "0.0.0.0";
     pub const DEFAULT_HTTP_PORT: u16 = 80;
 
