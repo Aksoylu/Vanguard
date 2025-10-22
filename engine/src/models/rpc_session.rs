@@ -23,7 +23,7 @@ impl Default for RpcSession {
             port: Constants::DEFAULT_RPC_PORT,
             private_key: Constants::DEFAULT_PRIVATE_KEY.to_string(),
             created_at: get_current_timestamp(),
-            hash: generate_hash(Constants::DEFAULT_PRIVATE_KEY.to_string()),
+            hash,
         }
     }
 }
