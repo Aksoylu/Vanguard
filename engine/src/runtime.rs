@@ -161,8 +161,9 @@ impl Runtime {
             "Logger Settings",
             format!(
                 "Logs will saved to path '{}' with maximum file size {}. Keeping last {} logs.",
-                "[Active]".green(),
-                &self.config.https_server.get_endpoint().underline()
+                &self.config.logger.log_dir_path.clone().unwrap_or_default(),
+                &self.config.logger.log_file_size,
+                &self.config.logger.keep_last_logs
             )
         ]);
 

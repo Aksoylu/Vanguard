@@ -1,7 +1,6 @@
 use hyper::{
-    header::HeaderValue,
     service::{make_service_fn, service_fn},
-    Body, Client, Request, Response, Server, StatusCode,
+    Body, Request, Response, Server,
 };
 
 use std::{
@@ -12,15 +11,14 @@ use std::{
 };
 use tokio::sync::Mutex;
 
-use hyper::client::HttpConnector;
-
 use crate::{
-    log_debug, log_error, log_info, log_warn,
+    core::common_handler::{CommonHandler, Protocol},
+    log_debug, log_error, log_info,
     models::route::{HttpRoute, IwsRoute},
     render::Render,
     utils::{
         directory_utility::is_directory_exist,
-        file_utility::{get_content_type, is_file_exist, read_file_as_binary},
+        file_utility::is_file_exist,
         network_utility::{extract_host, parse_ip_address},
     },
 };
@@ -115,7 +113,8 @@ impl HttpServer {
             "Http outband request host {:?} not found in IWS or HTTP Route table.",
             &request_host
         );
-        return self.navigate_http_route_not_found(req, client_ip).await;
+
+        CommonHandler::not_found_error(Protocol::HTTP, req, client_ip).await
     }
 
     async fn handle_http_route(
@@ -138,9 +137,13 @@ impl HttpServer {
                 &current_http_route.target
             );
 
-            return self
-                .navigate_url(&current_http_route.target, req, client_ip.clone())
-                .await;
+            return CommonHandler::url_execution(
+                Protocol::HTTP,
+                &current_http_route.target,
+                req,
+                client_ip.clone(),
+            )
+            .await;
         }
 
         log_debug!(
@@ -148,93 +151,7 @@ impl HttpServer {
             &current_http_route.source
         );
 
-        return self
-            .navigate_http_route_not_found(req, client_ip.clone())
-            .await;
-    }
-
-    async fn navigate_url(
-        &self,
-        endpoint_to_navigate: &String,
-        req: Request<Body>,
-        client_ip: IpAddr,
-    ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
-
-        let original_uri = req.uri().clone();
-        let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
-        let request_path = original_uri.path().to_string();
-
-        let mut new_uri = format!("http://{}{}", endpoint_to_navigate, request_path);
-        if let Some(query) = original_uri.query() {
-            new_uri.push('?');
-            new_uri.push_str(query);
-        }
-
-        let (mut parts, body) = req.into_parts();
-        parts.uri = new_uri.parse().unwrap();
-        parts.headers.insert(
-            "x-forwarded-for",
-            HeaderValue::from_str(&client_ip.to_string()).unwrap(),
-        );
-
-        let new_request = Request::from_parts(parts, body);
-
-        let http = HttpConnector::new();
-        let client: Client<HttpConnector> = Client::builder().build(http);
-
-        let response = client.request(new_request).await?;
-
-        let elapsed_time = start_time.elapsed().as_millis();
-
-        log_info!(
-            "HTTP |EXECUTION| {} {} {} ({} ms) from {} to {} via ip {}",
-            request_method,
-            request_path,
-            &response.status().as_u16(),
-            elapsed_time,
-            request_host,
-            &endpoint_to_navigate,
-            &client_ip
-        );
-
-        Ok(response)
-    }
-
-    async fn navigate_http_route_not_found(
-        &self,
-        req: Request<Body>,
-        client_ip: IpAddr,
-    ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
-
-        let original_uri = req.uri().clone();
-        let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
-        let request_path = original_uri.path().to_string();
-
-        let internal_server_error_content = Render::internal_server_error(
-            &request_host,
-            "Requested domain/target is not assigned to a valid HTTP source",
-        );
-
-        let elapsed_time = start_time.elapsed().as_millis();
-
-        log_info!(
-            "HTTP |ROUTE NOT FOUND| {} {} {} ({} ms) from {} via ip {}",
-            request_method,
-            request_path,
-            StatusCode::NOT_FOUND.as_u16(),
-            elapsed_time,
-            request_host,
-            &client_ip
-        );
-
-        return Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from(internal_server_error_content))
-            .unwrap());
+        CommonHandler::not_found_error(Protocol::HTTP, req, client_ip).await
     }
 
     async fn handle_iws_route(
@@ -257,9 +174,7 @@ impl HttpServer {
                 &current_iws_route.source
             );
 
-            return self
-                .navigate_iws_route_not_found(req, client_ip.clone())
-                .await;
+            return CommonHandler::iws_route_not_found_error(Protocol::HTTP, req, client_ip).await;
         }
 
         let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);
@@ -272,9 +187,13 @@ impl HttpServer {
                 &current_iws_route.serving_path
             );
 
-            return self
-                .navigate_iws_static_file(&requested_disk_path, req, client_ip.clone())
-                .await;
+            return CommonHandler::iws_static_file_execution(
+                Protocol::HTTP,
+                &requested_disk_path,
+                req,
+                client_ip,
+            )
+            .await;
         }
 
         if is_directory_exist(&requested_disk_path) {
@@ -284,9 +203,13 @@ impl HttpServer {
                 &current_iws_route.serving_path
             );
 
-            return self
-                .navigate_iws_static_directory(&requested_disk_path, req, client_ip.clone())
-                .await;
+            return CommonHandler::iws_static_directory_execution(
+                Protocol::HTTP,
+                &requested_disk_path,
+                req,
+                client_ip,
+            )
+            .await;
         }
 
         log_debug!(
@@ -295,175 +218,6 @@ impl HttpServer {
             &current_iws_route.serving_path
         );
 
-        return self.navigate_iws_empty_path(req, client_ip.clone()).await;
-    }
-
-    async fn navigate_iws_route_not_found(
-        &self,
-        req: Request<Body>,
-        client_ip: IpAddr,
-    ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
-
-        let original_uri = req.uri().clone();
-        let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
-        let request_path = original_uri.path().to_string();
-
-        let internal_server_error_content = Render::internal_server_error(
-            &request_host,
-            "Requested domain/target is not assigned to a valid HTTP source",
-        );
-
-        let elapsed_time = start_time.elapsed().as_millis();
-
-        log_info!(
-            "HTTP |IWS RECORD NOT FOUND| {} {} {} ({} ms) from {} via ip {}",
-            request_method,
-            request_path,
-            StatusCode::NOT_FOUND.as_u16(),
-            elapsed_time,
-            request_host,
-            &client_ip
-        );
-
-        return Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from(internal_server_error_content))
-            .unwrap());
-    }
-
-    async fn navigate_iws_static_file(
-        &self,
-        serving_path: &PathBuf,
-        req: Request<Body>,
-        client_ip: IpAddr,
-    ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
-
-        let original_uri = req.uri().clone();
-        let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
-        let request_path = original_uri.path().to_string();
-
-        let file_content: Option<Vec<u8>> = read_file_as_binary(&serving_path).await;
-
-        let elapsed_time = start_time.elapsed().as_millis();
-
-        if file_content.is_none() {
-            log_info!(
-                "HTTP |IWS RECORD FOUND| {} {} {} ({} ms) from {} via ip {}",
-                request_method,
-                request_path,
-                StatusCode::NOT_FOUND.as_u16(),
-                elapsed_time,
-                request_host,
-                &client_ip
-            );
-
-            return Ok(Response::builder()
-                .status(StatusCode::FOUND)
-                .body(Body::from("302 - Requested file is empty"))
-                .unwrap());
-        }
-
-        let content_type = get_content_type(&serving_path);
-
-        log_info!(
-            "HTTP |IWS EXECUTION| {} {} {} ({} ms) from {} to {} via ip {}",
-            request_method,
-            request_path,
-            StatusCode::OK.as_u16(),
-            elapsed_time,
-            request_host,
-            &serving_path.display(),
-            &client_ip
-        );
-        return Ok(Response::builder()
-            .header("Content-Type", content_type.as_ref())
-            .body(Body::from(file_content.unwrap()))
-            .unwrap());
-    }
-
-    /// If Index.html exist, render index.html as text
-    /// If Index.html not exist, get directory childs, prepare a html content and render as text
-    async fn navigate_iws_static_directory(
-        &self,
-        serving_path: &PathBuf,
-        req: Request<Body>,
-        client_ip: IpAddr,
-    ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
-
-        let index_html_path = serving_path.join("index.html");
-        if is_file_exist(&index_html_path) {
-            return self
-                .navigate_iws_static_file(&index_html_path, req, client_ip.clone())
-                .await;
-        }
-
-        let original_uri = req.uri().clone();
-        let url_path = original_uri.path().strip_prefix("/").unwrap_or("");
-        let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
-        let request_path = original_uri.path().to_string();
-
-        let absolute_path = serving_path.join("index.html");
-
-        let dir_content: String = Render::directory_explorer_page(&absolute_path, &url_path);
-
-        let elapsed_time = start_time.elapsed().as_millis();
-
-        log_info!(
-            "HTTP |IWS EXECUTION| {} {} {} ({} ms) from {} to {} via ip {}",
-            request_method,
-            request_path,
-            StatusCode::OK.as_u16(),
-            elapsed_time,
-            request_host,
-            &serving_path.display(),
-            &client_ip
-        );
-
-        return Ok(Response::builder()
-            .header("Content-Type", "text/html")
-            .body(Body::from(dir_content))
-            .unwrap());
-    }
-
-    // todo
-    async fn navigate_iws_empty_path(
-        &self,
-        req: Request<Body>,
-        client_ip: IpAddr,
-    ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
-
-        let original_uri = req.uri().clone();
-        let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
-        let request_path = original_uri.path().to_string();
-
-        let internal_server_error_content = Render::internal_server_error(
-            &request_host,
-            "Requested domain/target is not assigned to a valid HTTP source",
-        );
-
-        let elapsed_time = start_time.elapsed().as_millis();
-
-        log_info!(
-            "HTTP |IWS EMPTY EXECUTION| {} {} {} ({} ms) from {} via ip {}",
-            request_method,
-            request_path,
-            StatusCode::NOT_FOUND.as_u16(),
-            elapsed_time,
-            request_host,
-            &client_ip
-        );
-
-        return Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from(internal_server_error_content))
-            .unwrap());
+        CommonHandler::iws_empty_path_error(Protocol::HTTP, req, client_ip).await
     }
 }

@@ -1,21 +1,19 @@
-use hyper::client::HttpConnector;
-use hyper::StatusCode;
-use hyper::{header, server::conn::Http, service::service_fn, Body, Client, Request, Response};
+use hyper::{server::conn::Http, service::service_fn, Body, Request, Response};
+use std::net::IpAddr;
 use std::path::PathBuf;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_rustls::TlsAcceptor;
 
+use crate::core::common_handler::{CommonHandler, Protocol};
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
-use crate::render::dir_index_page::DirIndexPage;
-use crate::render::internal_error_page::InternalErrorPage;
-use crate::render::not_found_page::NotFoundPage;
-use crate::utils::directory_utility::is_directory_exist;
-use crate::utils::file_utility::{get_content_type, is_file_exist, read_file_as_binary};
-use crate::utils::network_utility::parse_ip_address;
-use crate::utils::tls_utility::create_ssl_context;
+use crate::{log_debug, log_error, log_info};
 
-use super::log_service::LogService;
+use crate::render::Render;
+use crate::utils::directory_utility::is_directory_exist;
+use crate::utils::file_utility::is_file_exist;
+use crate::utils::network_utility::{extract_host, parse_ip_address};
+use crate::utils::tls_utility::create_ssl_context;
 
 #[derive(Clone)]
 pub struct HttpsServer {
@@ -42,18 +40,14 @@ impl HttpsServer {
     }
 
     pub async fn start(&self) {
-        LogService::success(format!(
-            "Vanguard Engine Https server started on {:?}",
-            &self.socket
-        ));
-
         let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor =
             create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
 
         let listener: TcpListener = TcpListener::bind(&self.socket).await.unwrap();
 
-        /* LifeCycle */
+        log_info!("Vanguard Engine Https server started on {:?}", &self.socket);
+
         loop {
             let (stream, _) = listener.accept().await.unwrap();
             let tls_acceptor: TlsAcceptor = ssl_context.clone();
@@ -73,25 +67,35 @@ impl HttpsServer {
         stream: tokio::net::TcpStream,
         https_server: Arc<Mutex<HttpsServer>>,
     ) {
+        let remote_client_addr = match stream.peer_addr() {
+            Ok(addr) => addr,
+            Err(_) => {
+                log_error!("Unable to get client address");
+                return;
+            }
+        };
+
         tokio::spawn(async move {
             let stream = match tls_acceptor.accept(stream).await {
                 Ok(stream) => stream,
                 Err(e) => {
-                    eprintln!("TLS accept error: {:?}", e);
+                    log_error!("TLS accept error: {:?}", e);
                     return;
                 }
             };
 
             let service = service_fn(move |req: Request<Body>| {
                 let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
+                let client_ip = remote_client_addr.ip();
+
                 async move {
                     let data: tokio::sync::MutexGuard<HttpsServer> = https_server.lock().await;
 
-                    match data.handle_request(req).await {
+                    match data.handle_request(req, client_ip).await {
                         Ok(response) => Ok::<_, hyper::Error>(response),
                         Err(err) => {
                             return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                InternalErrorPage::new("/", format!("{:?}", err).as_str()).render(),
+                                Render::internal_server_error("/", format!("{:?}", err).as_str()),
                             )));
                         }
                     }
@@ -100,171 +104,147 @@ impl HttpsServer {
 
             let http = Http::new();
             if let Err(e) = http.serve_connection(stream, service).await {
-                eprintln!("Server error: {}", e);
+                log_error!("Server error: {}", e);
             }
         });
     }
 
-    async fn handle_request(&self, req: Request<Body>) -> Result<Response<Body>, hyper::Error> {
-        let request_host = req
-            .headers()
-            .get(header::HOST)
-            .and_then(|host| host.to_str().ok())
-            .map_or_else(|| "/".to_string(), |host_value| host_value.to_string());
-
-        /* Forwarding HTTPS requests */
-        if self.https_routes.contains_key(&request_host) {
-            let current_https_route = self.https_routes.get(&request_host).unwrap();
-
-            if String::is_empty(&current_https_route.source) {
-                let internal_server_error_content = self.render_internal_server_page(
-                    &request_host,
-                    "Requested target is not assigned to a valid HTTPS source",
-                );
-                return Ok(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(internal_server_error_content))
-                    .unwrap());
-            }
-
-            return self.navigate_url(&current_https_route.target, req).await;
-        }
-
-        /* Processing IWS requests */
-        if self.secure_iws_routes.contains_key(&request_host) {
-            let current_iws_route = self.secure_iws_routes.get(&request_host).unwrap();
-
-            if String::is_empty(&current_iws_route.source) {
-                let internal_server_error_content = self.render_internal_server_page(
-                    &request_host,
-                    "Requested target is not associated with a file system for Vanguard Secure IWS",
-                );
-
-                return Ok(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(internal_server_error_content))
-                    .unwrap());
-            }
-
-            return self
-                .serve_from_disk(&current_iws_route.serving_path, req)
-                .await;
-        }
-
-        let internal_server_error_content = self.render_internal_server_page(
-            &request_host,
-            "Requested target is not registered on Vanguard Secure IWS",
-        );
-        return Ok(Response::builder()
-            .status(StatusCode::INTERNAL_SERVER_ERROR)
-            .body(Body::from(internal_server_error_content))
-            .unwrap());
-    }
-
-    async fn navigate_url(
+    async fn handle_https_route(
         &self,
-        endpoint_to_navigate: &String,
+        request_host: &String,
         req: Request<Body>,
+        client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
-        let original_uri = req.uri().clone();
+        log_debug!(
+            "HTTPS outband request source found in http route registry:  {:?}",
+            request_host
+        );
 
-        let mut new_uri = format!("http://{}{}", endpoint_to_navigate, original_uri.path());
-        if let Some(query) = original_uri.query() {
-            new_uri.push('?');
-            new_uri.push_str(query);
+        let current_https_route = self.https_routes.get(request_host).unwrap();
+
+        if !String::is_empty(&current_https_route.source) {
+            log_debug!(
+                "HTTPS outband request source ({}) is known. Forwarding request to {}",
+                &current_https_route.source,
+                &current_https_route.target
+            );
+
+            return CommonHandler::url_execution(
+                Protocol::HTTPS,
+                &current_https_route.target,
+                req,
+                client_ip.clone(),
+            )
+            .await;
         }
 
-        let (mut parts, body) = req.into_parts();
-        parts.uri = new_uri.parse().unwrap();
+        log_debug!(
+            "HTTPS outband request source ({}) as domain/target is is unknown",
+            &current_https_route.source
+        );
 
-        let new_request = Request::from_parts(parts, body);
-
-        let http = HttpConnector::new();
-        let client: Client<HttpConnector> = Client::builder().build(http);
-
-        let response = client.request(new_request).await?;
-
-        Ok(response)
+        return CommonHandler::not_found_error(Protocol::HTTPS, req, client_ip).await;
     }
 
-    async fn serve_from_disk(
+    async fn handle_secure_iws_route(
         &self,
-        serving_path: &String,
+        request_host: &String,
         req: Request<Body>,
+        client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
 
-        let mut absolute_path = PathBuf::from(serving_path);
-        absolute_path.push(url_path);
+        log_debug!(
+            "HTTPS outband request source found in Secure IWS registry:  {:?}",
+            &request_host
+        );
 
-        if is_file_exist(&absolute_path) {
-            let file_content: Option<Vec<u8>> = read_file_as_binary(&absolute_path).await;
-            if file_content.is_none() {
-                let internal_server_error_content = self.render_internal_server_page(
-                    &url_path,
-                    "Requested path is totally points an empty buffer, file or source on",
-                );
-                return Ok(Response::builder()
-                    .status(StatusCode::INTERNAL_SERVER_ERROR)
-                    .body(Body::from(internal_server_error_content))
-                    .unwrap());
-            }
+        let current_iws_route = self.secure_iws_routes.get(request_host).unwrap();
+        if String::is_empty(&current_iws_route.serving_path) {
+            log_debug!(
+                "HTTPS outband IWS request source ({}) as domain/target is is unknown",
+                &current_iws_route.source
+            );
 
-            let content_type = get_content_type(&absolute_path);
-
-            return Ok(Response::builder()
-                .header("Content-Type", content_type.as_ref()) // Set the Content-Type header
-                .body(Body::from(file_content.unwrap()))
-                .unwrap());
+            return CommonHandler::iws_route_not_found_error(Protocol::HTTPS, req, client_ip).await;
         }
 
-        /* If directory exist;
-               If Index.html exist, render index.html as text
-               If Index.html not exist, get directory childs, prepare a html content and render as text
-        */
-        if is_directory_exist(&absolute_path) {
-            let mut index_html_path = absolute_path.clone();
-            index_html_path = index_html_path.join(PathBuf::from("index.html"));
+        let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);
+        requested_disk_path.push(url_path);
 
-            if is_file_exist(&index_html_path) {
-                let file_content = read_file_as_binary(&index_html_path).await;
-                if file_content.is_some() {
-                    return Ok(Response::builder()
-                        .header("Content-Type", "text/html")
-                        .body(Body::from(file_content.unwrap()))
-                        .unwrap());
-                }
-            }
+        if is_file_exist(&requested_disk_path) {
+            log_debug!(
+                "HTTPS outband IWS request source ({}) is known. Serving file from disk (Secure IWS registry) at path: {}",
+                &current_iws_route.source,
+                &current_iws_route.serving_path
+            );
 
-            let dir_content = self.render_dir_index_page(&absolute_path, &url_path);
-            return Ok(Response::builder()
-                .header("Content-Type", "text/html")
-                .body(Body::from(dir_content))
-                .unwrap());
+            return CommonHandler::iws_static_file_execution(
+                Protocol::HTTPS,
+                &requested_disk_path,
+                req,
+                client_ip,
+            )
+            .await;
         }
 
-        let not_found_content = self.render_not_found_page(&url_path);
-        return Ok(Response::builder()
-            .status(StatusCode::NOT_FOUND)
-            .body(Body::from(not_found_content))
-            .unwrap());
+        if is_directory_exist(&requested_disk_path) {
+            log_debug!(
+                "HTTPS outband IWS request source ({}) is known. Serving directory from disk (Secure IWS registry) at path: {}",
+                &current_iws_route.source,
+                &current_iws_route.serving_path
+            );
+
+            return CommonHandler::iws_static_directory_execution(
+                Protocol::HTTPS,
+                &requested_disk_path,
+                req,
+                client_ip,
+            )
+            .await;
+        }
+
+        log_debug!(
+            "HTTPS outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
+            &current_iws_route.source,
+            &current_iws_route.serving_path
+        );
+
+        CommonHandler::iws_empty_path_error(Protocol::HTTPS, req, client_ip).await
     }
 
-    fn render_dir_index_page(&self, dir_path: &PathBuf, url_path: &str) -> String {
-        let content = DirIndexPage::new(dir_path, url_path);
+    async fn handle_request(
+        &self,
+        req: Request<Body>,
+        client_ip: IpAddr,
+    ) -> Result<Response<Body>, hyper::Error> {
+        let request_host = extract_host(&req);
 
-        content.render()
-    }
+        log_debug!("HTTP outband request received: {:?}", &req);
+        log_debug!("HTTP outband request host: {:?}", &request_host);
 
-    fn render_not_found_page(&self, url_path: &str) -> String {
-        let content = NotFoundPage::new(url_path);
+        /* Forwarding HTTPS requests */
+        log_debug!("Looking for Http route table:");
 
-        content.render()
-    }
+        if self.https_routes.contains_key(&request_host) {
+            return self.handle_https_route(&request_host, req, client_ip).await;
+        }
 
-    fn render_internal_server_page(&self, url_path: &str, reason: &str) -> String {
-        let content = InternalErrorPage::new(url_path, reason);
+        /* Processing IWS requests */
+        log_debug!("Looking for Secure IWS route table:");
 
-        content.render()
+        if self.secure_iws_routes.contains_key(&request_host) {
+            return self
+                .handle_secure_iws_route(&request_host, req, client_ip)
+                .await;
+        }
+
+        /* Handle not found */
+        log_info!(
+            "HTTPS outband request host {:?} not found in Secure IWS or HTTPS Route table.",
+            &request_host
+        );
+
+        CommonHandler::not_found_error(Protocol::HTTPS, req, client_ip).await
     }
 }
