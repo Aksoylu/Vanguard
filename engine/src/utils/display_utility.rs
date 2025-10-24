@@ -208,6 +208,7 @@ impl<'a>  RuntimeDisplayUtility<'a>  {
         self.add_runtime_directory(&mut table);
         self.add_logger_settings(&mut table);
         self.add_config_file(&mut table);
+        self.add_router_file(&mut table);
         self.add_rpc_session_file(&mut table);
         self.add_http_routes(&mut table);
         self.add_integrated_web_server_routes(&mut table);

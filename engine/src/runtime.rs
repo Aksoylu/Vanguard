@@ -13,7 +13,6 @@ use crate::{
         crypt_utility::generate_hash, directory_utility::get_runtime_path, file_utility::load_json,
     },
 };
-use crate::{log_error, log_info};
 
 use tokio::sync::watch;
 

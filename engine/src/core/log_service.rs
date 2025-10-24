@@ -1,4 +1,4 @@
-use flexi_logger::{Age, Cleanup, Criterion, FileSpec, Logger as FlexiLogger, Naming};
+use flexi_logger::{opt_format, Age, Cleanup, Criterion, FileSpec, Logger as FlexiLogger, Naming};
 use log::{debug, error, info, warn};
 use once_cell::sync::Lazy;
 use std::fmt::Debug;
@@ -22,9 +22,18 @@ impl LogService {
                     .basename("vanguard")
                     .suffix("log"),
             )
+            .format(|write, now, record| {
+                write!(
+                    write,
+                    "[{}] {:<5}: {}",
+                    now.format("%Y-%m-%d %H:%M:%S"),
+                    record.level(),
+                    record.args()
+                )
+            })
             .rotate(
-                Criterion::AgeOrSize(Age::Day, logger_config.log_file_size), // Daily and splitted by given log_file_size
-                Naming::Timestamps, // Example file name: vanguard_2025-10-17_14-30-00.log
+                Criterion::AgeOrSize(Age::Day, logger_config.log_file_size),
+                Naming::Timestamps,
                 Cleanup::KeepLogFiles(logger_config.keep_last_logs),
             )
             .start()
