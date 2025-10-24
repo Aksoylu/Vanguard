@@ -1,3 +1,4 @@
+mod assets;
 mod constants;
 mod core;
 mod models;
@@ -13,13 +14,17 @@ use std::sync::Mutex;
 
 use rpc_service::rpc_server::RPCServer;
 use runtime::Runtime;
-use utils::text_utility::print_banner;
+
+use crate::assets::banner::print_banner;
+use crate::assets::startup_disclaimer::print_startup_disclaimer;
 
 #[tokio::main]
 async fn main() {
+    print_startup_disclaimer();
     print_banner();
+
     let runtime = Arc::new(Mutex::new(Runtime::init()));
-    
+
     let http_runtime = runtime.clone();
     let http_server = {
         let rt = http_runtime.lock().unwrap();

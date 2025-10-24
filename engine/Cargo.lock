@@ -208,6 +208,19 @@ dependencies = [
 ]
 
 [[package]]
+name = "console"
+version = "0.16.1"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b430743a6eb14e9764d4260d4c0d8123087d504eeb9c48f2b2a5e810dd369df4"
+dependencies = [
+ "encode_unicode",
+ "libc",
+ "once_cell",
+ "unicode-width 0.2.2",
+ "windows-sys 0.61.2",
+]
+
+[[package]]
 name = "core-foundation"
 version = "0.9.4"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -1345,7 +1358,7 @@ dependencies = [
  "is-terminal",
  "lazy_static",
  "term",
- "unicode-width",
+ "unicode-width 0.1.14",
 ]
 
 [[package]]
@@ -2206,6 +2219,12 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "7dd6e30e90baa6f72411720665d41d89b9a3d039dc45b8faea1ddd07f617f6af"
 
 [[package]]
+name = "unicode-width"
+version = "0.2.2"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b4ac048d71ede7ee76d585517add45da530660ef4390e49b098733c6e897f254"
+
+[[package]]
 name = "untrusted"
 version = "0.7.1"
 source = "registry+https://github.com/rust-lang/crates.io-index"
@@ -2224,6 +2243,7 @@ dependencies = [
  "base64 0.21.7",
  "chrono",
  "colored",
+ "console",
  "dirs",
  "flexi_logger",
  "hyper 0.14.29",
@@ -2236,6 +2256,7 @@ dependencies = [
  "once_cell",
  "prettytable-rs",
  "rand",
+ "regex",
  "rustls 0.20.9",
  "rustls-pemfile",
  "serde",
@@ -2244,6 +2265,7 @@ dependencies = [
  "tera",
  "tokio 1.38.0",
  "tokio-rustls 0.23.4",
+ "unicode-width 0.2.2",
 ]
 
 [[package]]

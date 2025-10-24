@@ -7,8 +7,7 @@ use std::sync::{Arc, RwLock};
 use crate::models::logger_config::LoggerConfig;
 
 // Global Logger Instance: Initially empty default config, updated in Runtime init
-pub static LOGGER: Lazy<Arc<RwLock<LogService>>> =
-    Lazy::new(|| Arc::new(RwLock::new(LogService::init(LoggerConfig::default()))));
+pub static LOGGER: Lazy<Arc<RwLock<LogService>>> = Lazy::new(|| Arc::new(RwLock::new(LogService)));
 
 #[derive(Debug, Clone)]
 pub struct LogService;
@@ -30,7 +29,6 @@ impl LogService {
             )
             .start()
             .unwrap();
-
         Self
     }
 

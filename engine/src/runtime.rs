@@ -4,6 +4,8 @@ use prettytable::{format, row, Table};
 use std::path::PathBuf;
 
 use crate::core::log_service::LOGGER;
+use crate::utils::file_utility::save_json;
+use crate::utils::text_utility::mask_token;
 use crate::{
     constants::Constants,
     core::{log_service::LogService, router::Router},
@@ -15,6 +17,7 @@ use crate::{
         text_utility::{get_flag, pathbuf_to_string},
     },
 };
+use crate::{fixed_row, log_error, log_info};
 
 use tokio::sync::watch;
 
@@ -30,7 +33,7 @@ pub struct Runtime {
     is_rpc_session_loaded_successfully: bool,
 
     route_path: PathBuf,
-    is_routes_loaded_successfully: bool,
+    is_router_loaded_successfully: bool,
 }
 
 impl Runtime {
@@ -40,30 +43,27 @@ impl Runtime {
 
         let config_path = Runtime::get_config_path(&runtime_path);
 
-        let config = Runtime::load_config(config_path.clone());
-        let is_config_loaded_successfully = config != Config::default();
+        let (config, is_config_loaded_successfully) = Runtime::load_config(config_path.clone());
 
-        let rpc_session = Runtime::load_rpc_session(rpc_session_path.clone());
-        let is_rpc_session_loaded_successfully = rpc_session != RpcSession::default();
-
-        let route_path = Runtime::get_route_path(&runtime_path);
-        let router = Router::load(route_path.clone());
-        let is_routes_loaded_successfully = router != Router::default();
-
-        // Initialization of global logger by replacing the default one
         let mut logger = LOGGER.write().unwrap();
         *logger = LogService::init(config.logger.clone());
 
+        let (rpc_session, is_rpc_session_loaded_successfully) =
+            Runtime::load_rpc_session(rpc_session_path.clone());
+
+        let route_path = Runtime::get_route_path(&runtime_path);
+        let (router, is_router_loaded_successfully) = Router::load(route_path.clone());
+
         if !is_config_loaded_successfully {
-            // TODO: WRITE FILE BACK
+            Runtime::save_config(config_path.clone(), &config);
         }
 
         if !is_rpc_session_loaded_successfully {
-            // TODO: WRITE FILE BACK
+            Runtime::save_rpc_session(rpc_session_path.clone(), &rpc_session);
         }
 
-        if !is_routes_loaded_successfully {
-            // TODO: WRITE FILE BACK
+        if !is_router_loaded_successfully {
+            Runtime::save_router(route_path.clone(), &router);
         }
 
         let instance = Runtime {
@@ -78,7 +78,7 @@ impl Runtime {
             is_rpc_session_loaded_successfully,
 
             route_path,
-            is_routes_loaded_successfully,
+            is_router_loaded_successfully,
         };
 
         instance.print();
@@ -91,28 +91,45 @@ impl Runtime {
         let _ = runtime_sub.send(());
     }
 
-    fn load_config(config_path: PathBuf) -> Config {
+    fn load_config(config_path: PathBuf) -> (Config, bool) {
         let read_config_operation = load_json::<Config>(&config_path);
         if read_config_operation.is_err() {
-            return Config::default();
+            return (Config::default(), false);
         }
 
         let config = read_config_operation.unwrap();
         let validation = config.validate();
 
         if validation.is_ok() {
-            return config;
+            return (config, true);
         } else {
             let error_text = validation.err().unwrap_or_default();
-            eprintln!("Invalid configuration: {}", error_text);
-            return Config::default();
+            return (Config::default(), false);
         }
     }
 
-    fn load_rpc_session(rpc_session_path: PathBuf) -> RpcSession {
+    fn save_config(config_path: PathBuf, config: &Config) -> bool {
+        let write_operation = save_json::<Config>(&config_path, config);
+
+        write_operation.is_ok()
+    }
+
+    fn save_rpc_session(rpc_session_path: PathBuf, rpc_session: &RpcSession) -> bool {
+        let write_operation = save_json::<RpcSession>(&rpc_session_path, rpc_session);
+
+        write_operation.is_ok()
+    }
+
+    fn save_router(router_path: PathBuf, router: &Router) -> bool {
+        let write_operation = save_json::<Router>(&router_path, router);
+
+        write_operation.is_ok()
+    }
+
+    fn load_rpc_session(rpc_session_path: PathBuf) -> (RpcSession, bool) {
         let read_rpc_session_operation = load_json::<RpcSession>(&rpc_session_path);
         if read_rpc_session_operation.is_err() {
-            return RpcSession::default();
+            return (RpcSession::default(), false);
         }
 
         let mut rpc_session = read_rpc_session_operation.unwrap();
@@ -121,11 +138,9 @@ impl Runtime {
         let validation = rpc_session.clone().validate();
 
         if validation.is_ok() {
-            return rpc_session;
+            return (rpc_session, true);
         } else {
-            let error_text = validation.err().unwrap_or_default();
-            eprintln!("Invalid Rpc Session: {}\nUsing default", error_text);
-            return RpcSession::default();
+            return (RpcSession::default(), false);
         }
     }
 
@@ -156,12 +171,12 @@ impl Runtime {
             pathbuf_to_string(&get_runtime_path())
         ]);
 
-        // todo \\
         table.add_row(row![
             "Logger Settings",
-            format!(
-                "Logs will saved to path '{}' with maximum file size {}. Keeping last {} logs.",
-                &self.config.logger.log_dir_path.clone().unwrap_or_default(),
+            fixed_row!(
+                "80",
+                "Logs path : '{}' with maximum file size :{}. Keeping last {} logs.",
+                &self.config.logger.log_dir_path,
                 &self.config.logger.log_file_size,
                 &self.config.logger.keep_last_logs
             )
@@ -169,16 +184,18 @@ impl Runtime {
 
         table.add_row(row![
             "Router File",
-            format!(
+            fixed_row!(
+                "80",
                 "{} {}",
-                get_flag(self.is_routes_loaded_successfully, "OK", "Not Loaded"),
-                pathbuf_to_string(&self.route_path).underline()
+                get_flag(self.is_router_loaded_successfully, "OK", "Not Loaded"),
+                pathbuf_to_string(&self.route_path).underline(),
             ),
         ]);
 
         table.add_row(row![
             "Config File",
-            format!(
+            fixed_row!(
+                "80",
                 "{} {}",
                 get_flag(self.is_config_loaded_successfully, "OK", "Not Loaded"),
                 pathbuf_to_string(&self.config_path).underline()
@@ -187,7 +204,8 @@ impl Runtime {
 
         table.add_row(row![
             "RPC Session File",
-            format!(
+            fixed_row!(
+                "80",
                 "{} {}",
                 get_flag(self.is_rpc_session_loaded_successfully, "OK", "Not Loaded"),
                 pathbuf_to_string(&self.rpc_session_path).underline()
@@ -196,30 +214,49 @@ impl Runtime {
 
         table.add_row(row![
             "HTTP Routes",
-            format!("Forwarding [{:?}]", &self.router.get_http_routes().len())
+            fixed_row!(
+                "80",
+                "Forwarding [{:?}]",
+                &self.router.get_http_routes().len()
+            )
         ]);
+
         table.add_row(row![
             "Integrated Web Server Routes",
-            format!("Serving [{:?}]", &self.router.get_iws_routes().len())
+            fixed_row!("80", "Serving [{:?}]", &self.router.get_iws_routes().len())
         ]);
+
+        let http_route_len= &self.router.get_https_routes().len();
+        let http_router_active = *http_route_len > 0;
+
         table.add_row(row![
             "HTTPS Routes",
-            format!("Forwarding [{:?}]", &self.router.get_https_routes().len())
+            fixed_row!(
+                "80",
+                "{} [{:?}]",
+                get_flag(http_router_active, "Forwarding", "Passive"),
+                &http_route_len
+            )
         ]);
 
         table.add_row(row![
             "Secure Integrated Web Server Routes",
-            format!("Serving [{:?}]", &self.router.get_secure_iws_routes().len())
+            fixed_row!(
+                "80",
+                "Serving [{:?}]",
+                &self.router.get_secure_iws_routes().len()
+            )
         ]);
 
         table.add_row(row![
             "JRPC Authentication Token",
-            &self.rpc_session.hash.underline()
+            fixed_row!("80", "{}", mask_token(&self.rpc_session.hash))
         ]);
 
         table.add_row(row![
             "JRPC Server",
-            format!(
+            fixed_row!(
+                "80",
                 "{} on {}",
                 "[Active]".green(),
                 &self.config.rpc_server.get_endpoint().underline()
@@ -228,7 +265,8 @@ impl Runtime {
 
         table.add_row(row![
             "HTTP Server",
-            format!(
+            fixed_row!(
+                "80",
                 "{} on {}",
                 "[Active]".green(),
                 &self.config.http_server.get_endpoint().underline()
@@ -237,7 +275,8 @@ impl Runtime {
 
         table.add_row(row![
             "HTTPS Server",
-            format!(
+            fixed_row!(
+                "80",
                 "{} on {}",
                 "[Active]".green(),
                 &self.config.https_server.get_endpoint().underline()

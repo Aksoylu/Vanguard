@@ -4,7 +4,8 @@ use crate::constants::Constants;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct LoggerConfig {
-    pub log_dir_path: Option<String>,
+    #[serde(default = "default_log_dir_path")]
+    pub log_dir_path: String,
 
     #[serde(default = "default_log_levels")]
     pub log_levels: Vec<String>,
@@ -19,7 +20,7 @@ pub struct LoggerConfig {
 impl Default for LoggerConfig {
     fn default() -> Self {
         Self {
-            log_dir_path: None,
+            log_dir_path: default_log_dir_path(),
             log_levels: default_log_levels(),
             log_file_size: default_log_file_size(),
             keep_last_logs: default_keep_last_logs(),

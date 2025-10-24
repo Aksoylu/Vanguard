@@ -1,0 +1,3 @@
+INFO [vanguard_engine::core::log_service] Vanguard Engine Http server started on 0.0.0.0:80
+INFO [vanguard_engine::core::log_service] Vanguard Engine Https server started on 0.0.0.0:443
+INFO [vanguard_engine::core::log_service] Vanguard Engine JRPC server started on 127.0.0.1:4242

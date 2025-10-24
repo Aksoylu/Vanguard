@@ -116,7 +116,7 @@ impl HttpsServer {
         client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
         log_debug!(
-            "HTTPS outband request source found in http route registry:  {:?}",
+            "HTTPS outband request source found in https route registry:  {:?}",
             request_host
         );
 
@@ -220,11 +220,11 @@ impl HttpsServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let request_host = extract_host(&req);
 
-        log_debug!("HTTP outband request received: {:?}", &req);
-        log_debug!("HTTP outband request host: {:?}", &request_host);
+        log_debug!("HTTPS outband request received: {:?}", &req);
+        log_debug!("HTTPS outband request host: {:?}", &request_host);
 
         /* Forwarding HTTPS requests */
-        log_debug!("Looking for Http route table:");
+        log_debug!("Looking for Https route table:");
 
         if self.https_routes.contains_key(&request_host) {
             return self.handle_https_route(&request_host, req, client_ip).await;
