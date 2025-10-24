@@ -1,23 +1,19 @@
 extern crate prettytable;
-use colored::Colorize;
-use prettytable::{format, row, Table};
 use std::path::PathBuf;
 
 use crate::core::log_service::LOGGER;
+use crate::utils::display_utility::RuntimeDisplayUtility;
 use crate::utils::file_utility::save_json;
-use crate::utils::text_utility::mask_token;
+use crate::utils::text_utility::{mask_token, status_flag, warning_flag};
 use crate::{
     constants::Constants,
     core::{log_service::LogService, router::Router},
     models::{config::Config, rpc_session::RpcSession},
     utils::{
-        crypt_utility::generate_hash,
-        directory_utility::get_runtime_path,
-        file_utility::load_json,
-        text_utility::{get_flag, pathbuf_to_string},
+        crypt_utility::generate_hash, directory_utility::get_runtime_path, file_utility::load_json,
     },
 };
-use crate::{fixed_row, log_error, log_info};
+use crate::{log_error, log_info};
 
 use tokio::sync::watch;
 
@@ -26,14 +22,14 @@ pub struct Runtime {
     pub rpc_session: RpcSession,
     pub router: Router,
 
-    config_path: PathBuf,
-    is_config_loaded_successfully: bool,
+    pub runtime_path: PathBuf,
+    pub config_path: PathBuf,
+    pub rpc_session_path: PathBuf,
+    pub route_path: PathBuf,
 
-    rpc_session_path: PathBuf,
-    is_rpc_session_loaded_successfully: bool,
-
-    route_path: PathBuf,
-    is_router_loaded_successfully: bool,
+    pub is_jrpc_server_active: bool,
+    pub is_http_server_active: bool,
+    pub is_https_server_active: bool,
 }
 
 impl Runtime {
@@ -66,24 +62,27 @@ impl Runtime {
             Runtime::save_router(route_path.clone(), &router);
         }
 
-        let instance = Runtime {
+        Runtime {
             config,
             rpc_session,
             router,
 
+            runtime_path,
             config_path,
-            is_config_loaded_successfully,
-
             rpc_session_path,
-            is_rpc_session_loaded_successfully,
-
             route_path,
-            is_router_loaded_successfully,
-        };
 
-        instance.print();
+            is_jrpc_server_active: true,
+            is_http_server_active: true,
+            is_https_server_active: true,
+        }
+    }
 
-        instance
+    pub fn print(&self) {
+        let runtime_display: RuntimeDisplayUtility =
+            RuntimeDisplayUtility::new(self, true, true, true);
+
+        runtime_display.print();
     }
 
     pub fn update_config(&mut self, new_config: Config, runtime_sub: watch::Sender<()>) {
@@ -160,129 +159,5 @@ impl Runtime {
         let mut session_path = runtime_path.clone();
         session_path.push(Constants::SESSION_FILENAME);
         session_path
-    }
-
-    fn print(&self) {
-        let mut table = Table::new();
-        table.set_format(*format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
-
-        table.add_row(row![
-            "Runtime Directory",
-            pathbuf_to_string(&get_runtime_path())
-        ]);
-
-        table.add_row(row![
-            "Logger Settings",
-            fixed_row!(
-                "80",
-                "Logs path : '{}' with maximum file size :{}. Keeping last {} logs.",
-                &self.config.logger.log_dir_path,
-                &self.config.logger.log_file_size,
-                &self.config.logger.keep_last_logs
-            )
-        ]);
-
-        table.add_row(row![
-            "Router File",
-            fixed_row!(
-                "80",
-                "{} {}",
-                get_flag(self.is_router_loaded_successfully, "OK", "Not Loaded"),
-                pathbuf_to_string(&self.route_path).underline(),
-            ),
-        ]);
-
-        table.add_row(row![
-            "Config File",
-            fixed_row!(
-                "80",
-                "{} {}",
-                get_flag(self.is_config_loaded_successfully, "OK", "Not Loaded"),
-                pathbuf_to_string(&self.config_path).underline()
-            ),
-        ]);
-
-        table.add_row(row![
-            "RPC Session File",
-            fixed_row!(
-                "80",
-                "{} {}",
-                get_flag(self.is_rpc_session_loaded_successfully, "OK", "Not Loaded"),
-                pathbuf_to_string(&self.rpc_session_path).underline()
-            ),
-        ]);
-
-        table.add_row(row![
-            "HTTP Routes",
-            fixed_row!(
-                "80",
-                "Forwarding [{:?}]",
-                &self.router.get_http_routes().len()
-            )
-        ]);
-
-        table.add_row(row![
-            "Integrated Web Server Routes",
-            fixed_row!("80", "Serving [{:?}]", &self.router.get_iws_routes().len())
-        ]);
-
-        let http_route_len= &self.router.get_https_routes().len();
-        let http_router_active = *http_route_len > 0;
-
-        table.add_row(row![
-            "HTTPS Routes",
-            fixed_row!(
-                "80",
-                "{} [{:?}]",
-                get_flag(http_router_active, "Forwarding", "Passive"),
-                &http_route_len
-            )
-        ]);
-
-        table.add_row(row![
-            "Secure Integrated Web Server Routes",
-            fixed_row!(
-                "80",
-                "Serving [{:?}]",
-                &self.router.get_secure_iws_routes().len()
-            )
-        ]);
-
-        table.add_row(row![
-            "JRPC Authentication Token",
-            fixed_row!("80", "{}", mask_token(&self.rpc_session.hash))
-        ]);
-
-        table.add_row(row![
-            "JRPC Server",
-            fixed_row!(
-                "80",
-                "{} on {}",
-                "[Active]".green(),
-                &self.config.rpc_server.get_endpoint().underline()
-            )
-        ]);
-
-        table.add_row(row![
-            "HTTP Server",
-            fixed_row!(
-                "80",
-                "{} on {}",
-                "[Active]".green(),
-                &self.config.http_server.get_endpoint().underline()
-            )
-        ]);
-
-        table.add_row(row![
-            "HTTPS Server",
-            fixed_row!(
-                "80",
-                "{} on {}",
-                "[Active]".green(),
-                &self.config.https_server.get_endpoint().underline()
-            )
-        ]);
-
-        table.printstd();
     }
 }

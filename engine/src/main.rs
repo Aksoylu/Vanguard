@@ -24,6 +24,7 @@ async fn main() {
     print_banner();
 
     let runtime = Arc::new(Mutex::new(Runtime::init()));
+    runtime.lock().unwrap().print();
 
     let http_runtime = runtime.clone();
     let http_server = {
