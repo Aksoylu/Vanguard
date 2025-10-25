@@ -41,7 +41,7 @@ impl Runtime {
         let (config, is_config_loaded_successfully) = Runtime::load_config(config_path.clone());
 
         let mut logger = LOGGER.write().unwrap();
-        *logger = LogService::init(config.logger.clone());
+        *logger = LogService::init(&runtime_path, config.logger.clone());
 
         let (rpc_session, is_rpc_session_loaded_successfully) =
             Runtime::load_rpc_session(rpc_session_path.clone());
