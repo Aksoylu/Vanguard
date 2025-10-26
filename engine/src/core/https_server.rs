@@ -131,6 +131,7 @@ impl HttpsServer {
 
             return CommonHandler::url_execution(
                 Protocol::HTTPS,
+                request_host,
                 &current_https_route.target,
                 req,
                 client_ip.clone(),

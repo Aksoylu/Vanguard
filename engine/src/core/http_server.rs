@@ -139,6 +139,7 @@ impl HttpServer {
 
             return CommonHandler::url_execution(
                 Protocol::HTTP,
+                &request_host,
                 &current_http_route.target,
                 req,
                 client_ip.clone(),
