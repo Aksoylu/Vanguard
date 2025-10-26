@@ -7,3 +7,5 @@ pub mod text_utility;
 pub mod time_utility;
 pub mod tls_utility;
 pub mod base64_utility;
+pub mod logger_utility;
+pub mod display_utility;

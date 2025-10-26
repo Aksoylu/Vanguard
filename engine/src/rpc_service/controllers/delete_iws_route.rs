@@ -1,4 +1,3 @@
-use crate::rpc_service::models::delete_http_route_model::{DeleteHttpRouteRequest, DeleteHttpRouteResponse};
 use crate::rpc_service::models::delete_iws_route_model::{DeleteIwsRouteRequest, DeleteIwsRouteResponse};
 use crate::runtime::Runtime;
 use jsonrpc_core::{Error, Params, Value};

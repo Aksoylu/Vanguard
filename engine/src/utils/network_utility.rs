@@ -1,5 +1,14 @@
 use std::net::Ipv4Addr;
 
+use hyper::{header, Body, Request};
+
+pub fn extract_host(req: &Request<Body>) -> String {
+    req.headers()
+        .get(header::HOST)
+        .and_then(|host| host.to_str().ok())
+        .map_or_else(|| "/".to_string(), |host_value| host_value.to_string())
+}
+
 pub fn parse_ip_address(value: String) -> Ipv4Addr {
     let parts: Vec<&str> = value.split('.').collect();
 

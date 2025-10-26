@@ -4,7 +4,10 @@ use std::{collections::HashMap, path::PathBuf};
 use crate::{
     constants::Constants,
     models::route::{HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
-    utils::{directory_utility::get_runtime_path, file_utility::{load_json, save_json}},
+    utils::{
+        directory_utility::get_runtime_path,
+        file_utility::{load_json, save_json},
+    },
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
@@ -37,21 +40,18 @@ impl Default for Router {
 }
 
 impl Router {
-    /* File / Constructor Functions */
-    pub fn load(load_path: PathBuf) -> Router {
+    pub fn load(load_path: PathBuf) -> (Router, bool) {
         let read_route_operation = load_json::<Vec<JsonRoute>>(&load_path);
         if read_route_operation.is_err() {
-            return Router::default();
+            return (Router::default(), false);
         }
 
         let route_list = read_route_operation.unwrap();
         let router = Router::build(load_path, route_list);
         if router.is_ok() {
-            return router.unwrap();
+            return (router.unwrap(), true);
         } else {
-            let error_text = router.err().unwrap_or_default();
-            eprintln!("Invalid Router Session: {}\nUsing default", error_text);
-            return Router::default();
+            return (Router::default(), false);
         }
     }
 

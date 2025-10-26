@@ -8,7 +8,7 @@ use crate::utils::directory_utility::get_ssl_path;
 use crate::utils::file_utility::list_all_files;
 use crate::utils::tls_utility::detect_file_type;
 
-pub fn list_ssl_certs(runtime: Arc<Mutex<Runtime>>, _params: Params) -> Result<Value, Error> {
+pub fn list_ssl_certs(_runtime: Arc<Mutex<Runtime>>, _params: Params) -> Result<Value, Error> {
     let ssl_file_vec = get_ssl_file_vec();
 
     Ok(ListSslCertResponse::build(ssl_file_vec))
