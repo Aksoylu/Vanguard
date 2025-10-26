@@ -134,8 +134,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         );
 
         let formatted_endpoint = if self.runtime_instance.is_http_server_active {
-            self
-                .runtime_instance
+            self.runtime_instance
                 .config
                 .rpc_server
                 .get_endpoint()
@@ -156,18 +155,19 @@ impl<'a> RuntimeDisplayUtility<'a> {
             "Passive",
         );
 
-        let endpoint = if self.runtime_instance.is_http_server_active {
-            &self
-                .runtime_instance
+        let formatted_endpoint = if self.runtime_instance.is_http_server_active {
+            self.runtime_instance
                 .config
                 .http_server
                 .get_endpoint()
                 .underline()
         } else {
-            &"".underline()
+            "".underline()
         };
 
-        table.add_row(row!["HTTP Server", format!("{} on {}", flag, &endpoint)]);
+        let endpoint = &formatted_endpoint;
+
+        table.add_row(row!["HTTP Server", format!("{} on {}", flag, endpoint)]);
     }
 
     fn add_https_server(&self, table: &mut Table) {
@@ -177,18 +177,20 @@ impl<'a> RuntimeDisplayUtility<'a> {
             "Passive",
         );
 
-        let endpoint = if self.runtime_instance.is_https_server_active {
-            &self
+        let formatted_endpoint = if self.runtime_instance.is_https_server_active {
+            self
                 .runtime_instance
                 .config
                 .https_server
                 .get_endpoint()
                 .underline()
         } else {
-            &"".underline()
+            "".underline()
         };
 
-        table.add_row(row!["HTTPS Server", format!("{} on {}", flag, &endpoint)]);
+        let endpoint = &formatted_endpoint;
+
+        table.add_row(row!["HTTPS Server", format!("{} on {}", flag, endpoint)]);
     }
 
     fn add_logger_settings(&self, table: &mut Table) {
