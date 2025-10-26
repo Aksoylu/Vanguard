@@ -72,7 +72,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         table.add_row(row![
             "HTTP Routes",
             format!(
-                "{} Forwarding [{:?}]",
+                "{} {:?}",
                 warning_flag(is_http_router_active, "Forwarding", "Passive"),
                 &self.runtime_instance.router.get_http_routes().len()
             )
@@ -85,7 +85,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         table.add_row(row![
             "Integrated Web Server Routes",
             format!(
-                "{} Forwarding [{:?}]",
+                "{} {:?}",
                 warning_flag(is_iws_router_active, "Forwarding", "Idle"),
                 &self.runtime_instance.router.get_iws_routes().len()
             )
@@ -98,7 +98,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         table.add_row(row![
             "HTTPS Routes",
             format!(
-                "{} Forwarding [{:?}]",
+                "{} {:?}",
                 warning_flag(is_https_router_active, "Forwarding", "Idle"),
                 &self.runtime_instance.router.get_https_routes().len()
             )
@@ -112,7 +112,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         table.add_row(row![
             "Secure Integrated Web Server Routes",
             format!(
-                "{} Forwarding [{:?}]",
+                "{} {:?}",
                 warning_flag(is_secure_iws_router_active, "Forwarding", "Idle"),
                 &self.runtime_instance.router.get_secure_iws_routes().len()
             )
@@ -178,8 +178,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         );
 
         let formatted_endpoint = if self.runtime_instance.is_https_server_active {
-            self
-                .runtime_instance
+            self.runtime_instance
                 .config
                 .https_server
                 .get_endpoint()
@@ -193,34 +192,42 @@ impl<'a> RuntimeDisplayUtility<'a> {
         table.add_row(row!["HTTPS Server", format!("{} on {}", flag, endpoint)]);
     }
 
-    fn add_logger_settings(&self, table: &mut Table) {
-        let log_dir_path = self
+    fn add_log_output_path(&self, table: &mut Table) {
+        let log_output_path = &self
             .runtime_instance
             .runtime_path
-            .join(&self.runtime_instance.config.logger.log_dir_name);
+            .join(&self.runtime_instance.config.logger.log_dir_name)
+            .to_string_lossy()
+            .to_string();
 
         table.add_row(row![
             "Log Output Path",
-            format!("{}", &log_dir_path.to_str().unwrap_or_default().underline(),)
+            format!("{}", log_output_path.underline())
         ]);
+    }
 
-        // todo: enhance to show multiple log levels
-        table.add_row(row![
-            "Log Levels",
-            format!(
-                "{}",
-                &self.runtime_instance.config.logger.log_levels.join(", ")
-            )
-        ]);
+    fn add_max_log_file_size(&self, table: &mut Table) {
+        let max_log_file_size = self.runtime_instance.config.logger.log_file_size;
+        let display_size = (max_log_file_size as i32) / 1_000_000;
 
         table.add_row(row![
-            "Logger Details",
-            format!(
-                "Maximum log file size :{}, keeping last {} logs.",
-                &self.runtime_instance.config.logger.log_file_size,
-                &self.runtime_instance.config.logger.keep_last_logs
-            )
+            "Maximum Log File Size",
+            format!("{} ({} mb)", max_log_file_size, display_size)
         ]);
+    }
+
+    fn add_log_levels(&self, table: &mut Table) {
+        let log_levels = &self
+            .runtime_instance
+            .config
+            .logger
+            .log_levels
+            .iter()
+            .map(|item| -> String { format!("[{}]", item) })
+            .collect::<Vec<String>>()
+            .join(", ");
+
+        table.add_row(row!["Log Levels", log_levels]);
     }
 
     pub fn print(&self) {
@@ -239,7 +246,9 @@ impl<'a> RuntimeDisplayUtility<'a> {
         self.add_jrpc_server(&mut table);
         self.add_http_server(&mut table);
         self.add_https_server(&mut table);
-        self.add_logger_settings(&mut table);
+        self.add_log_output_path(&mut table);
+        self.add_max_log_file_size(&mut table);
+        self.add_log_levels(&mut table);
 
         table.printstd();
     }
