@@ -33,7 +33,7 @@ impl CommonHandler {
 
         let original_uri = req.uri().clone();
         let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
+        let request_host = original_uri.host().unwrap_or("unknown").to_string();
         let request_path = original_uri.path().to_string();
 
         let mut new_uri = format!("http://{}{}", endpoint_to_navigate, request_path);
