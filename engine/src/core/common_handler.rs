@@ -75,6 +75,7 @@ impl CommonHandler {
 
     pub async fn iws_static_file_execution(
         protocol: Protocol,
+        request_host: &String,
         serving_path: &PathBuf,
         req: Request<Body>,
         client_ip: IpAddr,
@@ -88,7 +89,6 @@ impl CommonHandler {
 
         let original_uri = req.uri().clone();
         let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
         let request_path = original_uri.path().to_string();
 
         let file_content: Option<Vec<u8>> = read_file_as_binary(&serving_path).await;
@@ -136,6 +136,7 @@ impl CommonHandler {
     /// If Index.html not exist, get directory childs, prepare a html content and render as text
     pub async fn iws_static_directory_execution(
         protocol: Protocol,
+        request_host: &String,
         serving_path: &PathBuf,
         req: Request<Body>,
         client_ip: IpAddr,
@@ -151,6 +152,7 @@ impl CommonHandler {
         if is_file_exist(&index_html_path) {
             return CommonHandler::iws_static_file_execution(
                 protocol,
+                request_host,
                 &index_html_path,
                 req,
                 client_ip,
@@ -161,7 +163,6 @@ impl CommonHandler {
         let original_uri = req.uri().clone();
         let url_path = original_uri.path().strip_prefix("/").unwrap_or("");
         let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
         let request_path = original_uri.path().to_string();
 
         let absolute_path = serving_path.join("index.html");
@@ -190,6 +191,7 @@ impl CommonHandler {
 
     pub async fn not_found_error(
         protocol: Protocol,
+        request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
@@ -202,7 +204,6 @@ impl CommonHandler {
 
         let original_uri = req.uri().clone();
         let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
         let request_path = original_uri.path().to_string();
 
         let internal_server_error_content = Render::internal_server_error(
@@ -235,6 +236,7 @@ impl CommonHandler {
 
     pub async fn iws_empty_path_error(
         protocol: Protocol,
+        request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
@@ -247,7 +249,6 @@ impl CommonHandler {
 
         let original_uri = req.uri().clone();
         let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
         let request_path = original_uri.path().to_string();
 
         let internal_server_error_content = Render::internal_server_error(
@@ -280,6 +281,7 @@ impl CommonHandler {
 
     pub async fn iws_route_not_found_error(
         protocol: Protocol,
+        request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
@@ -292,7 +294,6 @@ impl CommonHandler {
 
         let original_uri = req.uri().clone();
         let request_method = req.method().clone();
-        let request_host = req.uri().host().unwrap_or("unknown").to_string();
         let request_path = original_uri.path().to_string();
 
         let internal_server_error_content = Render::internal_server_error(

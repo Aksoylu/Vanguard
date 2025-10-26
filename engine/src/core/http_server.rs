@@ -114,7 +114,7 @@ impl HttpServer {
             &request_host
         );
 
-        CommonHandler::not_found_error(Protocol::HTTP, req, client_ip).await
+        CommonHandler::not_found_error(Protocol::HTTP, &request_host, req, client_ip).await
     }
 
     async fn handle_http_route(
@@ -152,7 +152,7 @@ impl HttpServer {
             &current_http_route.source
         );
 
-        CommonHandler::not_found_error(Protocol::HTTP, req, client_ip).await
+        CommonHandler::not_found_error(Protocol::HTTP, request_host, req, client_ip).await
     }
 
     async fn handle_iws_route(
@@ -175,7 +175,13 @@ impl HttpServer {
                 &current_iws_route.source
             );
 
-            return CommonHandler::iws_route_not_found_error(Protocol::HTTP, req, client_ip).await;
+            return CommonHandler::iws_route_not_found_error(
+                Protocol::HTTP,
+                request_host,
+                req,
+                client_ip,
+            )
+            .await;
         }
 
         let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);
@@ -190,6 +196,7 @@ impl HttpServer {
 
             return CommonHandler::iws_static_file_execution(
                 Protocol::HTTP,
+                request_host,
                 &requested_disk_path,
                 req,
                 client_ip,
@@ -206,6 +213,7 @@ impl HttpServer {
 
             return CommonHandler::iws_static_directory_execution(
                 Protocol::HTTP,
+                request_host,
                 &requested_disk_path,
                 req,
                 client_ip,
@@ -219,6 +227,6 @@ impl HttpServer {
             &current_iws_route.serving_path
         );
 
-        CommonHandler::iws_empty_path_error(Protocol::HTTP, req, client_ip).await
+        CommonHandler::iws_empty_path_error(Protocol::HTTP, request_host, req, client_ip).await
     }
 }
