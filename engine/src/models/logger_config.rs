@@ -7,7 +7,10 @@ pub struct LoggerConfig {
     #[serde(default = "default_log_dir_name")]
     pub log_dir_name: String,
 
-    #[serde(default = "default_log_levels", deserialize_with = "deserialize_log_levels")]
+    #[serde(
+        default = "default_log_levels",
+        deserialize_with = "deserialize_log_levels"
+    )]
     pub log_levels: Vec<String>,
 
     #[serde(default = "default_log_file_size")]
@@ -33,9 +36,9 @@ fn default_log_dir_name() -> String {
 }
 
 fn default_log_levels() -> Vec<String> {
-    Constants::DEFAULT_LOG_LEVELS_AS_STR
-        .split(',')
-        .map(|s| s.trim().to_string())
+    Constants::DEFAULT_LOG_LEVELS
+        .iter()
+        .map(|s| s.to_string())
         .collect()
 }
 
@@ -47,10 +50,23 @@ fn default_keep_last_logs() -> usize {
     Constants::DEFAULT_KEEP_LAST_LOGS
 }
 
+/// Custom deserializer for log levels to ensure only valid levels are accepted
 fn deserialize_log_levels<'de, D>(deserializer: D) -> Result<Vec<String>, D::Error>
 where
     D: Deserializer<'de>,
 {
-    let levels: Vec<String> = Deserialize::deserialize(deserializer)?;
-    Ok(levels.into_iter().map(|s| s.to_uppercase()).collect())
+    let readed_log_levels: Vec<String> = Deserialize::deserialize(deserializer)?;
+
+    let mut log_levels = Vec::new();
+    for each_readed_log_level in readed_log_levels {
+        let is_valid_log_level = Constants::LOG_LEVELS
+            .iter()
+            .any(|&valid_level| valid_level.eq_ignore_ascii_case(&each_readed_log_level));
+
+        if is_valid_log_level {
+            log_levels.push(each_readed_log_level);
+        }
+    }
+
+    Ok(log_levels.into_iter().map(|s| s.to_uppercase()).collect())
 }
