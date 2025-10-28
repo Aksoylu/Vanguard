@@ -1,20 +1,20 @@
-use crate::models::route::JsonRoute;
-use jsonrpc_core::Value;
+use crate::utils::rpc_utility::RpcParameter;
+use jsonrpc_core::{Error, Params, Value};
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
-pub struct GetHttpRouteResponse {
+pub struct AddHttpRouteResponse {
     code: i32,
     message: String,
-    data: Vec<JsonRoute>,
+    data: Option<Value>,
 }
 
-impl GetHttpRouteResponse {
-    pub fn build(data: Vec<JsonRoute>) -> jsonrpc_core::Value {
-        let response = GetHttpRouteResponse {
+impl AddHttpRouteResponse {
+    pub fn build(message: String, data: Option<Value>) -> jsonrpc_core::Value {
+        let response = AddHttpRouteResponse {
             code: 200,
-            message: "ok".to_owned(),
+            message,
             data,
         };
 
