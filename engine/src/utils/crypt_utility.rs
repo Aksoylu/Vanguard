@@ -1,11 +1,11 @@
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
+use base64::engine::general_purpose;
 use base64::{decode, encode};
 use rand::seq::SliceRandom;
 use rand::RngCore;
 use sha2::{Digest, Sha256};
 use std::fmt::Write;
-
 
 pub fn generate_hash(secure_key: String) -> String {
     let secret = secure_key.to_string() + &generate_salt();
@@ -47,10 +47,13 @@ pub fn generate_nonce() -> [u8; 12] {
     nonce
 }
 
-pub fn encrypt_aes256(key_bytes: &[u8; 32], plaintext: &str, nonce: &[u8; 12]) -> (String, String) {
-    let key = Key::<Aes256Gcm>::from_slice(key_bytes);
+pub fn encrypt_aes256(encryption_key: &str, plaintext: &str, nonce: &[u8; 12]) -> (String, String) {
+    let key_bytes = parse_string_as_aes_key(encryption_key);
+    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    
     let cipher = Aes256Gcm::new(key);
     let nonce = Nonce::from_slice(nonce);
+    
     let ciphertext = cipher
         .encrypt(nonce, plaintext.as_bytes())
         .expect("encryption failed");
@@ -58,15 +61,27 @@ pub fn encrypt_aes256(key_bytes: &[u8; 32], plaintext: &str, nonce: &[u8; 12]) -
 }
 
 pub fn decrypt_aes256(
-    key_bytes: &[u8; 32],
+    decryption_key: &str,
     ciphertext_b64: &str,
     nonce_b64: &str,
 ) -> Option<String> {
-    let key = Key::<Aes256Gcm>::from_slice(key_bytes);
-    let cipher = Aes256Gcm::new(key);
-    let nonce_bytes = decode(nonce_b64).ok()?;
+    let nonce_bytes: Vec<u8> = decode(nonce_b64).ok()?;
+
+    let key_bytes = parse_string_as_aes_key(decryption_key);
+    let parsed_key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    let cipher = Aes256Gcm::new(parsed_key);
+
     let ciphertext_bytes = decode(ciphertext_b64).ok()?;
     let nonce = Nonce::from_slice(&nonce_bytes);
     let plaintext = cipher.decrypt(nonce, ciphertext_bytes.as_ref()).ok()?;
     String::from_utf8(plaintext).ok()
+}
+
+pub fn parse_string_as_aes_key(key_str: &str) -> [u8; 32] {
+    let mut key_bytes = [0u8; 32];
+    let bytes = key_str.as_bytes();
+    for (i, b) in bytes.iter().enumerate().take(32) {
+        key_bytes[i] = *b;
+    }
+    key_bytes
 }
