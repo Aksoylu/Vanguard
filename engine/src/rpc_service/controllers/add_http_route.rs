@@ -1,4 +1,6 @@
-use crate::rpc_service::models::add_http_route_model::{AddHttpRouteRequest, AddHttpRouteResponse};
+use crate::rpc_service::models::add_http_route_request::{AddHttpRouteRequest};
+
+use crate::rpc_service::models::add_http_route_response::AddHttpRouteResponse;
 use crate::{models::route::HttpRoute, runtime::Runtime};
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;

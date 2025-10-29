@@ -1,7 +1,8 @@
 
 pub mod rpc_server;
 
+mod rpc_middleware;
 mod controllers;
-mod middleware;
 mod routes;
 mod models;
+mod rpc_error;

@@ -42,18 +42,14 @@ impl Runtime {
         let mut logger = LOGGER.write().unwrap();
         *logger = LogService::init(&runtime_path, config.logger.clone());
 
-        let (rpc_session, is_rpc_session_loaded_successfully) =
-            Runtime::load_rpc_session(rpc_session_path.clone());
+        let rpc_session = RpcSession::default();
+        Runtime::save_rpc_session(rpc_session_path.clone(), &rpc_session);
 
         let route_path = Runtime::get_route_path(&runtime_path);
         let (router, is_router_loaded_successfully) = Router::load(route_path.clone());
 
         if !is_config_loaded_successfully {
             Runtime::save_config(config_path.clone(), &config);
-        }
-
-        if !is_rpc_session_loaded_successfully {
-            Runtime::save_rpc_session(rpc_session_path.clone(), &rpc_session);
         }
 
         if !is_router_loaded_successfully {
@@ -121,24 +117,6 @@ impl Runtime {
         let write_operation = save_json::<Router>(&router_path, router);
 
         write_operation.is_ok()
-    }
-
-    fn load_rpc_session(rpc_session_path: PathBuf) -> (RpcSession, bool) {
-        let read_rpc_session_operation = load_json::<RpcSession>(&rpc_session_path);
-        if read_rpc_session_operation.is_err() {
-            return (RpcSession::default(), false);
-        }
-
-        let mut rpc_session = read_rpc_session_operation.unwrap();
-        rpc_session.hash = generate_hash(rpc_session.private_key.clone());
-
-        let validation = rpc_session.clone().validate();
-
-        if validation.is_ok() {
-            return (rpc_session, true);
-        } else {
-            return (RpcSession::default(), false);
-        }
     }
 
     fn get_config_path(runtime_path: &PathBuf) -> PathBuf {
