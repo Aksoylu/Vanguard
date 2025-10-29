@@ -2,6 +2,7 @@ use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;
 use std::sync::Mutex;
 
+use crate::rpc_service::rpc_error::RPCError;
 use crate::runtime::Runtime;
 use crate::utils::crypt_utility::decrypt_aes256;
 
@@ -16,25 +17,36 @@ impl RpcMiddleware {
     pub fn bind(
         controller_delegate: RpcHandler,
         function_runtime: Arc<Mutex<Runtime>>,
-        function_authorization_code: String,
+        decryption_key: String,
+        authorization_token: String,
     ) -> impl Fn(Params) -> Result<Value, Error> + Send + Sync + 'static {
         move |params: Params| {
-            let decrypted_params = match Self::try_decrypt_params(&function_authorization_code, &params) {
-                Ok(p) => p,
-                Err(err_str) => {
-                    return Err(Error {
-                        code: jsonrpc_core::ErrorCode::ServerError(400),
-                        message: format!(
-                            "Vanguard JRPC Security Warning: Wrong cryption key or nonce: {}",
-                            err_str
-                        ),
-                        data: None,
-                    });
-                }
-            };
+            // 1. Decrypt params
+            let decrypt_params_operation = Self::decrypt_params(&decryption_key, &params);
+            if decrypt_params_operation.is_err() {
+                return Err(RPCError::badrequest(format!(
+                    "Vanguard JRPC Security Warning: Failed to decrypt parameters. Details: {}",
+                    decrypt_params_operation.err().unwrap_or_default()
+                )));
+            }
 
-            // 2. Authorization check
-            let auth_result: Result<(), Error> = Ok(()); // simülasyon
+            let payload = decrypt_params_operation.unwrap();
+
+            let check_auth_token_operation = Self::check_auth_token(&authorization_token, &payload);
+            if !check_auth_token_operation {
+                return Err(RPCError::unauthorized(format!(
+                    "Vanguard JRPC Security Warning: Wrong cryption key or nonce. Details: {}",
+                    decrypt_params_operation.err().unwrap_or_default()
+                )));
+            }
+
+            let payload_auth_token = check_auth_token_operation.unwrap_or_default();
+
+            let parsed_payload = Params::Map(
+                serde_json::from_value(decrypted_payload_as_json)
+                    .map_err(|_| "invalid params map")?,
+            );
+
             if auth_result.is_ok() {
                 controller_delegate(function_runtime.clone(), decrypted_params)
             } else {
@@ -49,7 +61,7 @@ impl RpcMiddleware {
 
     // Tries to decrypt the params using AES-256-GCM
     /// Expects params to be a JSON object with "nonce" and "payload" fields
-    pub fn try_decrypt_params(auth_token: &str, params: &Params) -> Result<Params, String> {
+    pub fn decrypt_params(auth_token: &str, params: &Params) -> Result<Value, String> {
         let raw = serde_json::to_value(params).map_err(|_| "invalid params")?;
 
         let nonce = raw
@@ -62,14 +74,33 @@ impl RpcMiddleware {
             .and_then(|v| v.as_str())
             .ok_or("missing payload")?;
 
-        let decrypted_str = decrypt_aes256(&auth_token, crypted_payload, nonce);
-        if decrypted_str.is_none() {
+        let decrypted_payload_as_str = decrypt_aes256(&auth_token, crypted_payload, nonce);
+        if decrypted_payload_as_str.is_none() {
             return Err("decryption failed".into());
         }
 
-        let json = serde_json::from_str(&decrypted_str.unwrap_or_default())
-            .map_err(|_| "invalid decrypted json")?;
+        let decrypted_payload_as_json =
+            serde_json::from_str(&decrypted_payload_as_str.unwrap_or_default())
+                .map_err(|_| "incompatible payload json")?;
 
-        Ok(Params::Map(serde_json::from_value(json).unwrap()))
+        Ok(decrypted_payload_as_json)
+    }
+
+    pub fn check_auth_token(valid_auth_token: &str, params: &Value) -> bool {
+        let raw = serde_json::to_value(params).map_err(|_| "invalid params");
+
+        let nonce = raw
+            .get("nonce")
+            .and_then(|v| v.as_str())
+            .ok_or("missing nonce");
+
+        if auth_token != expected_token {
+            return Err(Error {
+                code: jsonrpc_core::ErrorCode::ServerError(401),
+                message: "Unauthorized".into(),
+                data: None,
+            });
+        }
+        Ok(())
     }
 }
