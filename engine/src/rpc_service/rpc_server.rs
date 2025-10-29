@@ -13,7 +13,6 @@ pub struct RPCServer {
     port: u16,
     auth_token: String,
     endpoint: String,
-    rpc_handler: IoHandler,
     runtime: Arc<Mutex<Runtime>>,
 }
 
@@ -27,14 +26,11 @@ impl RPCServer {
         let parsed_ip_address = parse_ip_address(ip_address.clone());
         let endpoint = format!("{}:{}", parsed_ip_address, port);
 
-        let rpc_handler = RPCServer::build_rpc_handler(runtime.clone()).await;
-
         Self {
             ip_address,
             port,
             auth_token,
             endpoint,
-            rpc_handler,
             runtime,
         }
     }
@@ -43,12 +39,15 @@ impl RPCServer {
         let mut controller_registry = IoHandler::default();
 
         let authorization_code = runtime.lock().unwrap().rpc_session.hash.clone();
+        println!("Authorization Code: {}", &authorization_code);
+        
         for (service_name, controller_delegate) in ROUTES.iter() {
             controller_registry.add_method(
                 service_name,
                 RpcMiddleware::bind(
                     controller_delegate.clone(),
                     runtime.clone(),
+                    authorization_code.clone(),
                     authorization_code.clone(),
                 ),
             );
@@ -59,7 +58,9 @@ impl RPCServer {
 
     /// Public: This function is repsonsible of booting process of  JRPC Server
     pub async fn start(&self) {
-        let server = ServerBuilder::new(self.rpc_handler.clone())
+        let rpc_handler = RPCServer::build_rpc_handler(self.runtime.clone()).await;
+
+        let server = ServerBuilder::new(rpc_handler)
             .start_http(&self.endpoint.parse().unwrap())
             .expect("JRPC Server failed to start.");
 

@@ -1,5 +1,6 @@
 use crate::utils::rpc_utility::RpcParameter;
 use jsonrpc_core::{Error, Params, Value};
+use rustls::internal::msgs::message;
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -8,8 +9,11 @@ pub struct EchoRequest {
 }
 
 impl EchoRequest {
-    pub fn new(params: Params) -> Result<Self, Error> {
-        let message: Option<String> = RpcParameter::extract_string("message", params.clone());
+    pub fn new(params: Value) -> Result<Self, Error> {
+        let message = params
+            .get("message")
+            .and_then(|v| v.as_str())
+            .map(|s| s.to_string());
 
         if message.is_none() {
             return Err(Error {

@@ -8,13 +8,12 @@ use sha2::{Digest, Sha256};
 use std::fmt::Write;
 
 pub fn generate_hash(secure_key: String) -> String {
-    let secret = secure_key.to_string() + &generate_salt();
+    let secret = secure_key.to_string() + &generate_salt(128);
 
     hash_sha_256(&secret)
 }
 
-fn generate_salt() -> String {
-    let size = 32;
+fn generate_salt(size: i32) -> String {
     let charset: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         .chars()
         .collect();
@@ -28,60 +27,60 @@ fn generate_salt() -> String {
 }
 
 pub fn hash_sha_256(input: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(input.as_bytes());
-    let result = hasher.finalize();
+    let digest = Sha256::digest(input.as_bytes());
+    let mut key = [0u8; 32];
+    key.copy_from_slice(&digest);
+    let key_as_str = key
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .collect::<String>();
 
-    let mut hash_hex_string = String::new(); // Her bayt 2 karaktere dönüşeceği için kapasiteyi ayarla
-
-    for byte in result {
-        write!(&mut hash_hex_string, "{:02x}", byte).expect("Unable to write");
-    }
-
-    hash_hex_string
+    key_as_str
 }
 
-pub fn generate_nonce() -> [u8; 12] {
-    let mut nonce = [0u8; 12];
+pub fn generate_nonce_hex() -> String {
+    let mut nonce = [0u8; 12]; // AES-GCM standard nonce length
     rand::thread_rng().fill_bytes(&mut nonce);
-    nonce
+    hex::encode(nonce) // hex string olarak döndür
 }
 
-pub fn encrypt_aes256(encryption_key: &str, plaintext: &str, nonce: &[u8; 12]) -> (String, String) {
-    let key_bytes = parse_string_as_aes_key(encryption_key);
-    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
-    
-    let cipher = Aes256Gcm::new(key);
-    let nonce = Nonce::from_slice(nonce);
-    
-    let ciphertext = cipher
-        .encrypt(nonce, plaintext.as_bytes())
-        .expect("encryption failed");
-    (encode(ciphertext), encode(nonce))
-}
+pub fn encrypt_aes256_hex(key_hex: &str, plaintext: &str, nonce_hex: &str) -> Option<String> {
+    // Hex string to bytes
+    let key_bytes = decode(key_hex).ok()?;
+    let nonce_bytes = decode(nonce_hex).ok()?;
 
-pub fn decrypt_aes256(
-    decryption_key: &str,
-    ciphertext_b64: &str,
-    nonce_b64: &str,
-) -> Option<String> {
-    let nonce_bytes: Vec<u8> = decode(nonce_b64).ok()?;
-
-    let key_bytes = parse_string_as_aes_key(decryption_key);
-    let parsed_key = Key::<Aes256Gcm>::from_slice(&key_bytes);
-    let cipher = Aes256Gcm::new(parsed_key);
-
-    let ciphertext_bytes = decode(ciphertext_b64).ok()?;
-    let nonce = Nonce::from_slice(&nonce_bytes);
-    let plaintext = cipher.decrypt(nonce, ciphertext_bytes.as_ref()).ok()?;
-    String::from_utf8(plaintext).ok()
-}
-
-pub fn parse_string_as_aes_key(key_str: &str) -> [u8; 32] {
-    let mut key_bytes = [0u8; 32];
-    let bytes = key_str.as_bytes();
-    for (i, b) in bytes.iter().enumerate().take(32) {
-        key_bytes[i] = *b;
+    if key_bytes.len() != 32 || nonce_bytes.len() != 12 {
+        return None; // key veya nonce yanlış boyutta
     }
-    key_bytes
+
+    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    let cipher = Aes256Gcm::new(key);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let ciphertext = cipher.encrypt(nonce, plaintext.as_bytes()).ok()?;
+    Some(encode(ciphertext))
+}
+
+pub fn decrypt_aes256_hex(key_hex: &str, ciphertext_hex: &str, nonce_hex: &str) -> Option<String> {
+    let key_bytes = hex::decode(key_hex).ok()?;
+    let nonce_bytes = hex::decode(nonce_hex).ok()?;
+
+    println!(
+        "Key bytes length: {}, Nonce bytes length: {}",
+        key_bytes.len(),
+        nonce_bytes.len()
+    );
+
+    let ciphertext_bytes: Vec<u8> =  hex::decode(ciphertext_hex).ok()?;
+
+    if key_bytes.len() != 32 || nonce_bytes.len() != 12 {
+        return None;
+    }
+
+    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    let cipher = Aes256Gcm::new(key);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let plaintext_bytes = cipher.decrypt(nonce, ciphertext_bytes.as_ref()).ok()?;
+    String::from_utf8(plaintext_bytes).ok()
 }

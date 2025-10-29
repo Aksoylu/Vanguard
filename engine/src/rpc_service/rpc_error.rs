@@ -5,11 +5,11 @@ pub struct RPCError;
 
 impl RPCError {
     pub fn badrequest(message: String) -> Error {
-        build(message, &StatusCode::BAD_REQUEST)
+        Self::build(message, &StatusCode::BAD_REQUEST)
     }
 
     pub fn unauthorized(message: String) -> Error {
-        build(message, &StatusCode::UNAUTHORIZED)
+        Self::build(message, &StatusCode::UNAUTHORIZED)
     }
 
     fn build(message: String, code: &StatusCode) -> Error {

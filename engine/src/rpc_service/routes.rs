@@ -17,6 +17,7 @@ use super::controllers::{
 pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
     vec![
         ("echo", Arc::new(echo) as RpcHandler),
+        /*
         ("list_ssl_certs", Arc::new(list_ssl_certs) as RpcHandler),
         ("upload_ssl_cert", Arc::new(upload_ssl_cert) as RpcHandler),
         ("delete_ssl_cert", Arc::new(delete_ssl_cert) as RpcHandler),
@@ -29,5 +30,6 @@ pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
         ("delete_iws_route", Arc::new(delete_iws_route) as RpcHandler),
         ("add_secure_iws_route",Arc::new(add_secure_iws_route) as RpcHandler),
         ("delete_secure_iws_route",Arc::new(delete_secure_iws_route) as RpcHandler),
+        */
     ]
 });
