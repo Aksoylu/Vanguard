@@ -5,7 +5,7 @@ use std::sync::Mutex;
 use crate::rpc_service::models::echo_model::{EchoRequest, EchoResponse};
 use crate::runtime::Runtime;
 
-pub fn echo(_runtime: Arc<Mutex<Runtime>>, payload: Value) -> Result<Value, Error> {
+pub fn echo(payload: Value) -> Result<Value, Error> {
     let request = match EchoRequest::new(payload) {
         Ok(req) => req,
         Err(_) => {

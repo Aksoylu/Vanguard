@@ -49,7 +49,7 @@ impl Config {
             return Err("RPC server port is 0".into());
         }
 
-        if self.rpc_server.private_key.is_empty(){
+        if self.rpc_server.private_secret_key.is_empty(){
             return Err("RPC server private key is empty".into());
         }
 

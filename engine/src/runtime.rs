@@ -2,22 +2,20 @@ extern crate prettytable;
 use std::path::PathBuf;
 
 use crate::core::log_service::LOGGER;
+use crate::core::rpc_session::{RPC_SESSION, RpcSession};
 use crate::utils::display_utility::RuntimeDisplayUtility;
 use crate::utils::file_utility::save_json;
 use crate::{
     constants::Constants,
     core::{log_service::LogService, router::Router},
-    models::{config::Config, rpc_session::RpcSession},
-    utils::{
-        crypt_utility::generate_hash, directory_utility::get_runtime_path, file_utility::load_json,
-    },
+    models::config::Config,
+    utils::{directory_utility::get_runtime_path, file_utility::load_json},
 };
 
 use tokio::sync::watch;
 
 pub struct Runtime {
     pub config: Config,
-    pub rpc_session: RpcSession,
     pub router: Router,
 
     pub runtime_path: PathBuf,
@@ -42,7 +40,13 @@ impl Runtime {
         let mut logger = LOGGER.write().unwrap();
         *logger = LogService::init(&runtime_path, config.logger.clone());
 
-        let rpc_session = RpcSession::default();
+        let mut rpc_session = RPC_SESSION.write().unwrap();
+        *rpc_session = RpcSession::init(
+            config.rpc_server.ip_address.clone(),
+            config.rpc_server.port.clone(),
+            config.rpc_server.private_secret_key.clone(),
+        );
+
         Runtime::save_rpc_session(rpc_session_path.clone(), &rpc_session);
 
         let route_path = Runtime::get_route_path(&runtime_path);
@@ -58,7 +62,6 @@ impl Runtime {
 
         Runtime {
             config,
-            rpc_session,
             router,
 
             runtime_path,

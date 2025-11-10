@@ -6,7 +6,7 @@ use crate::rpc_service::rpc_error::RPCError;
 use crate::runtime::Runtime;
 use crate::utils::crypt_utility::decrypt_aes256_hex;
 
-pub type RpcHandler = Arc<dyn Fn(Arc<Mutex<Runtime>>, Value) -> Result<Value, Error> + Send + Sync>;
+pub type RpcHandler = Arc<dyn Fn(Value) -> Result<Value, Error> + Send + Sync>;
 
 pub struct RpcMiddleware {
     runtime: Arc<Mutex<Runtime>>,
@@ -15,7 +15,6 @@ pub struct RpcMiddleware {
 impl RpcMiddleware {
     pub fn bind(
         controller_delegate: RpcHandler,
-        function_runtime: Arc<Mutex<Runtime>>,
         decryption_key: String,
         authorization_token: String,
     ) -> impl Fn(Params) -> Result<Value, Error> + Send + Sync + 'static {
@@ -54,7 +53,7 @@ impl RpcMiddleware {
 
             let request_data = parse_request_data_operation.unwrap();
 
-            controller_delegate(function_runtime.clone(), request_data)
+            controller_delegate(request_data)
         }
     }
 

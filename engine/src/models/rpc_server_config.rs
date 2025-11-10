@@ -6,7 +6,7 @@ use crate::constants::Constants;
 pub struct RpcServerConfig {
     pub ip_address: String,
     pub port: u16,
-    pub private_key: String,
+    pub private_secret_key: String,
 }
 
 impl Default for RpcServerConfig {
@@ -14,7 +14,7 @@ impl Default for RpcServerConfig {
         Self {
             ip_address: Constants::DEFAULT_RPC_IP.to_string(),
             port: Constants::DEFAULT_RPC_PORT,
-            private_key: Constants::DEFAULT_PRIVATE_KEY.to_string(),
+            private_secret_key: Constants::DEFAULT_PRIVATE_SECRET_KEY.to_string(),
         }
     }
 }

@@ -17,6 +17,7 @@ use runtime::Runtime;
 
 use crate::assets::banner::print_banner;
 use crate::assets::startup_disclaimer::print_startup_disclaimer;
+use crate::core::rpc_session::RPC_SESSION;
 
 #[tokio::main]
 async fn main() {
@@ -57,15 +58,9 @@ async fn main() {
         https_server.start().await;
     });
 
-    let jsonrpc_runtime = runtime.clone();
     let jsonrpc_server = {
-        let rt = jsonrpc_runtime.lock().unwrap();
-        RPCServer::singleton(
-            rt.config.rpc_server.ip_address.clone(),
-            rt.config.rpc_server.port,
-            rt.config.rpc_server.private_key.clone(),
-            runtime.clone(),
-        )
+        let rpc_session = RPC_SESSION.read().unwrap();
+        RPCServer::new(rpc_session.clone())
     }
     .await;
 

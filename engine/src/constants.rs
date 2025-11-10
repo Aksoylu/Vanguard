@@ -28,5 +28,5 @@ impl Constants {
 
     pub const DEFAULT_RPC_IP: &'static str = "127.0.0.1";
     pub const DEFAULT_RPC_PORT: u16 = 4242;
-    pub const DEFAULT_PRIVATE_KEY: &'static str = "0xVanguard";
+    pub const DEFAULT_PRIVATE_SECRET_KEY: &'static str = "0xVanguard";
 }

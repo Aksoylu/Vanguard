@@ -1,4 +1,7 @@
-use crate::utils::text_utility::{mask_token, pathbuf_to_string, status_flag, warning_flag};
+use crate::{
+    core::rpc_session::RPC_SESSION,
+    utils::text_utility::{mask_token, pathbuf_to_string, status_flag, warning_flag},
+};
 use colored::Colorize;
 use prettytable::{format, row, Table};
 
@@ -120,9 +123,20 @@ impl<'a> RuntimeDisplayUtility<'a> {
     }
 
     fn add_jrpc_authentication_token(&self, table: &mut Table) {
+        let rpc_session = RPC_SESSION.read().unwrap();
+
         table.add_row(row![
             "JRPC Authentication Token",
-            format!("{}", mask_token(&self.runtime_instance.rpc_session.hash))
+            format!("{}", mask_token(&rpc_session.authorization_token))
+        ]);
+    }
+
+    fn add_jrpc_encryption_key(&self, table: &mut Table) {
+        let rpc_session = RPC_SESSION.read().unwrap();
+
+        table.add_row(row![
+            "JRPC Encryption Key",
+            format!("{}", mask_token(&rpc_session.aes_encryption_key))
         ]);
     }
 
@@ -243,6 +257,7 @@ impl<'a> RuntimeDisplayUtility<'a> {
         self.add_https_routes(&mut table);
         self.add_secure_iws_routes(&mut table);
         self.add_jrpc_authentication_token(&mut table);
+        self.add_jrpc_encryption_key(&mut table);
         self.add_jrpc_server(&mut table);
         self.add_http_server(&mut table);
         self.add_https_server(&mut table);
