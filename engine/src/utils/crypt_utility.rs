@@ -1,11 +1,9 @@
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use base64::engine::general_purpose;
 use base64::{decode, encode};
 use rand::seq::SliceRandom;
 use rand::RngCore;
 use sha2::{Digest, Sha256};
-use std::fmt::Write;
 
 pub fn generate_hash(secure_key: String) -> String {
     let secret = secure_key.to_string() + &generate_salt(128);

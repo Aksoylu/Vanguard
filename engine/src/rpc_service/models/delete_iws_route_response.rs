@@ -1,5 +1,5 @@
 use crate::utils::rpc_utility::RpcParameter;
-use jsonrpc_core::{Error, Params, Value};
+use jsonrpc_core::{Error, Value};
 use serde::Deserialize;
 use serde::Serialize;
 
@@ -8,8 +8,8 @@ pub struct DeleteIwsRouteRequest {
 }
 
 impl DeleteIwsRouteRequest {
-    pub fn new(params: Params) -> Result<Self, Error> {
-        let source: Option<String> = RpcParameter::extract_string("source", params.clone());
+    pub fn new(params: Value) -> Result<Self, Error> {
+        let source: Option<String> = RpcParameter::extract_string("source", &params);
 
         if source.is_none() {
             return Err(Error {

@@ -3,14 +3,17 @@ use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
-pub struct AddSecureIwsResponse {
+pub struct DeleteIwsRouteResponse {
     code: i32,
     message: String,
 }
 
-impl AddSecureIwsResponse {
-    pub fn build(message: String) -> jsonrpc_core::Value {
-        let response = AddSecureIwsResponse { code: 200, message };
+impl DeleteIwsRouteResponse {
+    pub fn build() -> jsonrpc_core::Value {
+        let response = DeleteIwsRouteResponse {
+            code: 200,
+            message: "ok".to_owned(),
+        };
 
         let serialized_json = match serde_json::to_string(&response) {
             Ok(text) => text,
