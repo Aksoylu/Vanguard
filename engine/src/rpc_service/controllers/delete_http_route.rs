@@ -1,5 +1,5 @@
 use crate::rpc_service::models::delete_http_route_model::{DeleteHttpRouteRequest, DeleteHttpRouteResponse};
-use crate::runtime::Runtime;
+use crate::boot::Runtime;
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;
 use std::sync::Mutex;

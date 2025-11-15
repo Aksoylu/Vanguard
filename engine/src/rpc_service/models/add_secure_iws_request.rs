@@ -3,15 +3,18 @@ use jsonrpc_core::{Error, Params, Value};
 use serde::Deserialize;
 use serde::Serialize;
 
-pub struct AddIwsRouteRequest {
+pub struct AddSecureIwsRequest {
     source: String,
-    serving_path: String
+    serving_path: String,
+    use_ssl: bool,
 }
 
-impl AddIwsRouteRequest {
+impl AddSecureIwsRequest {
     pub fn new(params: Params) -> Result<Self, Error> {
-        let source: Option<String> = RpcParameter::extract_string("source", params.clone());
-        let serving_path = RpcParameter::extract_string("serving_path", params.clone());
+        let source = RpcParameter::extract_string("source", &params);
+        let serving_path = RpcParameter::extract_string("serving_path", &params);
+
+        let use_ssl = RpcParameter::extract_boolean("use_ssl", params.clone());
 
         if source.is_none() {
             return Err(Error {
@@ -31,7 +34,8 @@ impl AddIwsRouteRequest {
 
         Ok(Self {
             source: source.unwrap(),
-            serving_path: serving_path.unwrap()
+            serving_path: serving_path.unwrap(),
+            use_ssl,
         })
     }
 
@@ -42,20 +46,21 @@ impl AddIwsRouteRequest {
     pub fn get_serving_path(&self) -> String {
         self.serving_path.clone()
     }
+
+    pub fn get_use_ssl(&self) -> bool {
+        self.use_ssl.clone()
+    }
 }
 
 #[derive(Serialize, Deserialize)]
-pub struct AddIwsRouteResponse {
+pub struct AddSecureIwsResponse {
     code: i32,
-    message: String
+    message: String,
 }
 
-impl AddIwsRouteResponse {
+impl AddSecureIwsResponse {
     pub fn build(message: String) -> jsonrpc_core::Value {
-        let response = AddIwsRouteResponse {
-            code: 200,
-            message
-        };
+        let response = AddSecureIwsResponse { code: 200, message };
 
         let serialized_json = match serde_json::to_string(&response) {
             Ok(text) => text,

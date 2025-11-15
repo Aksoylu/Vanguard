@@ -4,35 +4,6 @@ use rustls::internal::msgs::message;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub struct EchoRequest {
-    message: String,
-}
-
-impl EchoRequest {
-    pub fn new(params: Value) -> Result<Self, Error> {
-        let message = params
-            .get("message")
-            .and_then(|v| v.as_str())
-            .map(|s| s.to_string());
-
-        if message.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Please add a message".into(),
-                data: None,
-            });
-        }
-
-        Ok(Self {
-            message: message.unwrap(),
-        })
-    }
-
-    pub fn get_message(&self) -> String {
-        self.message.clone()
-    }
-}
-
 #[derive(Serialize, Deserialize)]
 pub struct EchoResponse {
     code: i32,

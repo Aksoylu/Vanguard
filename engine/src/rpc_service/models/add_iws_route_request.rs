@@ -1,35 +1,35 @@
 use crate::utils::rpc_utility::RpcParameter;
 use jsonrpc_core::{Error, Value};
 
-pub struct AddHttpRouteRequest {
+pub struct AddIwsRouteRequest {
     source: String,
-    target: String,
+    serving_path: String,
 }
 
-impl AddHttpRouteRequest {
+impl AddIwsRouteRequest {
     pub fn new(params: Value) -> Result<Self, Error> {
         let source = RpcParameter::extract_string("source", &params);
-        let target = RpcParameter::extract_string("target", &params);
+        let serving_path = RpcParameter::extract_string("serving_path", &params);
 
         if source.is_none() {
             return Err(Error {
                 code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name is not valid".into(),
+                message: "Route name (source) is not valid".into(),
                 data: None,
             });
         }
 
-        if target.is_none() {
+        if serving_path.is_none() {
             return Err(Error {
                 code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name is not valid".into(),
+                message: "Serving path (serving_path) is not exist on server".into(),
                 data: None,
             });
         }
 
         Ok(Self {
             source: source.unwrap(),
-            target: target.unwrap(),
+            serving_path: serving_path.unwrap(),
         })
     }
 
@@ -37,7 +37,7 @@ impl AddHttpRouteRequest {
         self.source.clone()
     }
 
-    pub fn get_target(&self) -> String {
-        self.target.clone()
+    pub fn get_serving_path(&self) -> String {
+        self.serving_path.clone()
     }
 }

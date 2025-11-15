@@ -3,16 +3,22 @@ use hyper::{
     Body, Request, Response, Server,
 };
 
+use once_cell::sync::Lazy;
+use std::sync::{Arc, RwLock};
+
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
     path::PathBuf,
-    sync::Arc,
 };
 use tokio::sync::Mutex;
 
 use crate::{
-    core::common_handler::{CommonHandler, Protocol},
+    constants::Constants,
+    core::{
+        common_handler::{CommonHandler, Protocol},
+        shared_memory::ROUTER,
+    },
     log_debug, log_error, log_info,
     models::route::{HttpRoute, IwsRoute},
     render::Render,
@@ -30,19 +36,36 @@ pub struct HttpServer {
     iws_routes: HashMap<String, IwsRoute>,
 }
 
+impl Default for HttpServer {
+    fn default() -> Self {
+        let default_ip_address = parse_ip_address(Constants::DEFAULT_HTTP_IP.to_string());
+        let default_port = Constants::DEFAULT_HTTP_PORT;
+
+        let default_socket_instance: SocketAddr =
+            SocketAddr::from((default_ip_address, default_port));
+
+        let default_http_route_table: HashMap<String, HttpRoute> = HashMap::new();
+        let default_iws_route_table: HashMap<String, IwsRoute> = HashMap::new();
+
+        Self {
+            socket: default_socket_instance,
+            http_routes: default_http_route_table,
+            iws_routes: default_iws_route_table,
+        }
+    }
+}
+
 impl HttpServer {
-    pub fn singleton(
-        ip_address: String,
-        port: u16,
-        http_routes: HashMap<String, HttpRoute>,
-        iws_routes: HashMap<String, IwsRoute>,
-    ) -> Self {
-        let socket = SocketAddr::from((parse_ip_address(ip_address.clone()), port));
+    pub fn init(ip_address: String, port: u16) -> Self {
+        let ip = parse_ip_address(ip_address.clone());
+        let socket = SocketAddr::from((ip, port));
+
+        let router = ROUTER.read().unwrap();
 
         Self {
             socket,
-            http_routes,
-            iws_routes,
+            http_routes: router.get_http_routes(),
+            iws_routes: router.get_iws_routes(),
         }
     }
 

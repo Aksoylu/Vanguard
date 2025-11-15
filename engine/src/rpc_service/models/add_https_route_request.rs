@@ -1,7 +1,5 @@
 use crate::utils::rpc_utility::RpcParameter;
-use jsonrpc_core::{Error, Params, Value};
-use serde::Deserialize;
-use serde::Serialize;
+use jsonrpc_core::{Error, Value};
 
 pub struct AddHttpsRouteRequest {
     source: String,
@@ -9,9 +7,9 @@ pub struct AddHttpsRouteRequest {
 }
 
 impl AddHttpsRouteRequest {
-    pub fn new(params: Params) -> Result<Self, Error> {
-        let source: Option<String> = RpcParameter::extract_string("source", params.clone());
-        let target = RpcParameter::extract_string("target", params.clone());
+    pub fn new(params: Value) -> Result<Self, Error> {
+        let source = RpcParameter::extract_string("source", &params);
+        let target = RpcParameter::extract_string("target", &params);
 
         if source.is_none() {
             return Err(Error {
@@ -41,29 +39,5 @@ impl AddHttpsRouteRequest {
 
     pub fn get_target(&self) -> String {
         self.target.clone()
-    }
-}
-
-#[derive(Serialize, Deserialize)]
-pub struct AddHttpsRouteResponse {
-    code: i32,
-    message: String,
-    data: Option<Value>,
-}
-
-impl AddHttpsRouteResponse {
-    pub fn build(message: String, data: Option<Value>) -> jsonrpc_core::Value {
-        let response = AddHttpsRouteResponse {
-            code: 200,
-            message,
-            data,
-        };
-
-        let serialized_json = match serde_json::to_string(&response) {
-            Ok(text) => text,
-            Err(error) => error.to_string(),
-        };
-
-        Value::String(serialized_json)
     }
 }

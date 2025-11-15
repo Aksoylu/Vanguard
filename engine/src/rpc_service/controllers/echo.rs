@@ -1,9 +1,6 @@
 use jsonrpc_core::{Error, ErrorCode, Value};
-use std::sync::Arc;
-use std::sync::Mutex;
-
-use crate::rpc_service::models::echo_model::{EchoRequest, EchoResponse};
-use crate::runtime::Runtime;
+use crate::rpc_service::models::echo_request::EchoRequest;
+use crate::rpc_service::models::echo_response::EchoResponse;
 
 pub fn echo(payload: Value) -> Result<Value, Error> {
     let request = match EchoRequest::new(payload) {

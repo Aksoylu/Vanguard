@@ -9,7 +9,6 @@ use crate::constants::Constants;
 use crate::models::logger_config::LoggerConfig;
 
 // Global Logger Instance: Initially empty default config, updated in Runtime init
-pub static LOGGER: Lazy<Arc<RwLock<LogService>>> = Lazy::new(|| Arc::new(RwLock::new(LogService::default())));
 
 #[derive(Debug, Clone)]
 pub struct LogService {

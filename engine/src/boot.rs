@@ -1,9 +1,12 @@
 extern crate prettytable;
 use std::path::PathBuf;
 
-use crate::core::log_service::LOGGER;
-use crate::core::rpc_session::{RPC_SESSION, RpcSession};
-use crate::utils::display_utility::RuntimeDisplayUtility;
+use crate::core::http_server::HttpServer;
+use crate::core::https_server::HttpsServer;
+use crate::core::rpc_session::RpcSession;
+use crate::core::shared_memory::{HTTPS_SERVER, HTTP_SERVER, LOGGER, ROUTER, RPC_SERVER};
+use crate::models::boot_result::BootResult;
+use crate::rpc_service::rpc_server::RPCServer;
 use crate::utils::file_utility::save_json;
 use crate::{
     constants::Constants,
@@ -12,79 +15,66 @@ use crate::{
     utils::{directory_utility::get_runtime_path, file_utility::load_json},
 };
 
-use tokio::sync::watch;
+use log::error;
 
-pub struct Runtime {
-    pub config: Config,
-    pub router: Router,
+pub struct Boot {}
 
-    pub runtime_path: PathBuf,
-    pub config_path: PathBuf,
-    pub rpc_session_path: PathBuf,
-    pub route_path: PathBuf,
-
-    pub is_jrpc_server_active: bool,
-    pub is_http_server_active: bool,
-    pub is_https_server_active: bool,
-}
-
-impl Runtime {
-    pub fn init() -> Self {
+impl Boot {
+    pub fn init() -> BootResult {
         let runtime_path = get_runtime_path();
-        let rpc_session_path = Runtime::get_rpc_session_path(&runtime_path);
+        let rpc_session_path = Self::get_rpc_session_path(&runtime_path);
 
-        let config_path = Runtime::get_config_path(&runtime_path);
+        let config_path = Self::get_config_path(&runtime_path);
+        let (config, is_config_loaded_successfully) = Self::load_config(config_path.clone());
+        if !is_config_loaded_successfully {
+            error!("Failed to load configuration. Using default settings.");
+        }
 
-        let (config, is_config_loaded_successfully) = Runtime::load_config(config_path.clone());
+        let route_path = Self::get_route_path(&runtime_path);
+        let (loaded_router, is_router_loaded_successfully) = Router::load(route_path.clone());
+        if is_router_loaded_successfully {
+            let mut router = ROUTER.write().unwrap();
+            *router = loaded_router.clone();
+        } else {
+            error!("Failed to load router data. Initializing default empty router.");
+        }
+
+        let mut http_server = HTTP_SERVER.write().unwrap();
+        *http_server = HttpServer::init(
+            config.http_server.ip_address.clone(),
+            config.http_server.port,
+        );
+
+        let mut https_server = HTTPS_SERVER.write().unwrap();
+        *https_server = HttpsServer::init(
+            config.https_server.ip_address.clone(),
+            config.https_server.port,
+        );
 
         let mut logger = LOGGER.write().unwrap();
         *logger = LogService::init(&runtime_path, config.logger.clone());
 
-        let mut rpc_session = RPC_SESSION.write().unwrap();
-        *rpc_session = RpcSession::init(
+        let rpc_session = RpcSession::init(
             config.rpc_server.ip_address.clone(),
             config.rpc_server.port.clone(),
             config.rpc_server.private_secret_key.clone(),
         );
+        let mut rpc_server = RPC_SERVER.write().unwrap();
+        *rpc_server = RPCServer::init(rpc_session.clone());
 
-        Runtime::save_rpc_session(rpc_session_path.clone(), &rpc_session);
+        Self::save_config(config_path.clone(), &config);
+        Self::save_router(route_path.clone(), &loaded_router);
+        Self::save_rpc_session(rpc_session_path.clone(), &rpc_session);
 
-        let route_path = Runtime::get_route_path(&runtime_path);
-        let (router, is_router_loaded_successfully) = Router::load(route_path.clone());
-
-        if !is_config_loaded_successfully {
-            Runtime::save_config(config_path.clone(), &config);
-        }
-
-        if !is_router_loaded_successfully {
-            Runtime::save_router(route_path.clone(), &router);
-        }
-
-        Runtime {
+        BootResult {
             config,
-            router,
-
             runtime_path,
             config_path,
             rpc_session_path,
             route_path,
-
-            is_jrpc_server_active: true,
-            is_http_server_active: true,
-            is_https_server_active: true,
+            is_config_loaded_successfully,
+            is_router_loaded_successfully,
         }
-    }
-
-    pub fn print(&self) {
-        let runtime_display: RuntimeDisplayUtility =
-            RuntimeDisplayUtility::new(self, true, true, true);
-
-        runtime_display.print();
-    }
-
-    pub fn update_config(&mut self, new_config: Config, runtime_sub: watch::Sender<()>) {
-        self.config = new_config;
-        let _ = runtime_sub.send(());
     }
 
     fn load_config(config_path: PathBuf) -> (Config, bool) {
@@ -99,7 +89,6 @@ impl Runtime {
         if validation.is_ok() {
             return (config, true);
         } else {
-            let error_text = validation.err().unwrap_or_default();
             return (Config::default(), false);
         }
     }

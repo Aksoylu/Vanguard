@@ -7,10 +7,6 @@ use crate::{
     utils::{crypt_utility::generate_hash, time_utility::get_current_timestamp},
 };
 
-// Global Logger Instance: Initially empty default config, updated in Runtime init
-pub static RPC_SESSION: Lazy<Arc<RwLock<RpcSession>>> =
-    Lazy::new(|| Arc::new(RwLock::new(RpcSession::default())));
-
 #[derive(Debug, Serialize, Deserialize, Clone, PartialEq)]
 pub struct RpcSession {
     pub ip_addr: String,

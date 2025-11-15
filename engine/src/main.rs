@@ -1,68 +1,41 @@
 mod assets;
+mod boot;
 mod constants;
 mod core;
 mod models;
 mod render;
 mod resources;
 mod rpc_service;
-mod runtime;
 mod utils;
 
-use core::{http_server::HttpServer, https_server::HttpsServer};
-use std::sync::Arc;
-use std::sync::Mutex;
-
-use rpc_service::rpc_server::RPCServer;
-use runtime::Runtime;
+use boot::Boot;
 
 use crate::assets::banner::print_banner;
 use crate::assets::startup_disclaimer::print_startup_disclaimer;
-use crate::core::rpc_session::RPC_SESSION;
+
+use crate::core::shared_memory::{HTTPS_SERVER, HTTP_SERVER, RPC_SERVER};
+use crate::utils::boot_display_utility::BootDisplayUtility;
 
 #[tokio::main]
 async fn main() {
     print_startup_disclaimer();
     print_banner();
 
-    let runtime = Arc::new(Mutex::new(Runtime::init()));
-    runtime.lock().unwrap().print();
+    let boot_result = Boot::init();
 
-    let http_runtime = runtime.clone();
-    let http_server = {
-        let rt = http_runtime.lock().unwrap();
+    let boot_display = BootDisplayUtility::init(boot_result);
+    boot_display.render();
 
-        HttpServer::singleton(
-            rt.config.http_server.ip_address.clone(),
-            rt.config.http_server.port,
-            rt.router.get_http_routes(),
-            rt.router.get_iws_routes(),
-        )
-    };
-
+    let http_server = HTTP_SERVER.read().unwrap().clone();
     tokio::spawn(async move {
         http_server.start().await;
     });
 
-    let https_runtime = runtime.clone();
-    let https_server = {
-        let rt = https_runtime.lock().unwrap();
-        HttpsServer::singleton(
-            rt.config.https_server.ip_address.clone(),
-            rt.config.https_server.port,
-            rt.router.get_https_routes(),
-            rt.router.get_secure_iws_routes(),
-        )
-    };
-
+    let https_server = HTTPS_SERVER.read().unwrap().clone();
     tokio::spawn(async move {
         https_server.start().await;
     });
 
-    let jsonrpc_server = {
-        let rpc_session = RPC_SESSION.read().unwrap();
-        RPCServer::new(rpc_session.clone())
-    }
-    .await;
-
-    jsonrpc_server.start().await;
+    let jrpc_server = RPC_SERVER.read().unwrap().clone();
+    jrpc_server.start().await;
 }

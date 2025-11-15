@@ -1,6 +1,6 @@
 use crate::models::route::IwsRoute;
 use crate::rpc_service::models::add_iws_route_model::{AddIwsRouteRequest, AddIwsRouteResponse};
-use crate::runtime::Runtime;
+use crate::boot::Runtime;
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;

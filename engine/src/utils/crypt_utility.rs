@@ -62,6 +62,11 @@ pub fn encrypt_aes256_hex(key_hex: &str, plaintext: &str, nonce_hex: &str) -> Op
 }
 
 pub fn decrypt_aes256_hex(key_hex: &str, ciphertext_hex: &str, nonce_hex: &str) -> Option<String> {
+    println!("key_hex {}", key_hex);
+    println!("ciphertext_hex {}", ciphertext_hex);
+    println!("nonce_hex {}", nonce_hex);
+
+
     let key_bytes = hex::decode(key_hex).ok()?;
     let nonce_bytes = hex::decode(nonce_hex).ok()?;
 

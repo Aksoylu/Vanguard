@@ -5,7 +5,9 @@ use std::{collections::HashMap, net::SocketAddr, sync::Arc};
 use tokio::{net::TcpListener, sync::Mutex};
 use tokio_rustls::TlsAcceptor;
 
+use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
+use crate::core::shared_memory::ROUTER;
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use crate::{log_debug, log_error, log_info};
 
@@ -15,6 +17,8 @@ use crate::utils::file_utility::is_file_exist;
 use crate::utils::network_utility::{extract_host, parse_ip_address};
 use crate::utils::tls_utility::create_ssl_context;
 
+// Global Http Server Instance: Initially empty default config, updated in Runtime init
+
 #[derive(Clone)]
 pub struct HttpsServer {
     socket: SocketAddr,
@@ -22,20 +26,36 @@ pub struct HttpsServer {
     secure_iws_routes: HashMap<String, SecureIwsRoute>,
 }
 
+impl Default for HttpsServer {
+    fn default() -> Self {
+        let default_ip_address = parse_ip_address(Constants::DEFAULT_HTTP_IP.to_string());
+        let default_port = Constants::DEFAULT_HTTP_PORT;
+
+        let default_socket_instance: SocketAddr =
+            SocketAddr::from((default_ip_address, default_port));
+
+        let default_https_route_table: HashMap<String, HttpsRoute> = HashMap::new();
+        let default_secure_iws_route_table: HashMap<String, SecureIwsRoute> = HashMap::new();
+
+        Self {
+            socket: default_socket_instance,
+            https_routes: default_https_route_table,
+            secure_iws_routes: default_secure_iws_route_table,
+        }
+    }
+}
+
 impl HttpsServer {
-    pub fn singleton(
-        ip_address: String,
-        port: u16,
-        https_routes: HashMap<String, HttpsRoute>,
-        secure_iws_routes: HashMap<String, SecureIwsRoute>,
-    ) -> Self {
+    pub fn init(ip_address: String, port: u16) -> Self {
         let ip = parse_ip_address(ip_address.clone());
         let socket = SocketAddr::from((ip, port));
 
+        let router = ROUTER.read().unwrap();
+
         Self {
             socket,
-            https_routes,
-            secure_iws_routes,
+            https_routes: router.get_https_routes(),
+            secure_iws_routes: router.get_secure_iws_routes(),
         }
     }
 
@@ -167,7 +187,13 @@ impl HttpsServer {
                 &current_iws_route.source
             );
 
-            return CommonHandler::iws_route_not_found_error(Protocol::HTTPS, request_host, req, client_ip).await;
+            return CommonHandler::iws_route_not_found_error(
+                Protocol::HTTPS,
+                request_host,
+                req,
+                client_ip,
+            )
+            .await;
         }
 
         let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);

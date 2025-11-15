@@ -1,7 +1,7 @@
 use crate::rpc_service::models::delete_https_route_model::{
     DeleteHttpsRouteRequest, DeleteHttpsRouteResponse,
 };
-use crate::runtime::Runtime;
+use crate::boot::Runtime;
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;

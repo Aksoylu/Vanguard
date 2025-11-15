@@ -1,17 +1,17 @@
-use jsonrpc_core::{ Value};
+use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
-pub struct AddHttpRouteResponse {
+pub struct AddHttpsRouteResponse {
     code: i32,
     message: String,
     data: Option<Value>,
 }
 
-impl AddHttpRouteResponse {
+impl AddHttpsRouteResponse {
     pub fn build(message: String, data: Option<Value>) -> jsonrpc_core::Value {
-        let response = AddHttpRouteResponse {
+        let response = AddHttpsRouteResponse {
             code: 200,
             message,
             data,

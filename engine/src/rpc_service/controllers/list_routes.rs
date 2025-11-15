@@ -3,7 +3,7 @@ use std::sync::Arc;
 use std::sync::Mutex;
 
 use crate::rpc_service::models::get_http_route_list_response::GetHttpRouteListResponse;
-use crate::runtime::Runtime;
+use crate::boot::Runtime;
 
 pub fn list_routes(runtime: Arc<Mutex<Runtime>>, _params: Params) -> Result<Value, Error> {
     let runtime_snapshot = runtime.lock().unwrap().router.clone();
