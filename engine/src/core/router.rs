@@ -184,7 +184,19 @@ impl Router {
         export_data
     }
 
-    pub fn add_http_route(mut self, route_body: HttpRoute) -> Self {
+    pub fn add_http_route(&mut self, route_body: HttpRoute) {
+        let route_name = route_body.source.clone();
+
+        if self.http_route_table.contains_key(&route_name) {
+            self.http_route_table.remove(&route_name);
+        }
+
+        self.http_route_table.insert(route_name, route_body);
+        self.save();
+    }
+
+
+    pub fn add_http_rou2te(mut self, route_body: HttpRoute) -> Self {
         let route_name = route_body.source.clone();
 
         if self.http_route_table.contains_key(&route_name) {

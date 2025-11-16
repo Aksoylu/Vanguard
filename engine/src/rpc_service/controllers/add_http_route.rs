@@ -5,6 +5,7 @@ use crate::rpc_service::models::add_http_route_response::AddHttpRouteResponse;
 use jsonrpc_core::ErrorCode;
 use jsonrpc_core::{Error, Value};
 
+
 pub fn add_http_route(payload: Value) -> Result<Value, Error> {
     let request = match AddHttpRouteRequest::new(payload) {
         Ok(req) => req,
@@ -23,7 +24,7 @@ pub fn add_http_route(payload: Value) -> Result<Value, Error> {
     };
 
     let mut router = ROUTER.write().unwrap();
-    *router = router.add_http_route(new_route);
+    router.add_http_route(new_route);
 
 
     Ok(AddHttpRouteResponse::build("Success".to_string(), None))

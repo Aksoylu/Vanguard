@@ -28,18 +28,11 @@ pub mod delete_ssl_cert_response;
 pub mod echo_request;
 pub mod echo_response;
 
-pub mod get_http_route_list_request; // todo
-pub mod get_http_route_list_response; // todo
+pub mod get_http_route_list_request;
+pub mod get_http_route_list_response;
 
-/// \\\
+pub mod get_ssl_cert_list_request;
+pub mod get_ssl_cert_list_response;
 
-
-
-
-pub mod upload_ssl_cert_model;
-pub mod list_ssl_cert_model;
-pub mod delete_ssl_cert_response;
-
-
-
-pub mod delete_secure_iws_route_response;
+pub mod upload_ssl_cert_request;
+pub mod upload_ssl_cert_response;

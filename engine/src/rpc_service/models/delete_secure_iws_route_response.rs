@@ -1,17 +1,18 @@
+use hyper::StatusCode;
 use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteIwsRouteResponse {
-    code: i32,
+    code: u16,
     message: String,
 }
 
 impl DeleteIwsRouteResponse {
     pub fn build() -> jsonrpc_core::Value {
         let response = DeleteIwsRouteResponse {
-            code: 200,
+            code: StatusCode::OK.as_u16(),
             message: "ok".to_owned(),
         };
 

@@ -1,19 +1,20 @@
 use hyper::StatusCode;
 use jsonrpc_core::Value;
-use serde::{Deserialize, Serialize};
+use serde::Deserialize;
+use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
-pub struct DeleteSSlCertResponse {
+pub struct UploadSslCertResponse {
     code: u16,
     message: String,
-    data: Vec<String>,
+    data: Option<Value>,
 }
 
-impl DeleteSSlCertResponse {
-    pub fn build(data: Vec<String>) -> jsonrpc_core::Value {
-        let response = DeleteSSlCertResponse {
+impl UploadSslCertResponse {
+    pub fn build(message: String, data: Option<Value>) -> jsonrpc_core::Value {
+        let response = UploadSslCertResponse {
             code: StatusCode::OK.as_u16(),
-            message: "OK".into(),
+            message,
             data,
         };
 

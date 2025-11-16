@@ -1,7 +1,9 @@
+use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::rpc_service::rpc_error::RPCError;
 use crate::utils::rpc_utility::RpcParameter;
 
 #[derive(Serialize, Deserialize)]
@@ -14,11 +16,10 @@ impl EchoRequest {
         let message = RpcParameter::extract_string("message", &params);
 
         if message.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Please add a message".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please add a message",
+            ));
         }
 
         Ok(Self {

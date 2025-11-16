@@ -1,4 +1,5 @@
-use crate::utils::rpc_utility::RpcParameter;
+use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub struct AddHttpsRouteRequest {
@@ -12,19 +13,17 @@ impl AddHttpsRouteRequest {
         let target = RpcParameter::extract_string("target", &params);
 
         if source.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name is not valid".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Source is not valid",
+            ));
         }
 
         if target.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name is not valid".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Target is not valid",
+            ));
         }
 
         Ok(Self {

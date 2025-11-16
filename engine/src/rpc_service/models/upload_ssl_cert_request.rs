@@ -2,9 +2,8 @@ use crate::utils::base64_utility;
 use crate::utils::rpc_utility::RpcParameter;
 use crate::utils::tls_utility::get_certificate_type;
 use crate::utils::tls_utility::SSlFileType;
-use jsonrpc_core::{Error, Params, Value};
-use serde::Deserialize;
-use serde::Serialize;
+
+use jsonrpc_core::{Error, Value};
 
 pub struct UploadSslCertRequest {
     domain: String,
@@ -13,10 +12,10 @@ pub struct UploadSslCertRequest {
 }
 
 impl UploadSslCertRequest {
-    pub fn new(params: Params) -> Result<Self, Error> {
-        let _domain: Option<String> = RpcParameter::extract_string("domain", params.clone());
-        let _raw_certificate = RpcParameter::extract_string("raw_certificate", params.clone());
-        let _raw_privatekey = RpcParameter::extract_string("raw_privatekey", params.clone());
+    pub fn new(params: Value) -> Result<Self, Error> {
+        let _domain: Option<String> = RpcParameter::extract_string("domain", &params);
+        let _raw_certificate = RpcParameter::extract_string("raw_certificate", &params);
+        let _raw_privatekey = RpcParameter::extract_string("raw_privatekey", &params);
 
         if _domain.is_none() {
             return Err(Error {
@@ -96,26 +95,3 @@ impl UploadSslCertRequest {
     }
 }
 
-#[derive(Serialize, Deserialize)]
-pub struct UploadSslCertResponse {
-    code: i32,
-    message: String,
-    data: Option<Value>,
-}
-
-impl UploadSslCertResponse {
-    pub fn build(message: String, data: Option<Value>) -> jsonrpc_core::Value {
-        let response = UploadSslCertResponse {
-            code: 200,
-            message,
-            data,
-        };
-
-        let serialized_json = match serde_json::to_string(&response) {
-            Ok(text) => text,
-            Err(error) => error.to_string(),
-        };
-
-        Value::String(serialized_json)
-    }
-}

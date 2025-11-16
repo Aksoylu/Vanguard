@@ -1,17 +1,18 @@
+use hyper::StatusCode;
 use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
 pub struct AddIwsRouteResponse {
-    code: i32,
+    code: u16,
     message: String
 }
 
 impl AddIwsRouteResponse {
     pub fn build(message: String) -> jsonrpc_core::Value {
         let response = AddIwsRouteResponse {
-            code: 200,
+            code: StatusCode::OK.as_u16(),
             message
         };
 

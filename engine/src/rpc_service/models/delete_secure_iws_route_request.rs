@@ -1,4 +1,5 @@
-use crate::utils::rpc_utility::RpcParameter;
+use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub struct DeleteIwsRouteRequest {
@@ -10,14 +11,15 @@ impl DeleteIwsRouteRequest {
         let source: Option<String> = RpcParameter::extract_string("source", &params);
 
         if source.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Provide at least 'source' parameter".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Provide at least 'source' parameter",
+            ));
         }
 
-        Ok(Self {source: source.unwrap()})
+        Ok(Self {
+            source: source.unwrap(),
+        })
     }
 
     pub fn get_source(&self) -> String {

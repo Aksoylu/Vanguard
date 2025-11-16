@@ -1,4 +1,5 @@
-use crate::utils::rpc_utility::RpcParameter;
+use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub struct DeleteSSlCertRequest {
@@ -10,11 +11,10 @@ impl DeleteSSlCertRequest {
         let domain: Option<String> = RpcParameter::extract_string("domain", &params);
 
         if domain.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Please speficy an existing domain".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please speficy an existing domain",
+            ));
         }
 
         Ok(Self {

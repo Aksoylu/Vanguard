@@ -1,16 +1,20 @@
+use hyper::StatusCode;
 use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
 pub struct AddSecureIwsResponse {
-    code: i32,
+    code: u16,
     message: String,
 }
 
 impl AddSecureIwsResponse {
     pub fn build(message: String) -> jsonrpc_core::Value {
-        let response = AddSecureIwsResponse { code: 200, message };
+        let response = AddSecureIwsResponse {
+            code: StatusCode::OK.as_u16(),
+            message,
+        };
 
         let serialized_json = match serde_json::to_string(&response) {
             Ok(text) => text,

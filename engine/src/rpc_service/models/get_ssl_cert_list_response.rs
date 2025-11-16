@@ -1,3 +1,4 @@
+use hyper::StatusCode;
 use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
@@ -12,7 +13,7 @@ pub struct SslCertEntity {
 
 #[derive(Serialize, Deserialize)]
 pub struct ListSslCertResponse {
-    code: i32,
+    code: u16,
     message: String,
     data: Vec<SslCertEntity>,
 }
@@ -20,7 +21,7 @@ pub struct ListSslCertResponse {
 impl ListSslCertResponse {
     pub fn build(data: Vec<SslCertEntity>) -> jsonrpc_core::Value {
         let response = ListSslCertResponse {
-            code: 200,
+            code: StatusCode::OK.as_u16(),
             message: "OK".into(),
             data,
         };

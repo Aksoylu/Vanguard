@@ -1,5 +1,5 @@
 use crate::utils::rpc_utility::RpcParameter;
-use jsonrpc_core::{Error, Value};
+use jsonrpc_core::{Error, Value, ErrorCode};
 use serde::Deserialize;
 use serde::Serialize;
 

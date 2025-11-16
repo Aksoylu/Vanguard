@@ -1,4 +1,5 @@
-use crate::utils::rpc_utility::RpcParameter;
+use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub struct AddIwsRouteRequest {
@@ -12,19 +13,17 @@ impl AddIwsRouteRequest {
         let serving_path = RpcParameter::extract_string("serving_path", &params);
 
         if source.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name (source) is not valid".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Source (Route Name) is not valid",
+            ));
         }
 
         if serving_path.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Serving path (serving_path) is not exist on server".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::NOT_FOUND,
+                "Serving path is not valid",
+            ));
         }
 
         Ok(Self {
