@@ -18,7 +18,7 @@ impl EchoRequest {
         if message.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
-                "Please add a message",
+                "Please provide 'message' parameter",
             ));
         }
 

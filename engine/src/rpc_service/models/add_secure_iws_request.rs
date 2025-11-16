@@ -15,14 +15,14 @@ impl AddSecureIwsRequest {
         if source.is_none() {
             return Err(RPCError::build(
                 &StatusCode::INTERNAL_SERVER_ERROR,
-                "Route name (source) is not valid",
+                "Please provide Route name (source)",
             ));
         }
 
         if serving_path.is_none() {
             return Err(RPCError::build(
                 &StatusCode::NOT_FOUND,
-                "Serving path (serving_path) is not exist on server",
+                "Please provide Serving path (serving_path)",
             ));
         }
 
@@ -31,7 +31,8 @@ impl AddSecureIwsRequest {
             serving_path: serving_path.unwrap(),
         })
     }
-
+    
+    // getters
     pub fn get_source(&self) -> String {
         self.source.clone()
     }

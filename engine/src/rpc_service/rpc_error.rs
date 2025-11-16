@@ -1,15 +1,15 @@
 use hyper::StatusCode;
-use jsonrpc_core::{Error, Params, Value};
+use jsonrpc_core::Error;
 
 pub struct RPCError;
 
 impl RPCError {
-    pub fn badrequest(message: &str) -> Error {
-        Self::build(&StatusCode::BAD_REQUEST, message)
+    pub fn badrequest(message: String) -> Error {
+        Self::build(&StatusCode::BAD_REQUEST, message.as_str())
     }
 
-    pub fn unauthorized(message: &str) -> Error {
-        Self::build(&StatusCode::UNAUTHORIZED, message)
+    pub fn unauthorized(message: String) -> Error {
+        Self::build(&StatusCode::UNAUTHORIZED, message.as_str())
     }
 
     pub fn build(code: &StatusCode, message: &str) -> Error {

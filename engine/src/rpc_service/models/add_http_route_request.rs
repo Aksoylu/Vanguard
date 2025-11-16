@@ -15,14 +15,14 @@ impl AddHttpRouteRequest {
         if source.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
-                "Source is not valid",
+                "Please provide 'Source' parameter",
             ));
         }
 
         if target.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
-                "Target is not valid",
+                "Please provide 'Target' parameter",
             ));
         }
 
@@ -32,6 +32,7 @@ impl AddHttpRouteRequest {
         })
     }
 
+    // getters
     pub fn get_source(&self) -> String {
         self.source.clone()
     }

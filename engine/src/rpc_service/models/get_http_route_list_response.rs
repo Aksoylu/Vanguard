@@ -1,4 +1,5 @@
 use crate::models::route::JsonRoute;
+use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 use hyper::StatusCode;
 use jsonrpc_core::Value;
 use serde::Deserialize;
@@ -15,7 +16,7 @@ impl GetHttpRouteListResponse {
     pub fn build(data: Vec<JsonRoute>) -> jsonrpc_core::Value {
         let response = GetHttpRouteListResponse {
             code: StatusCode::OK.as_u16(),
-            message: "ok".to_owned(),
+            message: RpcStatusMessage::OK.to_string(),
             data,
         };
 

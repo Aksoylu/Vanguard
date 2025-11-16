@@ -15,14 +15,14 @@ impl AddIwsRouteRequest {
         if source.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
-                "Source (Route Name) is not valid",
+                "Please provide Source (Route Name)",
             ));
         }
 
         if serving_path.is_none() {
             return Err(RPCError::build(
                 &StatusCode::NOT_FOUND,
-                "Serving path is not valid",
+                "Please provide Serving Path (serving_path)",
             ));
         }
 
@@ -32,6 +32,7 @@ impl AddIwsRouteRequest {
         })
     }
 
+    // getters
     pub fn get_source(&self) -> String {
         self.source.clone()
     }

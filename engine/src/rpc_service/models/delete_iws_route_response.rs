@@ -1,43 +1,20 @@
-use crate::utils::rpc_utility::RpcParameter;
-use jsonrpc_core::{Error, Value, ErrorCode};
+use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
-pub struct DeleteIwsRouteRequest {
-    source: String,
-}
-
-impl DeleteIwsRouteRequest {
-    pub fn new(params: Value) -> Result<Self, Error> {
-        let source: Option<String> = RpcParameter::extract_string("source", &params);
-
-        if source.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Provide at least 'source' parameter".into(),
-                data: None,
-            });
-        }
-
-        Ok(Self {source: source.unwrap()})
-    }
-
-    pub fn get_source(&self) -> String {
-        self.source.clone()
-    }
-}
+use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteIwsRouteResponse {
     code: i32,
-    message: String
+    message: String,
 }
 
 impl DeleteIwsRouteResponse {
     pub fn build() -> jsonrpc_core::Value {
         let response = DeleteIwsRouteResponse {
             code: 200,
-            message: "ok".to_owned()
+            message: RpcStatusMessage::OK.to_string(),
         };
 
         let serialized_json = match serde_json::to_string(&response) {

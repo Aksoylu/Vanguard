@@ -13,7 +13,7 @@ impl DeleteSSlCertRequest {
         if domain.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
-                "Please speficy an existing domain",
+                "Please provide 'domain' parameter",
             ));
         }
 
@@ -22,6 +22,7 @@ impl DeleteSSlCertRequest {
         })
     }
 
+    // getters
     pub fn get_domain(&self) -> String {
         self.domain.clone()
     }

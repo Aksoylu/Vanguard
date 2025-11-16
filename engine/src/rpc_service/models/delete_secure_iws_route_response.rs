@@ -3,6 +3,8 @@ use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::rpc_service::rpc_status_message::RpcStatusMessage;
+
 #[derive(Serialize, Deserialize)]
 pub struct DeleteIwsRouteResponse {
     code: u16,
@@ -13,7 +15,7 @@ impl DeleteIwsRouteResponse {
     pub fn build() -> jsonrpc_core::Value {
         let response = DeleteIwsRouteResponse {
             code: StatusCode::OK.as_u16(),
-            message: "ok".to_owned(),
+            message: RpcStatusMessage::OK.to_string(),
         };
 
         let serialized_json = match serde_json::to_string(&response) {

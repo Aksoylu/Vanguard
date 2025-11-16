@@ -3,6 +3,7 @@ use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 use crate::utils::tls_utility::SSlFileType;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -22,7 +23,7 @@ impl ListSslCertResponse {
     pub fn build(data: Vec<SslCertEntity>) -> jsonrpc_core::Value {
         let response = ListSslCertResponse {
             code: StatusCode::OK.as_u16(),
-            message: "OK".into(),
+            message: RpcStatusMessage::OK.to_string(),
             data,
         };
 

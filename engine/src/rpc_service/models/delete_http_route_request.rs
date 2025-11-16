@@ -13,7 +13,7 @@ impl DeleteHttpRouteRequest {
         if source.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
-                "Provide at least 'source' parameter",
+                "Please provide 'source' parameter",
             ));
         }
 
@@ -22,6 +22,7 @@ impl DeleteHttpRouteRequest {
         })
     }
 
+    // getters
     pub fn get_source(&self) -> String {
         self.source.clone()
     }

@@ -3,6 +3,8 @@ use serde::Deserialize;
 use serde::Serialize;
 use hyper::StatusCode;
 
+use crate::rpc_service::rpc_status_message::RpcStatusMessage;
+
 #[derive(Serialize, Deserialize)]
 pub struct AddHttpsRouteResponse {
     code: u16,
@@ -11,10 +13,10 @@ pub struct AddHttpsRouteResponse {
 }
 
 impl AddHttpsRouteResponse {
-    pub fn build(message: String, data: Option<Value>) -> jsonrpc_core::Value {
+    pub fn build(data: Option<Value>) -> jsonrpc_core::Value {
         let response = AddHttpsRouteResponse {
             code: StatusCode::OK.as_u16(),
-            message,
+            message: RpcStatusMessage::OK.to_string(),
             data,
         };
 
