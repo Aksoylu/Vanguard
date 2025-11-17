@@ -1,7 +1,9 @@
+use hyper::StatusCode;
 use jsonrpc_core::Value;
 use serde::Deserialize;
 use serde::Serialize;
 
+use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 use crate::utils::tls_utility::SSlFileType;
 
 #[derive(Serialize, Deserialize, Clone)]
@@ -12,7 +14,7 @@ pub struct SslCertEntity {
 
 #[derive(Serialize, Deserialize)]
 pub struct ListSslCertResponse {
-    code: i32,
+    code: u16,
     message: String,
     data: Vec<SslCertEntity>,
 }
@@ -20,8 +22,8 @@ pub struct ListSslCertResponse {
 impl ListSslCertResponse {
     pub fn build(data: Vec<SslCertEntity>) -> jsonrpc_core::Value {
         let response = ListSslCertResponse {
-            code: 200,
-            message: "OK".into(),
+            code: StatusCode::OK.as_u16(),
+            message: RpcStatusMessage::OK.to_string(),
             data,
         };
 

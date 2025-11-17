@@ -4,3 +4,4 @@ pub mod router;
 pub mod log_service;
 pub mod common_handler;
 pub mod rpc_session;
+pub mod shared_memory;

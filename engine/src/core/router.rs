@@ -184,7 +184,7 @@ impl Router {
         export_data
     }
 
-    pub fn add_http_route(mut self, route_body: HttpRoute) -> Self {
+    pub fn add_http_route(&mut self, route_body: HttpRoute) {
         let route_name = route_body.source.clone();
 
         if self.http_route_table.contains_key(&route_name) {
@@ -192,12 +192,10 @@ impl Router {
         }
 
         self.http_route_table.insert(route_name, route_body);
-
         self.save();
-        self
     }
 
-    pub fn add_https_route(mut self, route_body: HttpsRoute) -> Self {
+    pub fn add_https_route(&mut self, route_body: HttpsRoute) {
         let route_name = route_body.source.clone();
 
         if self.https_route_table.contains_key(&route_name) {
@@ -205,12 +203,10 @@ impl Router {
         }
 
         self.https_route_table.insert(route_name, route_body);
-
         self.save();
-        self
     }
 
-    pub fn add_iws_route(mut self, route_body: IwsRoute) -> Self {
+    pub fn add_iws_route(&mut self, route_body: IwsRoute) {
         let route_name = route_body.source.clone();
 
         if self.iws_route_table.contains_key(&route_name) {
@@ -218,12 +214,10 @@ impl Router {
         }
 
         self.iws_route_table.insert(route_name, route_body);
-
         self.save();
-        self
     }
 
-    pub fn add_secure_iws_route(mut self, route_body: SecureIwsRoute) -> Self {
+    pub fn add_secure_iws_route(&mut self, route_body: SecureIwsRoute) {
         let route_name = route_body.source.clone();
 
         if self.secure_iws_route_table.contains_key(&route_name) {
@@ -231,45 +225,39 @@ impl Router {
         }
 
         self.secure_iws_route_table.insert(route_name, route_body);
-
         self.save();
-        self
     }
 
-    pub fn delete_http_route(mut self, source: String) -> Self {
+    pub fn delete_http_route(&mut self, source: String) {
         if self.http_route_table.contains_key(&source) {
             self.http_route_table.remove(&source);
         }
 
         self.save();
-        self
     }
 
-    pub fn delete_https_route(mut self, source: String) -> Self {
+    pub fn delete_https_route(&mut self, source: String) {
         if self.https_route_table.contains_key(&source) {
             self.https_route_table.remove(&source);
         }
 
         self.save();
-        self
     }
 
-    pub fn delete_iws_route(mut self, source: String) -> Self {
+    pub fn delete_iws_route(&mut self, source: String) {
         if self.iws_route_table.contains_key(&source) {
             self.iws_route_table.remove(&source);
         }
 
         self.save();
-        self
     }
 
-    pub fn delete_secure_iws_route(mut self, source: String) -> Self {
+    pub fn delete_secure_iws_route(&mut self, source: String) {
         if self.secure_iws_route_table.contains_key(&source) {
             self.secure_iws_route_table.remove(&source);
         }
 
         self.save();
-        self
     }
 
     pub fn get_http_routes(&self) -> HashMap<String, HttpRoute> {

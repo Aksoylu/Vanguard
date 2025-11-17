@@ -1,16 +1,12 @@
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;
-use std::sync::Mutex;
 
 use crate::rpc_service::rpc_error::RPCError;
-use crate::runtime::Runtime;
 use crate::utils::crypt_utility::decrypt_aes256_hex;
 
 pub type RpcHandler = Arc<dyn Fn(Value) -> Result<Value, Error> + Send + Sync>;
 
-pub struct RpcMiddleware {
-    runtime: Arc<Mutex<Runtime>>,
-}
+pub struct RpcMiddleware {}
 
 impl RpcMiddleware {
     pub fn bind(
@@ -72,15 +68,19 @@ impl RpcMiddleware {
             .and_then(|v| v.as_str())
             .ok_or("missing payload")?;
 
-        println!("Decrypting with nonce: {}, payload: {}", nonce, crypted_payload);
+        println!(
+            "Decrypting with nonce: {}, payload: {}",
+            nonce, crypted_payload
+        );
 
         let decrypted_payload_as_str = decrypt_aes256_hex(&auth_token, crypted_payload, nonce);
         if decrypted_payload_as_str.is_none() {
             return Err("decryption failed".into());
         }
 
-        let decrypted_payload_as_json: Value = serde_json::from_str(&decrypted_payload_as_str.unwrap_or_default())
-            .map_err(|_| "incompatible payload json")?;
+        let decrypted_payload_as_json: Value =
+            serde_json::from_str(&decrypted_payload_as_str.unwrap_or_default())
+                .map_err(|_| "incompatible payload json")?;
 
         Ok(decrypted_payload_as_json)
     }
@@ -92,6 +92,8 @@ impl RpcMiddleware {
             return false;
         }
 
-        (auth_token.unwrap_or_default() == valid_auth_token)
+        let is_auth_token_correct = auth_token.unwrap_or_default() == valid_auth_token;
+
+        is_auth_token_correct
     }
 }

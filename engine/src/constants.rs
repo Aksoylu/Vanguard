@@ -20,12 +20,15 @@ impl Constants {
     pub const DEFAULT_LOG_FILE_SIZE: u64 = 10_000_000; // 10 MB
     pub const DEFAULT_KEEP_LAST_LOGS: usize = 7;
 
+    pub const DEFUALT_HTTPS_IS_ACTIVE: bool = true;
     pub const DEFAULT_HTTP_IP: &'static str = "0.0.0.0";
     pub const DEFAULT_HTTP_PORT: u16 = 80;
 
+    pub const DEFUALT_HTTP_IS_ACTIVE: bool = true;
     pub const DEFAULT_HTTPS_IP: &'static str = "0.0.0.0";
     pub const DEFAULT_HTTPS_PORT: u16 = 443;
 
+    pub const DEFUALT_RPC_IS_ACTIVE: bool = true;
     pub const DEFAULT_RPC_IP: &'static str = "127.0.0.1";
     pub const DEFAULT_RPC_PORT: u16 = 4242;
     pub const DEFAULT_PRIVATE_SECRET_KEY: &'static str = "0xVanguard";

@@ -6,3 +6,4 @@ mod controllers;
 mod routes;
 mod models;
 mod rpc_error;
+mod rpc_status_message;

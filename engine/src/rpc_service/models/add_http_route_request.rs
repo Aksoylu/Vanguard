@@ -1,7 +1,6 @@
-use crate::utils::rpc_utility::RpcParameter;
-use jsonrpc_core::{Error, Params, Value};
-use serde::Deserialize;
-use serde::Serialize;
+use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use hyper::StatusCode;
+use jsonrpc_core::{Error, Value};
 
 pub struct AddHttpRouteRequest {
     source: String,
@@ -9,24 +8,22 @@ pub struct AddHttpRouteRequest {
 }
 
 impl AddHttpRouteRequest {
-    pub fn new(params: Params) -> Result<Self, Error> {
-        let source: Option<String> = RpcParameter::extract_string("source", params.clone());
-        let target = RpcParameter::extract_string("target", params.clone());
+    pub fn new(params: Value) -> Result<Self, Error> {
+        let source = RpcParameter::extract_string("source", &params);
+        let target = RpcParameter::extract_string("target", &params);
 
         if source.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name is not valid".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please provide 'Source' parameter",
+            ));
         }
 
         if target.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Route name is not valid".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please provide 'Target' parameter",
+            ));
         }
 
         Ok(Self {
@@ -35,6 +32,7 @@ impl AddHttpRouteRequest {
         })
     }
 
+    // getters
     pub fn get_source(&self) -> String {
         self.source.clone()
     }

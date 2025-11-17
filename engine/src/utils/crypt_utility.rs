@@ -1,11 +1,9 @@
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use base64::engine::general_purpose;
 use base64::{decode, encode};
 use rand::seq::SliceRandom;
 use rand::RngCore;
 use sha2::{Digest, Sha256};
-use std::fmt::Write;
 
 pub fn generate_hash(secure_key: String) -> String {
     let secret = secure_key.to_string() + &generate_salt(128);
@@ -62,6 +60,11 @@ pub fn encrypt_aes256_hex(key_hex: &str, plaintext: &str, nonce_hex: &str) -> Op
 }
 
 pub fn decrypt_aes256_hex(key_hex: &str, ciphertext_hex: &str, nonce_hex: &str) -> Option<String> {
+    println!("key_hex {}", key_hex);
+    println!("ciphertext_hex {}", ciphertext_hex);
+    println!("nonce_hex {}", nonce_hex);
+
+
     let key_bytes = hex::decode(key_hex).ok()?;
     let nonce_bytes = hex::decode(nonce_hex).ok()?;
 

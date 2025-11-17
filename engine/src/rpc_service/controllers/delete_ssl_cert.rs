@@ -1,7 +1,7 @@
 use crate::rpc_service::models::delete_ssl_cert_model::{
     DeleteSSlCertRequest, DeleteSSlCertResponse,
 };
-use crate::runtime::Runtime;
+use crate::boot::Runtime;
 use crate::utils::directory_utility::get_ssl_path;
 use crate::utils::file_utility::{
     delete_file, is_file_exist

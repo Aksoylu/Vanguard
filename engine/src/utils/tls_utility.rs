@@ -1,3 +1,4 @@
+use jsonrpc_core::Error;
 use rustls::server::ResolvesServerCertUsingSni;
 use rustls::sign::{CertifiedKey, RsaSigningKey};
 use rustls::{Certificate, PrivateKey};
@@ -7,13 +8,12 @@ use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
+use crate::utils::file_utility::get_absolute_ssl_file_path;
+use jsonrpc_core::ErrorCode;
 use std::collections::HashMap;
 use std::fs::File;
-use std::io::{self, BufReader};
-use std::path::PathBuf;
+use std::io::BufReader;
 use std::sync::Arc;
-
-use super::directory_utility::get_ssl_path;
 
 #[derive(PartialEq, Serialize, Deserialize, Clone, Copy)]
 pub enum SSlFileType {
@@ -45,71 +45,69 @@ pub fn get_certificate_type(content: String) -> SSlFileType {
     SSlFileType::Invalid
 }
 
-/// todo: Impl secure iws route
 pub fn create_ssl_context(
     https_routes: HashMap<String, HttpsRoute>,
     secure_iws_routes: HashMap<String, SecureIwsRoute>,
 ) -> TlsAcceptor {
     let mut sni_resolver = ResolvesServerCertUsingSni::new();
-    let ssl_path = get_ssl_path();
 
     /* Loop for creating sni resolving for all https routes */
     for (source, https_route) in https_routes {
-        let mut ssl_certificate_path = ssl_path.clone();
-        ssl_certificate_path.push(https_route.ssl_context.cert.clone());
+        // Load certificate
+        let cert_file_path = &https_route.ssl_context.certificate_file_path;
+        let ssl_cert_list = match load_ssl_certs(cert_file_path) {
+            Ok(c) => c,
+            Err(err) => {
+                panic!(
+                    "An error occurred while loading SSL certificate for '{}': {}",
+                    source, err.message
+                );
+            }
+        };
 
-        let mut ssl_private_key_path = ssl_path.clone();
-        ssl_private_key_path.push(https_route.ssl_context.private_key.clone());
+        // Load private key
+        let private_key_file_path = &https_route.ssl_context.private_key_file_path;
+        let private_key = match load_ssl_private_key(private_key_file_path) {
+            Ok(k) => k,
+            Err(err) => {
+                panic!(
+                    "An error occurred while loading SSL private key for '{}' Https Route: {}",
+                    source, err.message
+                );
+            }
+        };
 
-        let load_cert_operation = load_certs(ssl_certificate_path.clone());
-        if load_cert_operation.is_err() {
-            panic!(
-                "Could not found SSL Certificate on path: {} ",
-                ssl_certificate_path.to_string_lossy()
-            );
-        }
-
-        let load_private_key_operation = load_private_key(ssl_private_key_path.clone());
-        if load_private_key_operation.is_err() {
-            panic!(
-                "Could not found SSL Private Key on path: {} ",
-                ssl_private_key_path.to_string_lossy()
-            );
-        }
-
-        let certs: Vec<Certificate> = load_cert_operation.unwrap();
-        let key: PrivateKey = load_private_key_operation.unwrap();
-        let certified_key = create_certified_key(certs, key);
+        let certified_key = create_certified_key(ssl_cert_list, private_key);
         sni_resolver.add(source.as_str(), certified_key).unwrap();
     }
 
     /* Loop for creating sni resolving for all secure IWS routes */
     for (source, secure_iws_route) in secure_iws_routes {
-        let mut ssl_certificate_path = ssl_path.clone();
-        ssl_certificate_path.push(secure_iws_route.ssl_context.cert.clone());
+        // Load certificate
+        let cert_file_path = &secure_iws_route.ssl_context.certificate_file_path;
+        let ssl_cert_list = match load_ssl_certs(cert_file_path) {
+            Ok(c) => c,
+            Err(err) => {
+                panic!(
+                    "An error occurred while loading SSL certificate for '{}' Secure IWS Route: {}",
+                    source, err.message
+                );
+            }
+        };
 
-        let mut ssl_private_key_path = ssl_path.clone();
-        ssl_private_key_path.push(secure_iws_route.ssl_context.private_key.clone());
+        // Load private key
+        let private_key_file_path = &secure_iws_route.ssl_context.private_key_file_path;
+        let private_key = match load_ssl_private_key(private_key_file_path) {
+            Ok(k) => k,
+            Err(err) => {
+                panic!(
+                    "An error occurred while loading SSL private key for '{}': {}",
+                    source, err.message
+                );
+            }
+        };
 
-        let load_cert_operation = load_certs(ssl_certificate_path.clone());
-        if load_cert_operation.is_err() {
-            panic!(
-                "Could not found SSL Certificate on path: {} ",
-                ssl_certificate_path.to_string_lossy()
-            );
-        }
-
-        let load_private_key_operation = load_private_key(ssl_private_key_path.clone());
-        if load_private_key_operation.is_err() {
-            panic!(
-                "Could not found SSL Private Key on path: {} ",
-                ssl_private_key_path.to_string_lossy()
-            );
-        }
-
-        let certs: Vec<Certificate> = load_cert_operation.unwrap();
-        let key: PrivateKey = load_private_key_operation.unwrap();
-        let certified_key = create_certified_key(certs, key);
+        let certified_key = create_certified_key(ssl_cert_list, private_key);
         sni_resolver.add(source.as_str(), certified_key).unwrap();
     }
 
@@ -121,42 +119,28 @@ pub fn create_ssl_context(
     TlsAcceptor::from(Arc::new(tls_config))
 }
 
-pub fn load_certs(path: PathBuf) -> io::Result<Vec<Certificate>> {
-    let certfile = File::open(path)?;
-    let mut reader = BufReader::new(certfile);
-    let certs = certs(&mut reader)
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Failed to load certificate"))?;
-    Ok(certs.into_iter().map(Certificate).collect())
-}
-
-pub fn load_private_key(path: PathBuf) -> io::Result<PrivateKey> {
-    let keyfile = File::open(path)?;
-    let mut reader = BufReader::new(keyfile);
-    let keys = pkcs8_private_keys(&mut reader)
-        .map_err(|_| io::Error::new(io::ErrorKind::InvalidData, "Failed to load private key"))?;
-    Ok(PrivateKey(keys[0].clone()))
-}
-
 pub fn validate_ssl_context(
-    domain: String,
-    certificate_upload_path: PathBuf,
-    privatekey_upload_path: PathBuf,
+    domain: &String,
+    ssl_cert_path: &String,
+    ssl_private_key_path: &String,
 ) -> bool {
-    let load_cert_operation = load_certs(certificate_upload_path);
+    let load_cert_operation = load_ssl_certs(ssl_cert_path);
     if load_cert_operation.is_err() {
         return false;
     }
 
-    let load_privatekey_operation = load_private_key(privatekey_upload_path);
+    let load_privatekey_operation = load_ssl_private_key(ssl_private_key_path);
     if load_privatekey_operation.is_err() {
         return false;
     }
 
-    validate_certificate(
-        domain,
+    let is_ssl_certificate_valid = validate_certificate(
+        domain.clone(),
         load_cert_operation.unwrap(),
         load_privatekey_operation.unwrap(),
-    )
+    );
+
+    is_ssl_certificate_valid
 }
 
 pub fn validate_certificate(domain: String, certs: Vec<Certificate>, key: PrivateKey) -> bool {
@@ -180,4 +164,58 @@ pub fn detect_file_type(file_name: String) -> SSlFileType {
 fn create_certified_key(certs: Vec<Certificate>, key: PrivateKey) -> CertifiedKey {
     let signing_key = RsaSigningKey::new(&key).unwrap();
     CertifiedKey::new(certs, Arc::new(signing_key))
+}
+
+fn load_ssl_certs(certificate_file_path: &String) -> Result<Vec<Certificate>, Error> {
+    let absolute_cert_file_path = get_absolute_ssl_file_path(certificate_file_path)?;
+
+    let readed_file = File::open(&absolute_cert_file_path).map_err(|_| Error {
+        code: jsonrpc_core::ErrorCode::InternalError,
+        message: format!(
+            "File not found at path '{}'",
+            &absolute_cert_file_path.to_string_lossy()
+        ),
+        data: None,
+    })?;
+
+    let mut reader = BufReader::new(readed_file);
+
+    let certs = certs(&mut reader).map_err(|_| Error {
+        code: ErrorCode::InternalError,
+        message: format!(
+            "Failed to load certificate from path '{}'",
+            absolute_cert_file_path.to_string_lossy()
+        ),
+        data: None,
+    })?;
+
+    Ok(certs.into_iter().map(Certificate).collect())
+}
+
+fn load_ssl_private_key(private_key_file_path: &String) -> Result<PrivateKey, Error> {
+    let absolute_private_key_file_path = get_absolute_ssl_file_path(private_key_file_path)?;
+
+    let readed_file = File::open(&absolute_private_key_file_path).map_err(|_| Error {
+        code: jsonrpc_core::ErrorCode::InternalError,
+        message: format!(
+            "File not found at path '{}'",
+            &absolute_private_key_file_path.to_string_lossy()
+        ),
+        data: None,
+    })?;
+
+    let mut reader = BufReader::new(readed_file);
+
+    let private_keys = pkcs8_private_keys(&mut reader).map_err(|_| Error {
+        code: jsonrpc_core::ErrorCode::InternalError,
+        message: format!(
+            "Failed to load private key from path '{}'",
+            &absolute_private_key_file_path.to_string_lossy()
+        ),
+        data: None,
+    })?;
+
+    let primary_private_key_as_binary = private_keys[0].clone();
+
+    Ok(PrivateKey(primary_private_key_as_binary))
 }
