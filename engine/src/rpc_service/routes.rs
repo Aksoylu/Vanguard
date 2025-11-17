@@ -17,18 +17,21 @@ use super::controllers::{
 pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
     vec![
         ("echo", Arc::new(echo) as RpcHandler),
+
+        ("add_http_route", Arc::new(add_http_route) as RpcHandler),
+        ("add_https_route", Arc::new(add_https_route) as RpcHandler),
+        ("add_iws_route", Arc::new(add_iws_route) as RpcHandler),
+        ("add_secure_iws_route",Arc::new(add_secure_iws_route) as RpcHandler),
+
         /*
         ("list_ssl_certs", Arc::new(list_ssl_certs) as RpcHandler),
         ("upload_ssl_cert", Arc::new(upload_ssl_cert) as RpcHandler),
         ("delete_ssl_cert", Arc::new(delete_ssl_cert) as RpcHandler),
         ("list_routes", Arc::new(list_routes) as RpcHandler),
-        ("add_http_route", Arc::new(add_http_route) as RpcHandler),
+
         ("delete_http_route",Arc::new(delete_http_route) as RpcHandler),
-        ("add_https_route", Arc::new(add_https_route) as RpcHandler),
         ("delete_https_route",Arc::new(delete_https_route) as RpcHandler),
-        ("add_iws_route", Arc::new(add_iws_route) as RpcHandler),
         ("delete_iws_route", Arc::new(delete_iws_route) as RpcHandler),
-        ("add_secure_iws_route",Arc::new(add_secure_iws_route) as RpcHandler),
         ("delete_secure_iws_route",Arc::new(delete_secure_iws_route) as RpcHandler),
         */
     ]

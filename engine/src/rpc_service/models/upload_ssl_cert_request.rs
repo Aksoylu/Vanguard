@@ -1,8 +1,10 @@
+use crate::rpc_service::rpc_error::RPCError;
 use crate::utils::base64_utility;
 use crate::utils::rpc_utility::RpcParameter;
 use crate::utils::tls_utility::get_certificate_type;
 use crate::utils::tls_utility::SSlFileType;
 
+use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub struct UploadSslCertRequest {
@@ -14,74 +16,68 @@ pub struct UploadSslCertRequest {
 impl UploadSslCertRequest {
     pub fn new(params: Value) -> Result<Self, Error> {
         let _domain: Option<String> = RpcParameter::extract_string("domain", &params);
-        let _raw_certificate = RpcParameter::extract_string("raw_certificate", &params);
-        let _raw_privatekey = RpcParameter::extract_string("raw_privatekey", &params);
+        let _certificate = RpcParameter::extract_string("certificate", &params);
+        let _privatekey = RpcParameter::extract_string("privatekey", &params);
 
         if _domain.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Given domain is not valid".into(),
-                data: None,
-            });
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please provide 'domain' parameter",
+            ));
         }
 
-        if _raw_certificate.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Given file doesn't represent a valid cert or private key".into(),
-                data: None,
-            });
+        if _certificate.is_none() {
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please provide 'certificate' (Valid SSL certificate) as parameter",
+            ));
         }
 
-        if _raw_privatekey.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Given file doesn't represent a valid cert or private key".into(),
-                data: None,
-            });
+        if _privatekey.is_none() {
+            return Err(RPCError::build(
+                &StatusCode::BAD_REQUEST,
+                "Please provide 'privatekey' (Valid SSL private key) as parameter",
+            ));
         }
 
         let domain = _domain.unwrap();
-        let base64_encrypted_certificate = _raw_certificate.unwrap();
-        let base64_encrypted_privatekey = _raw_privatekey.unwrap();
+        // Note that given certificate and private key given as Base64 encoded
+        // because JRPC doesnt support file upload
+        let decoded_certificate = base64_utility::decode_b64(_certificate.unwrap());
+        let decoded_privatekey = base64_utility::decode_b64(_privatekey.unwrap());
 
-        let certificate = base64_utility::decode_b64(base64_encrypted_certificate);
-        let privatekey = base64_utility::decode_b64(base64_encrypted_privatekey);
-
-        if certificate.is_none() || privatekey.is_none() {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Please encode your certificate and private key with base64".into(),
-                data: None,
-            });
+        if decoded_certificate.is_none() || decoded_privatekey.is_none() {
+            return Err(RPCError::build(
+                &StatusCode::INTERNAL_SERVER_ERROR,
+                "Please provide Base64 encoded SSL certificate and private key",
+            ));
         }
 
-        let raw_certificate = certificate.unwrap();
-        let raw_privatekey = privatekey.unwrap();
+        let certificate = decoded_certificate.unwrap();
+        let privatekey = decoded_privatekey.unwrap();
 
-        if get_certificate_type(raw_certificate.clone()) != SSlFileType::PemCertificate {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Given file doesn't represent a valid SSL Certificate".into(),
-                data: None,
-            });
+        if get_certificate_type(certificate.clone()) != SSlFileType::PemCertificate {
+            return Err(RPCError::build(
+                &StatusCode::METHOD_NOT_ALLOWED,
+                "Given 'certificate' parameter content doesn't represent a valid SSL certificate",
+            ));
         }
 
-        if get_certificate_type(raw_privatekey.clone()) != SSlFileType::PemPrivateKey {
-            return Err(Error {
-                code: jsonrpc_core::ErrorCode::ServerError(500),
-                message: "Given file doesn't represent a valid SSL Certificate Private Key".into(),
-                data: None,
-            });
+        if get_certificate_type(privatekey.clone()) != SSlFileType::PemPrivateKey {
+            return Err(RPCError::build(
+                &StatusCode::METHOD_NOT_ALLOWED,
+                "Given  doesn't represent a valid SSL certificate private Key",
+            ));
         }
 
         Ok(Self {
             domain,
-            raw_certificate,
-            raw_privatekey,
+            raw_certificate: certificate,
+            raw_privatekey: privatekey,
         })
     }
 
+    // getters
     pub fn get_domain(&self) -> String {
         self.domain.clone()
     }
@@ -94,4 +90,3 @@ impl UploadSslCertRequest {
         self.raw_privatekey.clone()
     }
 }
-

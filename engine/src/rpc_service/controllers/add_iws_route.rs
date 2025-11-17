@@ -1,29 +1,17 @@
 use crate::models::route::IwsRoute;
-use crate::rpc_service::models::add_iws_route_model::{AddIwsRouteRequest, AddIwsRouteResponse};
-use crate::boot::Runtime;
-use jsonrpc_core::ErrorCode;
-use jsonrpc_core::{Error, Params, Value};
-use std::sync::Arc;
-use std::sync::Mutex;
+use crate::rpc_service::models::add_iws_route_request::AddIwsRouteRequest;
+use crate::rpc_service::models::add_iws_route_response::AddIwsRouteResponse;
 
-pub fn add_iws_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
-    let request = match AddIwsRouteRequest::new(params) {
-        Ok(req) => req,
-        Err(err) => {
-            return Err(Error {
-                code: ErrorCode::InternalError,
-                message: err.message,
-                data: None,
-            });
-        }
-    };
+use jsonrpc_core::ErrorCode;
+use jsonrpc_core::{Error, Value};
+
+pub fn add_iws_route(params: Value) -> Result<Value, Error> {
+    let request = AddIwsRouteRequest::new(params)?;
 
     let source = request.get_source();
     let serving_path = request.get_serving_path();
 
-    let runtime_snapshot = runtime.lock().unwrap().router.clone();
-
-    /*  If record with source already exist in route or serving path is already used by another IWS route, terminate flow */
+    //  If record with source already exist in route or serving path is already used by another IWS route, terminate flow
     let route_list = runtime_snapshot.list_routes();
     for route in route_list {
         if route.source == source.clone() {

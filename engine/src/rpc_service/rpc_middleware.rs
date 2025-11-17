@@ -1,6 +1,5 @@
 use jsonrpc_core::{Error, Params, Value};
 use std::sync::Arc;
-use std::sync::Mutex;
 
 use crate::rpc_service::rpc_error::RPCError;
 use crate::utils::crypt_utility::decrypt_aes256_hex;

@@ -27,6 +27,7 @@ impl EchoRequest {
         })
     }
 
+    // getters
     pub fn get_message(&self) -> String {
         self.message.clone()
     }

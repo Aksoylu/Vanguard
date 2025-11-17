@@ -1,10 +1,12 @@
 use once_cell::sync::Lazy;
 use std::sync::{Arc, RwLock};
 
-use crate::{core::{
-    http_server::HttpServer, https_server::HttpsServer, log_service::LogService, router::Router,
-    rpc_session::RpcSession,
-}, rpc_service::rpc_server::RPCServer};
+use crate::{
+    core::{
+        http_server::HttpServer, https_server::HttpsServer, log_service::LogService, router::Router,
+    },
+    rpc_service::rpc_server::RPCServer,
+};
 
 // Here we store static global instances for engine-wide and multithread read-write access
 pub static HTTP_SERVER: Lazy<Arc<RwLock<HttpServer>>> =

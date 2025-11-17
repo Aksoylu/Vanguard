@@ -2,7 +2,7 @@ use crate::constants::Constants;
 use std::fs::{self};
 use std::path::PathBuf;
 
-pub fn get_ssl_path() -> PathBuf {
+pub fn get_ssl_upload_path() -> PathBuf {
     let mut ssl_path = get_runtime_path();
     ssl_path.push("SSL");
 

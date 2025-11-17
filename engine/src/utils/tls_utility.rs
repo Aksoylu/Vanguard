@@ -13,7 +13,6 @@ use std::io::{self, BufReader};
 use std::path::PathBuf;
 use std::sync::Arc;
 
-use super::directory_utility::get_ssl_path;
 
 #[derive(PartialEq, Serialize, Deserialize, Clone, Copy)]
 pub enum SSlFileType {
@@ -121,7 +120,7 @@ pub fn create_ssl_context(
     TlsAcceptor::from(Arc::new(tls_config))
 }
 
-pub fn load_certs(path: PathBuf) -> io::Result<Vec<Certificate>> {
+pub fn load_certs(path: &PathBuf) -> io::Result<Vec<Certificate>> {
     let certfile = File::open(path)?;
     let mut reader = BufReader::new(certfile);
     let certs = certs(&mut reader)
@@ -129,7 +128,7 @@ pub fn load_certs(path: PathBuf) -> io::Result<Vec<Certificate>> {
     Ok(certs.into_iter().map(Certificate).collect())
 }
 
-pub fn load_private_key(path: PathBuf) -> io::Result<PrivateKey> {
+pub fn load_private_key(path: &PathBuf) -> io::Result<PrivateKey> {
     let keyfile = File::open(path)?;
     let mut reader = BufReader::new(keyfile);
     let keys = pkcs8_private_keys(&mut reader)
@@ -138,9 +137,9 @@ pub fn load_private_key(path: PathBuf) -> io::Result<PrivateKey> {
 }
 
 pub fn validate_ssl_context(
-    domain: String,
-    certificate_upload_path: PathBuf,
-    privatekey_upload_path: PathBuf,
+    domain: &String,
+    certificate_upload_path: &PathBuf,
+    privatekey_upload_path: &PathBuf,
 ) -> bool {
     let load_cert_operation = load_certs(certificate_upload_path);
     if load_cert_operation.is_err() {
@@ -152,11 +151,13 @@ pub fn validate_ssl_context(
         return false;
     }
 
-    validate_certificate(
-        domain,
+    let is_ssl_certificate_valid = validate_certificate(
+        domain.clone(),
         load_cert_operation.unwrap(),
         load_privatekey_operation.unwrap(),
-    )
+    );
+
+    is_ssl_certificate_valid
 }
 
 pub fn validate_certificate(domain: String, certs: Vec<Certificate>, key: PrivateKey) -> bool {
