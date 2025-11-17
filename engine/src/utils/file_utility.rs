@@ -1,4 +1,3 @@
-use hyper::StatusCode;
 use jsonrpc_core::Error;
 use mime_guess::{from_path, Mime};
 use serde::de::DeserializeOwned;
@@ -122,12 +121,11 @@ pub fn get_content_type(file_path: &PathBuf) -> Mime {
 /// Else directly uses it as absolute path
 /// At the end, checks that is file name exist, else throws RPCError
 pub fn get_absolute_ssl_file_path(file_path_as_string: &String) -> Result<PathBuf, Error> {
-    let mut absolute_path = PathBuf::new();
+    let mut absolute_path = get_ssl_upload_path(); // as default
 
     if file_path_as_string.starts_with("@vanguard") {
         let vanguard_relative_path = file_path_as_string.replace("@vanguard", "");
 
-        absolute_path = get_ssl_upload_path();
         absolute_path.push(vanguard_relative_path);
     } else {
         absolute_path = PathBuf::from(file_path_as_string)

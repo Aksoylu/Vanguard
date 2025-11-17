@@ -1,25 +1,18 @@
-use crate::rpc_service::models::delete_http_route_model::{DeleteHttpRouteRequest, DeleteHttpRouteResponse};
-use crate::boot::Runtime;
-use jsonrpc_core::{Error, Params, Value};
-use std::sync::Arc;
-use std::sync::Mutex;
-use jsonrpc_core::ErrorCode;
+use crate::{
+    core::shared_memory::ROUTER,
+    rpc_service::models::{
+        delete_http_route_request::DeleteHttpRouteRequest,
+        delete_http_route_response::DeleteHttpRouteResponse,
+    },
+};
+use jsonrpc_core::{Error, Value};
 
-pub fn delete_http_route(runtime: Arc<Mutex<Runtime>>, params: Params) -> Result<Value, Error> {
-    let request = match DeleteHttpRouteRequest::new(params) {
-        Ok(req) => req,
-        Err(_) => {
-            return Err(Error {
-                code: ErrorCode::InternalError,
-                message: "Invalid request parameters for JRPC function: delete_http_route".into(),
-                data: None,
-            });
-        }
-    };
+pub fn delete_http_route(params: Value) -> Result<Value, Error> {
+    let request = DeleteHttpRouteRequest::new(params)?;
+    let domain = request.get_source();
 
-    let runtime_snapshot = runtime.lock().unwrap().router.clone();
-    let updated_runtime_snapshot = runtime_snapshot.delete_http_route( request.get_source());
-    runtime.lock().unwrap().router = updated_runtime_snapshot;
+    let mut router = ROUTER.write().unwrap();
+    router.delete_http_route(domain);
 
     Ok(DeleteHttpRouteResponse::build())
 }

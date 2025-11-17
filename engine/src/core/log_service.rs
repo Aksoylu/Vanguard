@@ -1,9 +1,7 @@
 use flexi_logger::{Age, Cleanup, Criterion, FileSpec, Logger as FlexiLogger, Naming};
 use log::{debug, error, info, warn};
-use once_cell::sync::Lazy;
 use std::fmt::Debug;
 use std::path::PathBuf;
-use std::sync::{Arc, RwLock};
 
 use crate::constants::Constants;
 use crate::models::logger_config::LoggerConfig;

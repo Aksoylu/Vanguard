@@ -19,5 +19,5 @@ pub fn add_http_route(payload: Value) -> Result<Value, Error> {
     let mut router = ROUTER.write().unwrap();
     router.add_http_route(new_route);
 
-    Ok(AddHttpRouteResponse::build(None))
+    Ok(AddHttpRouteResponse::build())
 }

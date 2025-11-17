@@ -3,8 +3,7 @@ use hyper::{
     Body, Request, Response, Server,
 };
 
-use once_cell::sync::Lazy;
-use std::sync::{Arc, RwLock};
+use std::sync::{Arc};
 
 use std::{
     collections::HashMap,

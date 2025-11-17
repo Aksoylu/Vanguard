@@ -4,9 +4,9 @@ use crate::models::ssl_context::SslContext;
 
 use crate::rpc_service::models::add_https_route_request::AddHttpsRouteRequest;
 use crate::rpc_service::models::add_https_route_response::AddHttpsRouteResponse;
+use crate::rpc_service::rpc_error::RPCError;
 use crate::utils::file_utility::get_absolute_ssl_file_path;
 use crate::utils::tls_utility::validate_ssl_context;
-use crate::{rpc_service::rpc_error::RPCError};
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
@@ -17,18 +17,14 @@ use jsonrpc_core::{Error, Value};
 pub fn add_https_route(params: Value) -> Result<Value, Error> {
     let request = AddHttpsRouteRequest::new(params)?;
 
-    let source = request.get_source();
-    let target = request.get_target();
-    let ssl_cert_path = request.get_ssl_cert_path();
-    let ssl_private_key_path = request.get_ssl_private_key_path();
+    let source: String = request.get_source();
+    let target: String = request.get_target();
+    let ssl_cert_path: String = request.get_ssl_cert_path();
+    let ssl_private_key_path: String = request.get_ssl_private_key_path();
 
-    let absolute_ssl_cert_path = get_absolute_ssl_file_path(&ssl_cert_path)?;
-    let absolute_private_key_path = get_absolute_ssl_file_path(&ssl_private_key_path)?;
+    let is_ssl_cert_valid = validate_ssl_context(&source, &ssl_cert_path, &ssl_private_key_path);
 
-    let validate_ssl_context_operation =
-        validate_ssl_context(&source, &absolute_ssl_cert_path, &absolute_private_key_path);
-
-    if !validate_ssl_context_operation {
+    if !is_ssl_cert_valid {
         return Err(RPCError::build(
             &StatusCode::NOT_ACCEPTABLE,
             "Ssl cert, private key and given source domain is not compatible ",

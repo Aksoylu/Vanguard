@@ -4,14 +4,14 @@ use jsonrpc_core::{Error, Value};
 
 pub struct AddIwsRouteRequest {
     source: String,
-    serving_path: String,
+    serving_path: String
 }
 
 impl AddIwsRouteRequest {
     pub fn new(params: Value) -> Result<Self, Error> {
         let source = RpcParameter::extract_string("source", &params);
         let serving_path = RpcParameter::extract_string("serving_path", &params);
-
+     
         if source.is_none() {
             return Err(RPCError::build(
                 &StatusCode::BAD_REQUEST,
@@ -28,7 +28,7 @@ impl AddIwsRouteRequest {
 
         Ok(Self {
             source: source.unwrap(),
-            serving_path: serving_path.unwrap(),
+            serving_path: serving_path.unwrap()
         })
     }
 

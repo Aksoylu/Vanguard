@@ -1,12 +1,10 @@
-use jsonrpc_core::{Error, Params, Value};
-use std::sync::Arc;
-use std::sync::Mutex;
-
+use crate::core::shared_memory::ROUTER;
 use crate::rpc_service::models::get_http_route_list_response::GetHttpRouteListResponse;
+use jsonrpc_core::{Error, Value};
 
-pub fn list_routes(runtime: Arc<Mutex<Runtime>>, _params: Params) -> Result<Value, Error> {
-    let runtime_snapshot = runtime.lock().unwrap().router.clone();
-    let all_routes = runtime_snapshot.list_routes();
+pub fn list_routes(_params: Value) -> Result<Value, Error> {
+    let router = ROUTER.read().unwrap();
+    let all_routes = router.list_routes();
 
     Ok(GetHttpRouteListResponse::build(all_routes))
 }

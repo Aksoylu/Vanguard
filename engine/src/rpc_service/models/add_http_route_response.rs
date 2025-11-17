@@ -8,16 +8,14 @@ use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 #[derive(Serialize, Deserialize)]
 pub struct AddHttpRouteResponse {
     code: u16,
-    message: String,
-    data: Option<Value>,
+    message: String
 }
 
 impl AddHttpRouteResponse {
-    pub fn build(data: Option<Value>) -> jsonrpc_core::Value {
+    pub fn build() -> jsonrpc_core::Value {
         let response = AddHttpRouteResponse {
             code: StatusCode::OK.as_u16(),
             message: RpcStatusMessage::OK.to_string(),
-            data,
         };
 
         let serialized_json = match serde_json::to_string(&response) {
