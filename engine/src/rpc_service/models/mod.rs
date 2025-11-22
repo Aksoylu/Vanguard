@@ -31,8 +31,8 @@ pub mod echo_response;
 pub mod get_http_route_list_request;
 pub mod get_http_route_list_response;
 
-pub mod get_ssl_cert_list_request;
-pub mod get_ssl_cert_list_response;
+pub mod get_uploaded_ssl_entity_list_request;
+pub mod get_uploaded_ssl_entity_list_response;
 
 pub mod upload_ssl_cert_request;
 pub mod upload_ssl_cert_response;

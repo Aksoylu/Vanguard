@@ -123,32 +123,36 @@ pub fn validate_ssl_context(
     domain: &String,
     ssl_cert_path: &String,
     ssl_private_key_path: &String,
-) -> bool {
-    let load_cert_operation = load_ssl_certs(ssl_cert_path);
-    if load_cert_operation.is_err() {
-        return false;
-    }
+) -> Result<(), Error> {
+    let load_cert_operation = load_ssl_certs(ssl_cert_path)?;
+    let load_privatekey_operation = load_ssl_private_key(ssl_private_key_path)?;
 
-    let load_privatekey_operation = load_ssl_private_key(ssl_private_key_path);
-    if load_privatekey_operation.is_err() {
-        return false;
-    }
-
-    let is_ssl_certificate_valid = validate_certificate(
+    validate_certificate(
         domain.clone(),
-        load_cert_operation.unwrap(),
-        load_privatekey_operation.unwrap(),
-    );
+        load_cert_operation,
+        load_privatekey_operation,
+    )?;
 
-    is_ssl_certificate_valid
+    Ok(())
 }
 
-pub fn validate_certificate(domain: String, certs: Vec<Certificate>, key: PrivateKey) -> bool {
+pub fn validate_certificate(
+    domain: String,
+    certs: Vec<Certificate>,
+    key: PrivateKey,
+) -> Result<(), Error> {
     let mut sni_resolver = ResolvesServerCertUsingSni::new();
     let certified_key = create_certified_key(certs, key);
-    let resolve_ssl_context_operation = sni_resolver.add(domain.as_str(), certified_key);
+    
+    sni_resolver
+        .add(domain.as_str(), certified_key)
+        .map_err(|error_body| Error {
+            code: jsonrpc_core::ErrorCode::InternalError,
+            message: error_body.to_string(),
+            data: None,
+        })?;
 
-    resolve_ssl_context_operation.is_ok()
+    Ok(())
 }
 
 pub fn detect_file_type(file_name: String) -> SSlFileType {
