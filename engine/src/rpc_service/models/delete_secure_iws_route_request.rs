@@ -2,11 +2,11 @@ use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
-pub struct DeleteIwsRouteRequest {
+pub struct DeleteSecureIwsRouteRequest {
     source: String,
 }
 
-impl DeleteIwsRouteRequest {
+impl DeleteSecureIwsRouteRequest {
     pub fn new(params: Value) -> Result<Self, Error> {
         let source: Option<String> = RpcParameter::extract_string("source", &params);
 

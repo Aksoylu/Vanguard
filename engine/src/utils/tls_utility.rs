@@ -124,26 +124,12 @@ pub fn validate_ssl_context(
     ssl_cert_path: &String,
     ssl_private_key_path: &String,
 ) -> Result<(), Error> {
-    let load_cert_operation = load_ssl_certs(ssl_cert_path)?;
-    let load_privatekey_operation = load_ssl_private_key(ssl_private_key_path)?;
+    let ssl_cert_list = load_ssl_certs(ssl_cert_path)?;
+    let private_key = load_ssl_private_key(ssl_private_key_path)?;
 
-    validate_certificate(
-        domain.clone(),
-        load_cert_operation,
-        load_privatekey_operation,
-    )?;
-
-    Ok(())
-}
-
-pub fn validate_certificate(
-    domain: String,
-    certs: Vec<Certificate>,
-    key: PrivateKey,
-) -> Result<(), Error> {
     let mut sni_resolver = ResolvesServerCertUsingSni::new();
-    let certified_key = create_certified_key(certs, key);
-    
+    let certified_key = create_certified_key(ssl_cert_list, private_key);
+
     sni_resolver
         .add(domain.as_str(), certified_key)
         .map_err(|error_body| Error {

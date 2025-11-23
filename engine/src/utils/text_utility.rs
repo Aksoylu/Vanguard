@@ -38,13 +38,6 @@ pub fn mask_token(input: &str) -> String {
     }
 }
 
-pub fn compare_string_insensitive(a: &str, b: &str) -> bool {
-    let ia = a.chars().filter(|c| !c.is_whitespace()).flat_map(|c| c.to_lowercase());
-    let ib = b.chars().filter(|c| !c.is_whitespace()).flat_map(|c| c.to_lowercase());
-
-    ia.eq(ib)
-}
-
 pub fn normalize_string(input_string: &String) -> String{
     let normalized = input_string.chars()
         .filter(|c| !c.is_whitespace())

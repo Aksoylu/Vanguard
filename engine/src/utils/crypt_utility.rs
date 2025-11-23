@@ -1,8 +1,6 @@
 use aes_gcm::aead::{Aead, KeyInit};
 use aes_gcm::{Aes256Gcm, Key, Nonce};
-use base64::{decode, encode};
 use rand::seq::SliceRandom;
-use rand::RngCore;
 use sha2::{Digest, Sha256};
 
 pub fn generate_hash(secure_key: String) -> String {
@@ -34,29 +32,6 @@ pub fn hash_sha_256(input: &str) -> String {
         .collect::<String>();
 
     key_as_str
-}
-
-pub fn generate_nonce_hex() -> String {
-    let mut nonce = [0u8; 12]; // AES-GCM standard nonce length
-    rand::thread_rng().fill_bytes(&mut nonce);
-    hex::encode(nonce) // hex string olarak döndür
-}
-
-pub fn encrypt_aes256_hex(key_hex: &str, plaintext: &str, nonce_hex: &str) -> Option<String> {
-    // Hex string to bytes
-    let key_bytes = decode(key_hex).ok()?;
-    let nonce_bytes = decode(nonce_hex).ok()?;
-
-    if key_bytes.len() != 32 || nonce_bytes.len() != 12 {
-        return None; // key veya nonce yanlış boyutta
-    }
-
-    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
-    let cipher = Aes256Gcm::new(key);
-    let nonce = Nonce::from_slice(&nonce_bytes);
-
-    let ciphertext = cipher.encrypt(nonce, plaintext.as_bytes()).ok()?;
-    Some(encode(ciphertext))
 }
 
 pub fn decrypt_aes256_hex(key_hex: &str, ciphertext_hex: &str, nonce_hex: &str) -> Option<String> {

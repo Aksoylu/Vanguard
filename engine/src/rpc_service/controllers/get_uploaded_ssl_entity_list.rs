@@ -1,6 +1,5 @@
 use jsonrpc_core::{Error, Value};
 
-
 use crate::models::ssl_entity::SslEntity;
 use crate::rpc_service::models::get_uploaded_ssl_entity_list_response::GetUplodadedSslEntityListResponse;
 use crate::utils::directory_utility::get_ssl_upload_path;

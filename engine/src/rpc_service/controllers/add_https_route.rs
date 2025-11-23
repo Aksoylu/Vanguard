@@ -1,7 +1,7 @@
 use crate::models::route::HttpsRoute;
 use crate::models::ssl_context::SslContext;
 use crate::utils::text_utility::normalize_string;
-use crate::{core::shared_memory::ROUTER, utils::text_utility::compare_string_insensitive};
+use crate::{core::shared_memory::ROUTER};
 
 use crate::rpc_service::models::add_https_route_request::AddHttpsRouteRequest;
 use crate::rpc_service::models::add_https_route_response::AddHttpsRouteResponse;
