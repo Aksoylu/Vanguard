@@ -1,25 +1,31 @@
-use core::{interprinter::CommandInterprinter, methods::version::print_cli_version};
-
-use utils::{banner::print_welcome_banner, console::separator};
-
-use crate::utils::console::console_read;
-
-mod build;
+mod assets;
+mod boot;
+mod commands;
+mod constants;
 mod core;
 mod models;
 mod utils;
-mod settings;
+
+use crate::assets::{banner::print_banner, startup_disclaimer::print_startup_disclaimer};
+
+use utils::console::separator;
+
+use crate::utils::console::console_read;
 
 #[tokio::main]
 async fn main() {
-    print_welcome_banner();
-    print_cli_version();
+    print_startup_disclaimer();
+    print_banner();
     separator(5);
 
-    let mut interprinter = CommandInterprinter::new();
+    let boot_result = Boot::init();
+
+    /*
+    let mut interprinter = Interprinter::new();
 
     loop {
         let input: String = console_read(">>>");
         interprinter.execute(input).await;
     }
+     */
 }

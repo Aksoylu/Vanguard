@@ -2,7 +2,7 @@ use serde::de::value::Error;
 use serde_json::{from_str, to_string};
 use std::{collections::HashMap, fs::File, io::Read};
 
-use crate::{models::rpc_session::RpcSession, settings::Settings};
+use crate::{core::rpc_session::RpcSession, settings::Settings};
 
 #[derive()]
 pub struct RpcClient {

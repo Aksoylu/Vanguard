@@ -1,3 +1,7 @@
+pub struct RpcParams{
+
+}
+
 pub struct JrpcPayload {
     pub jsonrpc: String,
     pub method: String,
