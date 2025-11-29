@@ -1,10 +1,13 @@
 use clap::Subcommand;
 
-pub mod echo;
+use crate::commands::echo::EchoArgs;
 
 #[derive(Subcommand)]
 pub enum Commands {
     Start,
     Ping,
-    Echo
+    Echo(EchoArgs),
 }
+
+
+pub mod echo;

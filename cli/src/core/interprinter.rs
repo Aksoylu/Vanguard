@@ -1,4 +1,5 @@
-use clap::{Parser};
+use clap::{Parser, command};
+use shlex::Shlex;
 
 use crate::commands::{Commands, echo::echo};
 
@@ -8,22 +9,37 @@ struct Cli {
     command: Commands,
 }
 
-struct Interprinter {
-    cli: Cli
-}
+pub struct Interprinter;
 
 impl Interprinter{
-    pub fn new() -> Self {
-        
-        let cli = Cli::parse();
-        Interprinter { cli }
+    pub fn new() -> Interprinter {
+        Interprinter{}
     }
 
-    pub async fn run(&self) {
-        match &self.cli.command {
-            Commands::Start => start().await,
+    async fn execute_command(cli: Cli) {
+        match cli.command {
+            Commands::Start => start().await, 
             Commands::Ping => ping().await,
-            Commands::Echo => echo().await,
+            Commands::Echo(args) => echo(args).await,
+        }
+    }
+    pub async fn run(&self, input: String) {
+        let args = Shlex::new(&input).collect::<Vec<_>>();
+
+        if args.is_empty() {
+            return;
+        }
+
+        let mut clap_args = vec!["execute".to_string()];
+        clap_args.extend(args);
+
+         match Cli::try_parse_from(clap_args) {
+            Ok(cli) => {
+                Self::execute_command(cli).await; 
+            },
+            Err(e) => {
+                eprintln!("{}", e);
+            }
         }
     }
 }

@@ -1,12 +1,9 @@
-use jsonrpc_core::Error;
-use mime_guess::{from_path, Mime};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-use crate::utils::directory_utility::get_ssl_upload_path;
 
 pub fn load_json<T>(file_path: &Path) -> Result<T, Box<dyn std::error::Error>>
 where

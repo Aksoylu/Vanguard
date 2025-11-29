@@ -19,10 +19,12 @@ hyper-rustls = "0.22"
 base64 = "0.21"
 aes-gcm = "0.10"
 hex = "0.4"
-
+dirs = "4.0.0"
+once_cell = "1.18"
+shlex = "0.1"
 
 crossterm = "0.26.0"
-clap = { version = "3", features = ["derive"] }
+clap = { version = "4.5", features = ["derive"] }
 
 [profile.dev]
 panic = "abort"

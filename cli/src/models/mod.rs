@@ -1,2 +1,3 @@
-pub mod echo_request;
-pub mod echo_response;
+pub mod rpc;
+pub mod commands;
+pub mod base;
