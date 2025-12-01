@@ -1,5 +1,8 @@
-pub struct RPCResponse{
+use serde::{Deserialize, Serialize};
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct RPCResponse {
     pub jsonrpc: String,
     pub result: String,
-    pub id : i32
+    pub id: i32,
 }

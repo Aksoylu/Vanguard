@@ -6,10 +6,14 @@ mod core;
 mod models;
 mod utils;
 
-use crate::{assets::{banner::print_banner, startup_disclaimer::print_startup_disclaimer}, boot::Boot, core::{interprinter::Interprinter, rpc_client::RPCClient, shared_memory::RPC_CLIENT}, utils::console::console_read};
+use crate::{
+    assets::{banner::print_banner, startup_disclaimer::print_startup_disclaimer},
+    boot::Boot,
+    core::{interprinter::Interprinter, rpc_client::RPCClient, shared_memory::RPC_CLIENT},
+    utils::console::console_read,
+};
 
 use utils::console::separator;
-
 
 #[tokio::main]
 async fn main() {
@@ -19,13 +23,16 @@ async fn main() {
 
     let boot_data = Boot::init();
 
-    let mut rpc_client = RPC_CLIENT.write().unwrap();
-    *rpc_client = RPCClient::init(boot_data);
-    
+    let _lock = {
+        // EK BİR SCOPE OLUŞTURUN
+        let mut rpc_client_guard = RPC_CLIENT.write().await; // Guard'ı al
+        *rpc_client_guard = RPCClient::init(boot_data);
+    };
+
     let interprinter = Interprinter::new();
 
     loop {
-        let input: String = console_read(">>> "); 
+        let input: String = console_read(">>> ");
         let trimmed_input = input.trim().to_lowercase();
 
         if trimmed_input == "exit" || trimmed_input == "quit" {
@@ -35,5 +42,4 @@ async fn main() {
 
         interprinter.run(input).await;
     }
-
 }
