@@ -22,8 +22,6 @@ pub async fn echo(args: EchoArgs) {
         message: args.message,
     };
 
-    print!("{}", &echo_request.message);
-
     let result = execute(echo_request).await;
 
     if result.is_err() {

@@ -35,7 +35,6 @@ impl RPCClient {
         }
 
         let rpc_url = get_rpc_url.unwrap();
-        print!("{}", &rpc_url);
 
         let client = Client::new();
 
@@ -65,18 +64,20 @@ impl RPCClient {
             return Err(RPCBaseError::build(readed_error_message.as_str()));
         }
 
-        let response_body: RPCResponse = response.json().await.map_err(|json_parse_error| {
+        let response_body = response.text().await.map_err(|read_body_error| {
             let error_message = format!(
-                "JSON parsing failure on server response: {}",
-                json_parse_error.to_string()
+                "Reading body failure on vanguard engine response: {}",
+                read_body_error.to_string()
             );
             RPCBaseError::build(error_message.as_str())
         })?;
 
+        println!("{}", &response_body);
+
         Ok(RPCResponse {
-            jsonrpc: response_body.jsonrpc,
-            result: response_body.result,
-            id: response_body.id,
+            jsonrpc: "jsonrpc".to_string(),
+            result: response_body,
+            id: 21,
         })
     }
 
