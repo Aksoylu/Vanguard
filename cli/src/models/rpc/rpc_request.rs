@@ -23,7 +23,7 @@ impl Default for RPCRequest {
 }
 
 impl RPCRequest {
-    pub fn new(method: &str, params: RPCParams) -> Self {
+    pub fn build(method: &str, params: RPCParams) -> Self {
         Self {
             id: 1,
             jsonrpc: "2.0".into(),

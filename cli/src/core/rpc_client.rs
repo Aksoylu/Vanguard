@@ -9,6 +9,7 @@ use crate::{
     },
 };
 use reqwest::Client;
+use serde_json::Value;
 
 pub struct RPCClient {
     pub boot_data: Option<BootData>,
@@ -21,13 +22,10 @@ impl RPCClient {
         }
     }
 
-    pub async fn call(
-        &self,
-        method: &str,
-        payload: RPCPayload,
-    ) -> Result<RPCResponse, RPCBaseError> {
-        let rpc_parameter = RPCParams::build(payload).await?;
-        let rpc_request = RPCRequest::new(method, rpc_parameter);
+    pub async fn call(&self, method: &str, input: Value) -> Result<RPCResponse, RPCBaseError> {
+        let payload = RPCPayload::build(input).await?;
+        let params = RPCParams::build(payload).await?;
+        let rpc_request = RPCRequest::build(method, params);
 
         let get_rpc_url = self.get_rpc_url();
         if get_rpc_url.is_none() {
@@ -72,13 +70,10 @@ impl RPCClient {
             RPCBaseError::build(error_message.as_str())
         })?;
 
-        println!("{}", &response_body);
+        let response = RPCResponse::build(response_body)?;
+        println!("rpc client result {:?}>>", &response);
 
-        Ok(RPCResponse {
-            jsonrpc: "jsonrpc".to_string(),
-            result: response_body,
-            id: 21,
-        })
+        Ok(response)
     }
 
     fn get_rpc_url(&self) -> Option<String> {
