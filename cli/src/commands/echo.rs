@@ -28,8 +28,10 @@ pub async fn echo(args: EchoArgs) {
 
     let echo_response = result.unwrap();
 
-    log_info!("Echo >> {}", echo_response.code);
-    log_info!("Echo >> {:?}", echo_response);
+    log_info!(
+        "Echo answer from Vanguard Engine: {}",
+        echo_response.message
+    );
 }
 
 async fn execute(input: EchoRequest) -> Result<EchoResponse, RPCBaseError> {
@@ -38,11 +40,15 @@ async fn execute(input: EchoRequest) -> Result<EchoResponse, RPCBaseError> {
 
     let lock = {
         let rpc_client = RPC_CLIENT.read().await;
-        let rpc_call_result = rpc_client.call("echo", serialized_input).await?;
-        let result = rpc_call_result.result;
+        let rpc_call_response = rpc_client.call("echo", serialized_input).await?;
+        let result = rpc_call_response.result;
+
+        let code = &result["code"].as_i64().unwrap_or_default();
+        let message = &result["message"].as_str().unwrap_or_default().to_string();
+
         Ok(EchoResponse {
-            code: 0,
-            message: result.to_string(),
+            code: code.to_owned(),
+            message: message.to_owned(),
         })
     }?;
 

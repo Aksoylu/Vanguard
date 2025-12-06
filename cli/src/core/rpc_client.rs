@@ -71,8 +71,6 @@ impl RPCClient {
         })?;
 
         let response = RPCResponse::build(response_body)?;
-        println!("rpc client result {:?}>>", &response);
-
         Ok(response)
     }
 
