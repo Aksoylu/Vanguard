@@ -1,7 +1,7 @@
+use crate::core::shared_memory::ROUTER;
 use crate::models::route::HttpsRoute;
 use crate::models::ssl_context::SslContext;
 use crate::utils::text_utility::normalize_string;
-use crate::{core::shared_memory::ROUTER};
 
 use crate::rpc_service::models::add_https_route_request::AddHttpsRouteRequest;
 use crate::rpc_service::models::add_https_route_response::AddHttpsRouteResponse;
@@ -22,35 +22,21 @@ pub fn add_https_route(params: Value) -> Result<Value, Error> {
     let ssl_cert_path: String = request.get_ssl_cert_path();
     let ssl_private_key_path: String = request.get_ssl_private_key_path();
 
-    let new_route = HttpsRoute {
-        source,
-        target,
+    validate_ssl_context(&source, &ssl_cert_path, &ssl_private_key_path)?;
 
-        ssl_context: SslContext {
-            certificate_file_path: ssl_cert_path,
-            private_key_file_path: ssl_private_key_path,
-        },
-    };
-
-    validate_ssl_context(
-        &new_route.source,
-        &new_route.ssl_context.certificate_file_path,
-        &new_route.ssl_context.private_key_file_path,
-    )?;
-
-    check_route_already_used(&new_route)?;
+    check_route_already_used(&source)?;
 
     let mut router = ROUTER.write().unwrap();
-    router.add_https_route(new_route);
+    router.add_https_route(&source, &target, &ssl_cert_path, &ssl_private_key_path);
 
     Ok(AddHttpsRouteResponse::build(None))
 }
 
-fn check_route_already_used(new_route: &HttpsRoute) -> Result<(), Error> {
+fn check_route_already_used(source: &String) -> Result<(), Error> {
     let router = ROUTER.read().unwrap();
     let all_route_list = router.list_routes();
 
-    let normalized_new_source = normalize_string(&new_route.source);
+    let normalized_new_source = normalize_string(source);
 
     for each_route in all_route_list {
         let normalized_current_source = normalize_string(&each_route.source);

@@ -38,12 +38,11 @@ pub fn add_iws_route(params: Value) -> Result<Value, Error> {
     }
 
     let new_iws_route = IwsRoute {
-        source: source.clone(),
         serving_path: serving_path.clone(),
     };
 
     let mut router = ROUTER.write().unwrap();
-    router.add_iws_route(new_iws_route);
+    router.add_iws_route(&source, new_iws_route);
 
     Ok(AddIwsRouteResponse::build())
 }

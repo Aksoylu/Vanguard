@@ -1,13 +1,6 @@
 use colored::{ColoredString, Colorize};
 use std::path::PathBuf;
 
-pub fn clear_punctation(input: String) -> String {
-    input
-        .chars()
-        .filter(|c| !c.is_ascii_punctuation())
-        .collect()
-}
-
 pub fn status_flag(input: bool, ok_flag: &str, error_flag: &str) -> ColoredString {
     if input {
         format!("[{}]", ok_flag).green()
@@ -38,8 +31,9 @@ pub fn mask_token(input: &str) -> String {
     }
 }
 
-pub fn normalize_string(input_string: &String) -> String{
-    let normalized = input_string.chars()
+pub fn normalize_string(input_string: &String) -> String {
+    let normalized = input_string
+        .chars()
         .filter(|c| !c.is_whitespace())
         .collect::<String>()
         .to_lowercase();

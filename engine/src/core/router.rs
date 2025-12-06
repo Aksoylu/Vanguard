@@ -3,7 +3,10 @@ use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
     constants::Constants,
-    models::route::{HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
+    models::{
+        route::{HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
+        ssl_context::SslContext,
+    },
     utils::{
         directory_utility::get_runtime_path,
         file_utility::{load_json, save_json},
@@ -16,6 +19,8 @@ pub struct Router {
     https_route_table: HashMap<String, HttpsRoute>,
     iws_route_table: HashMap<String, IwsRoute>,
     secure_iws_route_table: HashMap<String, SecureIwsRoute>,
+
+    #[serde(skip_serializing, skip_deserializing)]
     save_path: PathBuf,
 }
 
@@ -41,18 +46,14 @@ impl Default for Router {
 
 impl Router {
     pub fn load(load_path: PathBuf) -> (Router, bool) {
-        let read_route_operation = load_json::<Vec<JsonRoute>>(&load_path);
+        let read_route_operation = load_json::<Router>(&load_path);
         if read_route_operation.is_err() {
             return (Router::default(), false);
         }
 
-        let route_list = read_route_operation.unwrap();
-        let router = Router::build(load_path, route_list);
-        if router.is_ok() {
-            return (router.unwrap(), true);
-        } else {
-            return (Router::default(), false);
-        }
+        let router = read_route_operation.unwrap();
+
+        (router, true)
     }
 
     pub fn save(&self) {
@@ -68,109 +69,46 @@ impl Router {
         }
     }
 
-    fn build(save_path: PathBuf, route_list: Vec<JsonRoute>) -> Result<Self, String> {
-        let mut http_route_table: HashMap<String, HttpRoute> = HashMap::new();
-        let mut https_route_table: HashMap<String, HttpsRoute> = HashMap::new();
-        let mut iws_route_table: HashMap<String, IwsRoute> = HashMap::new();
-        let mut secure_iws_route_table: HashMap<String, SecureIwsRoute> = HashMap::new();
-
-        for each_route in route_list {
-            let protocol_name = each_route.protocol.clone().to_lowercase();
-
-            if protocol_name == "http" {
-                let new_http_route = HttpRoute {
-                    source: each_route.source.clone(),
-                    target: each_route.target.clone().unwrap_or_default(),
-                };
-                http_route_table.insert(each_route.source.clone(), new_http_route.clone());
-            } else if protocol_name == "https" {
-                let new_https_route = HttpsRoute {
-                    source: each_route.source.clone(),
-                    target: each_route.target.clone().unwrap_or_default(),
-                    ssl_context: each_route.ssl.clone().unwrap_or_default(),
-                };
-
-                https_route_table.insert(each_route.source.clone(), new_https_route.clone());
-            } else if protocol_name == "iws" {
-                let new_iws_route: IwsRoute = IwsRoute {
-                    source: each_route.source.clone(),
-                    serving_path: each_route.serving_path.clone().unwrap_or_default(),
-                };
-
-                iws_route_table.insert(each_route.source.clone(), new_iws_route.clone());
-            } else if protocol_name == "secureiws" {
-                let new_secure_iws_route = SecureIwsRoute {
-                    source: each_route.source.clone(),
-                    serving_path: each_route.serving_path.clone().unwrap_or_default(),
-                    ssl_context: each_route.ssl.clone().unwrap_or_default(),
-                };
-
-                secure_iws_route_table.insert(
-                    new_secure_iws_route.source.clone(),
-                    new_secure_iws_route.clone(),
-                );
-            } else {
-                return Err(format!("Error: Unsupported protocol: {}", protocol_name).into());
-            }
-        }
-
-        Ok(Router {
-            http_route_table,
-            https_route_table,
-            iws_route_table,
-            secure_iws_route_table,
-            save_path,
-        })
-    }
-
     fn convert_to_json_route_vec(&self) -> Vec<JsonRoute> {
         let mut json_route_vec = <Vec<JsonRoute>>::new();
 
-        for each_http_entity in &self.http_route_table {
-            let each_http_route = each_http_entity.1;
-
+        for (source, http_route) in &self.http_route_table {
             json_route_vec.push(JsonRoute {
                 protocol: "http".to_string(),
-                source: each_http_route.source.clone(),
-                target: Some(each_http_route.target.clone()),
+                source: source.clone(),
+                target: Some(http_route.target.clone()),
                 ssl: None,
                 serving_path: None,
             });
         }
 
-        for each_https_entity in &self.https_route_table {
-            let each_https_route = each_https_entity.1;
-
+        for (source, https_route) in &self.https_route_table {
             json_route_vec.push(JsonRoute {
                 protocol: "https".to_string(),
-                source: each_https_route.source.clone(),
-                target: Some(each_https_route.target.clone()),
-                ssl: Some(each_https_route.ssl_context.clone()),
+                source: source.clone(),
+                target: Some(https_route.target.clone()),
+                ssl: Some(https_route.ssl_context.clone()),
                 serving_path: None,
             })
         }
 
-        for each_iws_entity in &self.iws_route_table {
-            let each_iws_route = each_iws_entity.1;
-
+        for (source, iws_route) in &self.iws_route_table {
             json_route_vec.push(JsonRoute {
                 protocol: "iws".to_string(),
-                source: each_iws_route.source.clone(),
+                source: source.clone(),
                 target: None,
                 ssl: None,
-                serving_path: Some(each_iws_route.serving_path.clone()),
+                serving_path: Some(iws_route.serving_path.clone()),
             })
         }
 
-        for each_secure_iws_entity in &self.secure_iws_route_table {
-            let each_secure_iws_route = each_secure_iws_entity.1;
-
+        for (source, secure_iws_route) in &self.secure_iws_route_table {
             json_route_vec.push(JsonRoute {
                 protocol: "secureiws".to_string(),
-                source: each_secure_iws_route.source.clone(),
+                source: source.clone(),
                 target: None,
-                ssl: Some(each_secure_iws_route.ssl_context.clone()),
-                serving_path: Some(each_secure_iws_route.serving_path.clone()),
+                ssl: Some(secure_iws_route.ssl_context.clone()),
+                serving_path: Some(secure_iws_route.serving_path.clone()),
             })
         }
 
@@ -184,47 +122,73 @@ impl Router {
         export_data
     }
 
-    pub fn add_http_route(&mut self, route_body: HttpRoute) {
-        let route_name = route_body.source.clone();
-
-        if self.http_route_table.contains_key(&route_name) {
-            self.http_route_table.remove(&route_name);
+    pub fn add_http_route(&mut self, source: &String, target: &String) {
+        if self.http_route_table.contains_key(source) {
+            self.http_route_table.remove(source);
         }
 
-        self.http_route_table.insert(route_name, route_body);
+        let new_route = HttpRoute {
+            target: target.to_owned(),
+        };
+
+        self.http_route_table.insert(source.to_owned(), new_route);
         self.save();
     }
 
-    pub fn add_https_route(&mut self, route_body: HttpsRoute) {
-        let route_name = route_body.source.clone();
-
-        if self.https_route_table.contains_key(&route_name) {
-            self.https_route_table.remove(&route_name);
+    pub fn add_https_route(
+        &mut self,
+        source: &String,
+        target: &String,
+        ssl_cert_path: &String,
+        ssl_private_key_path: &String,
+    ) {
+        if self.https_route_table.contains_key(source) {
+            self.https_route_table.remove(source);
         }
 
-        self.https_route_table.insert(route_name, route_body);
+        let new_route = HttpsRoute {
+            target: target.to_owned(),
+            ssl_context: SslContext {
+                certificate_file_path: ssl_cert_path.to_owned(),
+                private_key_file_path: ssl_private_key_path.to_owned(),
+            },
+        };
+
+        self.https_route_table.insert(source.to_owned(), new_route);
         self.save();
     }
 
-    pub fn add_iws_route(&mut self, route_body: IwsRoute) {
-        let route_name = route_body.source.clone();
-
-        if self.iws_route_table.contains_key(&route_name) {
-            self.iws_route_table.remove(&route_name);
+    pub fn add_iws_route(&mut self, source: &String, route_body: IwsRoute) {
+        if self.iws_route_table.contains_key(source) {
+            self.iws_route_table.remove(source);
         }
 
-        self.iws_route_table.insert(route_name, route_body);
+        self.iws_route_table.insert(source.to_owned(), route_body);
         self.save();
     }
 
-    pub fn add_secure_iws_route(&mut self, route_body: SecureIwsRoute) {
-        let route_name = route_body.source.clone();
-
-        if self.secure_iws_route_table.contains_key(&route_name) {
-            self.secure_iws_route_table.remove(&route_name);
+    pub fn add_secure_iws_route(
+        &mut self,
+        source: &String,
+        serving_path: &String,
+        ssl_cert_path: &String,
+        ssl_private_key_path: &String,
+    ) {
+        if self.secure_iws_route_table.contains_key(source) {
+            self.secure_iws_route_table.remove(source);
         }
 
-        self.secure_iws_route_table.insert(route_name, route_body);
+        let new_route: SecureIwsRoute = SecureIwsRoute {
+            serving_path: serving_path.to_owned(),
+
+            ssl_context: SslContext {
+                certificate_file_path: ssl_cert_path.to_owned(),
+                private_key_file_path: ssl_private_key_path.to_owned(),
+            },
+        };
+
+        self.secure_iws_route_table
+            .insert(source.to_owned(), new_route);
         self.save();
     }
 

@@ -3,7 +3,7 @@ use hyper::{
     Body, Request, Response, Server,
 };
 
-use std::sync::{Arc};
+use std::sync::Arc;
 
 use std::{
     collections::HashMap,
@@ -152,10 +152,10 @@ impl HttpServer {
 
         let current_http_route = self.http_routes.get(request_host).unwrap();
 
-        if !String::is_empty(&current_http_route.source) {
+        if !String::is_empty(&current_http_route.target) {
             log_debug!(
                 "HTTP outband request source ({}) is known. Forwarding request to {}",
-                &current_http_route.source,
+                &request_host,
                 &current_http_route.target
             );
 
@@ -171,7 +171,7 @@ impl HttpServer {
 
         log_debug!(
             "HTTP outband request source ({}) as domain/target is is unknown",
-            &current_http_route.source
+            &request_host
         );
 
         CommonHandler::not_found_error(Protocol::HTTP, request_host, req, client_ip).await
@@ -194,7 +194,7 @@ impl HttpServer {
         if String::is_empty(&current_iws_route.serving_path) {
             log_debug!(
                 "HTTP outband IWS request source ({}) as domain/target is is unknown",
-                &current_iws_route.source
+                &request_host
             );
 
             return CommonHandler::iws_route_not_found_error(
@@ -212,7 +212,7 @@ impl HttpServer {
         if is_file_exist(&requested_disk_path) {
             log_debug!(
                 "HTTP outband IWS request source ({}) is known. Serving file from disk (IWS registry) at path: {}",
-                &current_iws_route.source,
+                &request_host,
                 &current_iws_route.serving_path
             );
 
@@ -229,7 +229,7 @@ impl HttpServer {
         if is_directory_exist(&requested_disk_path) {
             log_debug!(
                 "HTTP outband IWS request source ({}) is known. Serving directory from disk (IWS registry) at path: {}",
-                &current_iws_route.source,
+                &request_host,
                 &current_iws_route.serving_path
             );
 
@@ -245,7 +245,7 @@ impl HttpServer {
 
         log_debug!(
             "HTTP outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
-            &current_iws_route.source,
+            &request_host,
             &current_iws_route.serving_path
         );
 

@@ -158,7 +158,6 @@ fn create_certified_key(certs: Vec<Certificate>, key: PrivateKey) -> CertifiedKe
 
 fn load_ssl_certs(certificate_file_path: &String) -> Result<Vec<Certificate>, Error> {
     let absolute_cert_file_path = get_absolute_ssl_file_path(certificate_file_path)?;
-
     let readed_file = File::open(&absolute_cert_file_path).map_err(|_| Error {
         code: jsonrpc_core::ErrorCode::InternalError,
         message: format!(

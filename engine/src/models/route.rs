@@ -4,26 +4,22 @@ use super::ssl_context::SslContext;
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct HttpRoute {
-    pub source: String,
     pub target: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct HttpsRoute {
-    pub source: String,
     pub target: String,
     pub ssl_context: SslContext,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct IwsRoute {
-    pub source: String,
     pub serving_path: String,
 }
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct SecureIwsRoute {
-    pub source: String,
     pub serving_path: String,
     pub ssl_context: SslContext,
 }

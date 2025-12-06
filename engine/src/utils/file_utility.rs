@@ -124,7 +124,7 @@ pub fn get_absolute_ssl_file_path(file_path_as_string: &String) -> Result<PathBu
     let mut absolute_path = get_ssl_upload_path(); // as default
 
     if file_path_as_string.starts_with("@vanguard") {
-        let vanguard_relative_path = file_path_as_string.replace("@vanguard", "");
+        let vanguard_relative_path = file_path_as_string.replace("@vanguard/", "");
 
         absolute_path.push(vanguard_relative_path);
     } else {

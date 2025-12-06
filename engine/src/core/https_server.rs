@@ -142,10 +142,10 @@ impl HttpsServer {
 
         let current_https_route = self.https_routes.get(request_host).unwrap();
 
-        if !String::is_empty(&current_https_route.source) {
+        if !String::is_empty(&request_host) {
             log_debug!(
                 "HTTPS outband request source ({}) is known. Forwarding request to {}",
-                &current_https_route.source,
+                &request_host,
                 &current_https_route.target
             );
 
@@ -161,7 +161,7 @@ impl HttpsServer {
 
         log_debug!(
             "HTTPS outband request source ({}) as domain/target is is unknown",
-            &current_https_route.source
+            &request_host
         );
 
         return CommonHandler::not_found_error(Protocol::HTTPS, request_host, req, client_ip).await;
@@ -184,7 +184,7 @@ impl HttpsServer {
         if String::is_empty(&current_iws_route.serving_path) {
             log_debug!(
                 "HTTPS outband IWS request source ({}) as domain/target is is unknown",
-                &current_iws_route.source
+                &request_host
             );
 
             return CommonHandler::iws_route_not_found_error(
@@ -202,7 +202,7 @@ impl HttpsServer {
         if is_file_exist(&requested_disk_path) {
             log_debug!(
                 "HTTPS outband IWS request source ({}) is known. Serving file from disk (Secure IWS registry) at path: {}",
-                &current_iws_route.source,
+                &request_host,
                 &current_iws_route.serving_path
             );
 
@@ -219,7 +219,7 @@ impl HttpsServer {
         if is_directory_exist(&requested_disk_path) {
             log_debug!(
                 "HTTPS outband IWS request source ({}) is known. Serving directory from disk (Secure IWS registry) at path: {}",
-                &current_iws_route.source,
+                &request_host,
                 &current_iws_route.serving_path
             );
 
@@ -235,7 +235,7 @@ impl HttpsServer {
 
         log_debug!(
             "HTTPS outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
-            &current_iws_route.source,
+            &request_host,
             &current_iws_route.serving_path
         );
 

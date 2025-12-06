@@ -38,7 +38,7 @@ impl RPCServer {
                 RpcMiddleware::bind(
                     controller_delegate.clone(),
                     aes_decryption_key.clone(),
-                    authorization_token.clone()
+                    authorization_token.clone(),
                 ),
             );
         }
