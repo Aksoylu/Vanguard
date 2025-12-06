@@ -3,7 +3,6 @@ use crate::log_error;
 use std::fs::{self};
 use std::path::PathBuf;
 
-
 pub fn get_runtime_path() -> PathBuf {
     let path = if cfg!(target_os = "windows") {
         PathBuf::from(Constants::WIN_RUNTIME_PATH)

@@ -4,7 +4,6 @@ use std::fs::{self, File};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
-
 pub fn load_json<T>(file_path: &Path) -> Result<T, Box<dyn std::error::Error>>
 where
     T: DeserializeOwned,

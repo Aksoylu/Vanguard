@@ -13,9 +13,9 @@ macro_rules! log_info {
 macro_rules! log_error {
     ($($arg:tt)*) => {
         eprintln!(
-            "{}[ERROR] {}{}", 
+            "{}[ERROR] {}{}",
             $crate::utils::logger_utility::ANSI_COLOR_RED,
-            format!($($arg)*), 
+            format!($($arg)*),
             $crate::utils::logger_utility::ANSI_COLOR_RESET
         )
     };
@@ -25,9 +25,9 @@ macro_rules! log_error {
 macro_rules! log_warn {
     ($($arg:tt)*) => {
         eprintln!(
-            "{}[WARNING] {}{}", 
-            $crate::utils::logger_utility::ANSI_COLOR_YELLOW, 
-            format!($($arg)*), 
+            "{}[WARNING] {}{}",
+            $crate::utils::logger_utility::ANSI_COLOR_YELLOW,
+            format!($($arg)*),
             $crate::utils::logger_utility::ANSI_COLOR_RESET
         )
     };

@@ -9,5 +9,4 @@ pub enum Commands {
     Echo(EchoArgs),
 }
 
-
 pub mod echo;

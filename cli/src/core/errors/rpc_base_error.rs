@@ -1,16 +1,17 @@
-use std::{error::Error, fmt::{self, Display}};
-
+use std::{
+    error::Error,
+    fmt::{self, Display},
+};
 
 #[derive(Debug)]
 pub struct RPCBaseError {
-    pub reason: String
+    pub reason: String,
 }
 
 impl RPCBaseError {
-  
-    pub fn build( message: &str) -> RPCBaseError {
+    pub fn build(message: &str) -> RPCBaseError {
         RPCBaseError {
-            reason: message.into()
+            reason: message.into(),
         }
     }
 }

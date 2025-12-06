@@ -1,7 +1,9 @@
 use serde::de::value::Error;
 
 use crate::{
-    core::{interprinter::CommandInterprinter, rpc_client::RpcClient}, settings::Settings, utils::console::console_read
+    core::{interprinter::CommandInterprinter, rpc_client::RpcClient},
+    settings::Settings,
+    utils::console::console_read,
 };
 
 pub async fn engine(command_interprinter: &mut CommandInterprinter, params: Vec<String>) {
