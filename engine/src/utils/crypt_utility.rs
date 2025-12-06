@@ -1,15 +1,15 @@
+use aes_gcm::aead::{Aead, KeyInit};
+use aes_gcm::{Aes256Gcm, Key, Nonce};
 use rand::seq::SliceRandom;
 use sha2::{Digest, Sha256};
-use std::fmt::Write;
 
 pub fn generate_hash(secure_key: String) -> String {
-    let secret = secure_key.to_string() + &generate_salt();
+    let secret = secure_key.to_string() + &generate_salt(128);
 
     hash_sha_256(&secret)
 }
 
-fn generate_salt() -> String {
-    let size = 32;
+fn generate_salt(size: i32) -> String {
     let charset: Vec<char> = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
         .chars()
         .collect();
@@ -22,16 +22,31 @@ fn generate_salt() -> String {
     random_string
 }
 
-fn hash_sha_256(input: &str) -> String {
-    let mut hasher = Sha256::new();
-    hasher.update(input.as_bytes());
-    let result = hasher.finalize();
+pub fn hash_sha_256(input: &str) -> String {
+    let digest = Sha256::digest(input.as_bytes());
+    let mut key = [0u8; 32];
+    key.copy_from_slice(&digest);
+    let key_as_str = key
+        .iter()
+        .map(|byte| format!("{:02x}", byte))
+        .collect::<String>();
 
-    let mut hash_hex_string = String::new(); // Her bayt 2 karaktere dönüşeceği için kapasiteyi ayarla
+    key_as_str
+}
 
-    for byte in result {
-        write!(&mut hash_hex_string, "{:02x}", byte).expect("Unable to write");
+pub fn decrypt_aes256_hex(key_hex: &str, ciphertext_hex: &str, nonce_hex: &str) -> Option<String> {
+    let key_bytes = hex::decode(key_hex).ok()?;
+    let nonce_bytes = hex::decode(nonce_hex).ok()?;
+    let ciphertext_bytes: Vec<u8> = hex::decode(ciphertext_hex).ok()?;
+
+    if key_bytes.len() != 32 || nonce_bytes.len() != 12 {
+        return None;
     }
 
-    hash_hex_string
+    let key = Key::<Aes256Gcm>::from_slice(&key_bytes);
+    let cipher = Aes256Gcm::new(key);
+    let nonce = Nonce::from_slice(&nonce_bytes);
+
+    let plaintext_bytes = cipher.decrypt(nonce, ciphertext_bytes.as_ref()).ok()?;
+    String::from_utf8(plaintext_bytes).ok()
 }

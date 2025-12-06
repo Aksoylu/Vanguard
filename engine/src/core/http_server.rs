@@ -3,16 +3,21 @@ use hyper::{
     Body, Request, Response, Server,
 };
 
+use std::sync::Arc;
+
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
     path::PathBuf,
-    sync::Arc,
 };
 use tokio::sync::Mutex;
 
 use crate::{
-    core::common_handler::{CommonHandler, Protocol},
+    constants::Constants,
+    core::{
+        common_handler::{CommonHandler, Protocol},
+        shared_memory::ROUTER,
+    },
     log_debug, log_error, log_info,
     models::route::{HttpRoute, IwsRoute},
     render::Render,
@@ -30,19 +35,36 @@ pub struct HttpServer {
     iws_routes: HashMap<String, IwsRoute>,
 }
 
+impl Default for HttpServer {
+    fn default() -> Self {
+        let default_ip_address = parse_ip_address(Constants::DEFAULT_HTTP_IP.to_string());
+        let default_port = Constants::DEFAULT_HTTP_PORT;
+
+        let default_socket_instance: SocketAddr =
+            SocketAddr::from((default_ip_address, default_port));
+
+        let default_http_route_table: HashMap<String, HttpRoute> = HashMap::new();
+        let default_iws_route_table: HashMap<String, IwsRoute> = HashMap::new();
+
+        Self {
+            socket: default_socket_instance,
+            http_routes: default_http_route_table,
+            iws_routes: default_iws_route_table,
+        }
+    }
+}
+
 impl HttpServer {
-    pub fn singleton(
-        ip_address: String,
-        port: u16,
-        http_routes: HashMap<String, HttpRoute>,
-        iws_routes: HashMap<String, IwsRoute>,
-    ) -> Self {
-        let socket = SocketAddr::from((parse_ip_address(ip_address.clone()), port));
+    pub fn init(ip_address: String, port: u16) -> Self {
+        let ip = parse_ip_address(ip_address.clone());
+        let socket = SocketAddr::from((ip, port));
+
+        let router = ROUTER.read().unwrap();
 
         Self {
             socket,
-            http_routes,
-            iws_routes,
+            http_routes: router.get_http_routes(),
+            iws_routes: router.get_iws_routes(),
         }
     }
 
@@ -130,10 +152,10 @@ impl HttpServer {
 
         let current_http_route = self.http_routes.get(request_host).unwrap();
 
-        if !String::is_empty(&current_http_route.source) {
+        if !String::is_empty(&current_http_route.target) {
             log_debug!(
                 "HTTP outband request source ({}) is known. Forwarding request to {}",
-                &current_http_route.source,
+                &request_host,
                 &current_http_route.target
             );
 
@@ -149,7 +171,7 @@ impl HttpServer {
 
         log_debug!(
             "HTTP outband request source ({}) as domain/target is is unknown",
-            &current_http_route.source
+            &request_host
         );
 
         CommonHandler::not_found_error(Protocol::HTTP, request_host, req, client_ip).await
@@ -172,7 +194,7 @@ impl HttpServer {
         if String::is_empty(&current_iws_route.serving_path) {
             log_debug!(
                 "HTTP outband IWS request source ({}) as domain/target is is unknown",
-                &current_iws_route.source
+                &request_host
             );
 
             return CommonHandler::iws_route_not_found_error(
@@ -190,7 +212,7 @@ impl HttpServer {
         if is_file_exist(&requested_disk_path) {
             log_debug!(
                 "HTTP outband IWS request source ({}) is known. Serving file from disk (IWS registry) at path: {}",
-                &current_iws_route.source,
+                &request_host,
                 &current_iws_route.serving_path
             );
 
@@ -207,7 +229,7 @@ impl HttpServer {
         if is_directory_exist(&requested_disk_path) {
             log_debug!(
                 "HTTP outband IWS request source ({}) is known. Serving directory from disk (IWS registry) at path: {}",
-                &current_iws_route.source,
+                &request_host,
                 &current_iws_route.serving_path
             );
 
@@ -223,7 +245,7 @@ impl HttpServer {
 
         log_debug!(
             "HTTP outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
-            &current_iws_route.source,
+            &request_host,
             &current_iws_route.serving_path
         );
 

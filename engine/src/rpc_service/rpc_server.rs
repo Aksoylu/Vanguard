@@ -1,57 +1,63 @@
 use jsonrpc_core::IoHandler;
-use std::sync::Arc;
-use std::sync::Mutex;
 
-use crate::{
-    log_info, runtime::Runtime,
-    utils::network_utility::parse_ip_address,
-};
+use crate::core::rpc_session::RpcSession;
+use crate::rpc_service::routes::ROUTES;
+use crate::rpc_service::rpc_middleware::RpcMiddleware;
+use crate::{log_info, utils::network_utility::parse_ip_address};
 
 use jsonrpc_http_server::ServerBuilder;
 
-use super::routes::RPCRouter;
-
+#[derive(Clone)]
 pub struct RPCServer {
-    ip_address: String,
-    port: u16,
-    auth_token: String,
-    endpoint: String,
-    rpc_registry: IoHandler,
-    runtime: Arc<Mutex<Runtime>>,
+    pub rpc_session: RpcSession,
+}
+
+impl Default for RPCServer {
+    fn default() -> Self {
+        let default_rpc_session = RpcSession::default();
+        Self {
+            rpc_session: default_rpc_session,
+        }
+    }
 }
 
 impl RPCServer {
-    pub async fn singleton(
-        ip_address: String,
-        port: u16,
-        auth_token: String,
-        runtime: Arc<Mutex<Runtime>>,
-    ) -> Self {
-        let parsed_ip_address = parse_ip_address(ip_address.clone());
-        let endpoint = format!("{}:{}", parsed_ip_address, port);
+    pub fn init(rpc_session: RpcSession) -> Self {
+        Self { rpc_session }
+    }
 
-        let router: RPCRouter = RPCRouter::build(runtime.clone());
+    pub async fn build_rpc_handler(&self) -> IoHandler {
+        let mut controller_registry = IoHandler::default();
 
-        let mut rpc_registry: IoHandler = IoHandler::default();
-        rpc_registry = router.bind(rpc_registry.clone(), runtime.clone()).await;
+        let aes_decryption_key = self.rpc_session.aes_encryption_key.clone();
+        let authorization_token = self.rpc_session.authorization_token.clone();
 
-        Self {
-            ip_address,
-            port,
-            auth_token,
-            endpoint,
-            rpc_registry,
-            runtime,
+        for (service_name, controller_delegate) in ROUTES.iter() {
+            controller_registry.add_method(
+                service_name,
+                RpcMiddleware::bind(
+                    controller_delegate.clone(),
+                    aes_decryption_key.clone(),
+                    authorization_token.clone(),
+                ),
+            );
         }
+
+        controller_registry
     }
 
     /// Public: This function is repsonsible of booting process of  JRPC Server
     pub async fn start(&self) {
-        let server = ServerBuilder::new(self.rpc_registry.clone())
-            .start_http(&self.endpoint.parse().unwrap())
+        let rpc_handler = self.build_rpc_handler().await;
+
+        let parsed_ip_address = parse_ip_address(self.rpc_session.ip_addr.clone());
+        let endpoint = format!("{}:{}", parsed_ip_address, self.rpc_session.port);
+
+        let server = ServerBuilder::new(rpc_handler)
+            .start_http(&endpoint.parse().unwrap())
             .expect("JRPC Server failed to start.");
 
-        log_info!("Vanguard Engine JRPC server started on {}", &self.endpoint);
+        log_info!("Vanguard Engine JRPC server started on {}", &endpoint);
 
         server.wait();
     }

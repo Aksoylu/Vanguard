@@ -1,8 +1,7 @@
 use crate::rpc_service::models::upload_ssl_cert_model::{
     UploadSslCertRequest, UploadSslCertResponse,
 };
-use crate::runtime::Runtime;
-use crate::utils::directory_utility::get_ssl_path;
+
 use crate::utils::file_utility::{delete_file, write_file};
 use crate::utils::tls_utility::validate_ssl_context;
 

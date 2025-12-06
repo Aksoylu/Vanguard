@@ -1,2 +1,2 @@
 # Reprox CLI
-Interactive Shell (CLI client) for Reprox engine
+Interactive Shell (CLI client) application for Vanguard

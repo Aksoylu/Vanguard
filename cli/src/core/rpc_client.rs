@@ -1,64 +1,104 @@
-use serde::de::value::Error;
-use serde_json::{from_str, to_string};
-use std::{collections::HashMap, fs::File, io::Read};
+use crate::{
+    core::errors::rpc_base_error::RPCBaseError,
+    models::{
+        base::boot_data::BootData,
+        rpc::{
+            rpc_params::RPCParams, rpc_payload::RPCPayload, rpc_request::RPCRequest,
+            rpc_response::RPCResponse,
+        },
+    },
+};
+use reqwest::Client;
+use serde_json::Value;
 
-use crate::{models::rpc_session::RpcSession, settings::Settings};
-
-#[derive()]
-pub struct RpcClient {
-    session: RpcSession,
-    endpoint: String,
+pub struct RPCClient {
+    pub boot_data: Option<BootData>,
 }
 
-impl RpcClient {
-
-    pub fn init_session() -> Result<Self, Error> {
-        match RpcClient::read_rpc_session(Settings::SESSION_PATH.to_string()) {
-            Ok(session) => {
-                let endpoint: String = format!("{}:{}", session.ip_addr, session.port);
-
-                return Ok(Self { session, endpoint });
-            }
-            Err(err) => return Err(err),
+impl RPCClient {
+    pub fn init(boot_data: BootData) -> RPCClient {
+        RPCClient {
+            boot_data: Some(boot_data),
         }
     }
 
-    pub fn init_manual() -> Result<Self, Error> {
-        match RpcClient::read_rpc_session(Settings::SESSION_PATH.to_string()) {
-            Ok(session) => {
-                let endpoint: String = format!("{}:{}", session.ip_addr, session.port);
+    pub async fn call(&self, method: &str, input: Value) -> Result<RPCResponse, RPCBaseError> {
+        let payload = RPCPayload::build(input).await?;
+        let params = RPCParams::build(payload).await?;
+        let rpc_request = RPCRequest::build(method, params);
 
-                return Ok(Self { session, endpoint });
-            }
-            Err(err) => return Err(err),
+        let get_rpc_url = self.get_rpc_url();
+        if get_rpc_url.is_none() {
+            return Err(RPCBaseError::build("Can not detect RPC target url"));
         }
+
+        let rpc_url = get_rpc_url.unwrap();
+
+        let client = Client::new();
+
+        let response = client
+            .post(rpc_url.as_str())
+            .json(&rpc_request)
+            .send()
+            .await
+            .map_err(|http_error: reqwest::Error| {
+                let error_message = http_error.to_string();
+                RPCBaseError::build(error_message.as_str())
+            })?;
+
+        if !response.status().is_success() {
+            let response_body = response.text().await.map_err(|read_body_error| {
+                let response_parse_error_message = format!(
+                    "RPC can not read content of response body '{}'",
+                    read_body_error.to_string()
+                );
+                RPCBaseError::build(response_parse_error_message.as_str())
+            })?;
+
+            let readed_error_message = format!(
+                "Vanguard engine did not sent success signal '{}'",
+                response_body
+            );
+            return Err(RPCBaseError::build(readed_error_message.as_str()));
+        }
+
+        let response_body = response.text().await.map_err(|read_body_error| {
+            let error_message = format!(
+                "Reading body failure on vanguard engine response: {}",
+                read_body_error.to_string()
+            );
+            RPCBaseError::build(error_message.as_str())
+        })?;
+
+        let response = RPCResponse::build(response_body)?;
+        Ok(response)
     }
 
-    pub async fn send_rpc(
-        &self,
-        method: String,
-        parameter: Option<HashMap<String, String>>,
-    ) -> Result<String, Error> {
-        let mut route_table: HashMap<String, String> = HashMap::new();
+    fn get_rpc_url(&self) -> Option<String> {
+        if self.boot_data.is_none() {
+            return None;
+        }
 
-        Ok("sa".to_string())
+        let get_rpc_session = self
+            .boot_data
+            .as_ref()
+            .and_then(|boot_data| boot_data.rpc_session.as_ref())
+            .map(|rpc_session_info| rpc_session_info.clone());
+
+        if get_rpc_session.is_none() {
+            return None;
+        }
+
+        let rpc_session = get_rpc_session.unwrap();
+
+        let rpc_url = format!("http://{}:{}", &rpc_session.ip_addr, &rpc_session.port);
+
+        Some(rpc_url)
     }
+}
 
-    /// Public: This function is responsible of generating `RPC` session file for making possible to sending JRPC Request from CLI application
-    ///
-    /// # Arguments
-    /// * `private_key` - Private key value that specified in `settings.json` file. (`&str`)
-    ///
-    fn read_rpc_session(session_file_path: String) -> Result<RpcSession, Error> {
-        let mut file_buffer = String::new();
-
-        let mut io = File::open(session_file_path).expect("Failed to read internal session data");
-        io.read_to_string(&mut file_buffer)
-            .expect("Failed to read file");
-
-        let session: RpcSession =
-            from_str(&file_buffer).expect("Failed to parse internal session data");
-
-        Ok(session)
+impl Default for RPCClient {
+    fn default() -> Self {
+        Self { boot_data: None }
     }
 }

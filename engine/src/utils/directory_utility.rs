@@ -1,8 +1,9 @@
 use crate::constants::Constants;
+use crate::log_error;
 use std::fs::{self};
 use std::path::PathBuf;
 
-pub fn get_ssl_path() -> PathBuf {
+pub fn get_ssl_upload_path() -> PathBuf {
     let mut ssl_path = get_runtime_path();
     ssl_path.push("SSL");
 
@@ -49,7 +50,7 @@ pub fn is_directory_exist(file_path: &PathBuf) -> bool {
 pub fn create_path(path: &PathBuf) {
     let create_operation = fs::create_dir_all(path);
     if create_operation.is_err() {
-        panic!(
+        log_error!(
             "Failed to create  directory on: {}",
             path.to_str().unwrap_or_default()
         );
