@@ -29,16 +29,16 @@ impl RPCServer {
     pub async fn build_rpc_handler(&self) -> IoHandler {
         let mut controller_registry = IoHandler::default();
 
+        let aes_decryption_key = self.rpc_session.aes_encryption_key.clone();
         let authorization_token = self.rpc_session.authorization_token.clone();
-        let aes_encryption_key = self.rpc_session.aes_encryption_key.clone();
 
         for (service_name, controller_delegate) in ROUTES.iter() {
             controller_registry.add_method(
                 service_name,
                 RpcMiddleware::bind(
                     controller_delegate.clone(),
-                    aes_encryption_key.clone(),
-                    authorization_token.clone(),
+                    aes_decryption_key.clone(),
+                    authorization_token.clone()
                 ),
             );
         }

@@ -4,6 +4,7 @@ use crate::rpc_service::models::{echo_request::EchoRequest, echo_response::EchoR
 
 pub fn echo(payload: Value) -> Result<Value, Error> {
     let request = EchoRequest::new(payload)?;
+    let response = EchoResponse::build(request.get_message())?;
 
-    Ok(EchoResponse::build(request.get_message()))
+    Ok(response)
 }

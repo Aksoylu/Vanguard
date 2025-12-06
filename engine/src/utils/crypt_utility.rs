@@ -35,21 +35,9 @@ pub fn hash_sha_256(input: &str) -> String {
 }
 
 pub fn decrypt_aes256_hex(key_hex: &str, ciphertext_hex: &str, nonce_hex: &str) -> Option<String> {
-    println!("key_hex {}", key_hex);
-    println!("ciphertext_hex {}", ciphertext_hex);
-    println!("nonce_hex {}", nonce_hex);
-
-
     let key_bytes = hex::decode(key_hex).ok()?;
     let nonce_bytes = hex::decode(nonce_hex).ok()?;
-
-    println!(
-        "Key bytes length: {}, Nonce bytes length: {}",
-        key_bytes.len(),
-        nonce_bytes.len()
-    );
-
-    let ciphertext_bytes: Vec<u8> =  hex::decode(ciphertext_hex).ok()?;
+    let ciphertext_bytes: Vec<u8> = hex::decode(ciphertext_hex).ok()?;
 
     if key_bytes.len() != 32 || nonce_bytes.len() != 12 {
         return None;

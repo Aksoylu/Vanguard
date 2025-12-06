@@ -11,12 +11,13 @@ pub struct RpcMiddleware {}
 impl RpcMiddleware {
     pub fn bind(
         controller_delegate: RpcHandler,
-        decryption_key: String,
+        aes_decryption_key: String,
         authorization_token: String,
+
     ) -> impl Fn(Params) -> Result<Value, Error> + Send + Sync + 'static {
         move |raw_params: Params| {
             // 1. Decrypt params
-            let decrypt_payload_operation = Self::decrypt_payload(&decryption_key, &raw_params);
+            let decrypt_payload_operation = Self::decrypt_payload(&aes_decryption_key, &raw_params);
             if decrypt_payload_operation.is_err() {
                 return Err(RPCError::badrequest(format!(
                     "Vanguard JRPC Security Warning: Failed to decrypt parameters. Details: {}",
@@ -55,7 +56,7 @@ impl RpcMiddleware {
 
     // Tries to decrypt the params using AES-256-GCM
     /// Expects params to be a JSON object with "nonce" and "payload" fields
-    pub fn decrypt_payload(auth_token: &str, params: &Params) -> Result<Value, String> {
+    pub fn decrypt_payload(aes_decryption_key: &str, params: &Params) -> Result<Value, String> {
         let raw = serde_json::to_value(params).map_err(|_| "invalid params")?;
 
         let nonce = raw
@@ -73,7 +74,7 @@ impl RpcMiddleware {
             nonce, crypted_payload
         );
 
-        let decrypted_payload_as_str = decrypt_aes256_hex(&auth_token, crypted_payload, nonce);
+        let decrypted_payload_as_str = decrypt_aes256_hex(&aes_decryption_key, crypted_payload, nonce);
         if decrypted_payload_as_str.is_none() {
             return Err("decryption failed".into());
         }

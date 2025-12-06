@@ -1,7 +1,6 @@
 use hyper::StatusCode;
-use jsonrpc_core::{Value};
-use serde::Deserialize;
-use serde::Serialize;
+use jsonrpc_core::{Error, ErrorCode, Value};
+use serde::{Deserialize, Serialize};
 
 #[derive(Serialize, Deserialize)]
 pub struct EchoResponse {
@@ -10,17 +9,20 @@ pub struct EchoResponse {
 }
 
 impl EchoResponse {
-    pub fn build(message: String) -> jsonrpc_core::Value {
+    pub fn build(message: String) -> Result<Value, Error> {
         let response = EchoResponse {
             code: StatusCode::OK.as_u16(),
             message: message,
         };
 
-        let serialized_json: String = match serde_json::to_string(&response) {
-            Ok(text) => text,
-            Err(error) => error.to_string(),
-        };
+        let response_as_json = serde_json::to_value(response).map_err(|error_details| {
+            return Error {
+                code: ErrorCode::InternalError,
+                message: error_details.to_string(),
+                data: None,
+            };
+        })?;
 
-        Value::String(serialized_json)
+        Ok(response_as_json)
     }
 }
