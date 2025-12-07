@@ -1,4 +1,5 @@
 use crate::{
+    constants::Constants,
     core::shared_memory::{ROUTER, RPC_SERVER},
     models::boot_result::BootResult,
     utils::text_utility::{mask_token, pathbuf_to_string, status_flag, warning_flag},
@@ -13,6 +14,13 @@ pub struct BootDisplayUtility {
 impl BootDisplayUtility {
     pub fn init(boot_result: BootResult) -> Self {
         BootDisplayUtility { boot_result }
+    }
+
+    fn add_build_info(&self, table: &mut Table) {
+        table.add_row(row![
+            "Vanguard Version",
+            format!("Main Build {} ", Constants::VERSION_NAME)
+        ]);
     }
 
     fn add_runtime_directory(&self, table: &mut Table) {
@@ -147,7 +155,10 @@ impl BootDisplayUtility {
         };
 
         let flag = status_flag(is_active, "Active", "Passive");
-        table.add_row(row!["JRPC Server", format!("{} on {}", flag, &formatted_endpoint)]);
+        table.add_row(row![
+            "JRPC Server",
+            format!("{} on {}", flag, &formatted_endpoint)
+        ]);
     }
 
     fn add_http_server(&self, table: &mut Table) {
@@ -231,7 +242,7 @@ impl BootDisplayUtility {
     pub fn render(&self) {
         let mut table = Table::new();
         table.set_format(*format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
-
+        self.add_build_info(&mut table);
         self.add_runtime_directory(&mut table);
         self.add_config_file(&mut table);
         self.add_router_file(&mut table);
