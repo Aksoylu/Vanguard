@@ -5,11 +5,9 @@ use crate::utils::console_utility::convert_input_to_boolean;
 #[derive(Parser, Debug)]
 #[command(author, version, about, long_about = None)]
 pub struct ApplicationParameters {
-    /// Eğer 'y' ise yapılandırma dosyalarını ezer
     #[arg(long, default_value = "n")]
     overwrite_config: String,
 
-    /// Eğer 'y' ise yönlendirici yapılandırmasını ezer
     #[arg(long, default_value = "n")]
     overwrite_router: String,
 }
