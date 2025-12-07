@@ -12,14 +12,24 @@ pub fn approve_dialog(text: &str) -> bool {
             .read_line(&mut console_input)
             .expect("Can not read input from console");
 
-        let temiz_girdi = console_input.trim().to_lowercase();
-
-        match temiz_girdi.as_str() {
-            "y" | "yes" => return true,
-            "n" | "no" => return false,
-            _ => {
-                println!("Please select 'y' (yes) or 'n' (no)");
-            }
+        let result = convert_input_to_boolean(&console_input);
+        if result.is_some() {
+            return result.unwrap();
         }
+
+        println!("Please select 'y' (yes) or 'n' (no)");
     }
+}
+
+pub fn convert_input_to_boolean(input: &str) -> Option<bool> {
+    let normalized_input = input.trim().to_lowercase();
+
+    if normalized_input == "y" || normalized_input == "yes" {
+        return Some(true);
+    }
+    if normalized_input == "n" || normalized_input == "no" {
+        return Some(false);
+    }
+
+    None
 }
