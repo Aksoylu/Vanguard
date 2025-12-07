@@ -24,8 +24,7 @@ async fn main() {
     let boot_data = Boot::init();
 
     let _lock = {
-        // EK BİR SCOPE OLUŞTURUN
-        let mut rpc_client_guard = RPC_CLIENT.write().await; // Guard'ı al
+        let mut rpc_client_guard = RPC_CLIENT.write().await;
         *rpc_client_guard = RPCClient::init(boot_data);
     };
 
