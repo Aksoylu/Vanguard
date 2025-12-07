@@ -62,12 +62,11 @@ impl Boot {
         let mut rpc_server = RPC_SERVER.write().unwrap();
         *rpc_server = RPCServer::init(rpc_session.clone());
 
-        Self::save_config(config_path.clone(), &config);
-        Self::save_router(route_path.clone(), &loaded_router);
         Self::save_rpc_session(rpc_session_path.clone(), &rpc_session);
 
         BootResult {
             config,
+            router: loaded_router,
             runtime_path,
             config_path,
             rpc_session_path,
@@ -75,6 +74,18 @@ impl Boot {
             is_config_loaded_successfully,
             is_router_loaded_successfully,
         }
+    }
+
+    pub fn save_config(config_path: PathBuf, config: &Config) -> bool {
+        let write_operation = save_json::<Config>(&config_path, config);
+
+        write_operation.is_ok()
+    }
+
+    pub fn save_router(router_path: PathBuf, router: &Router) -> bool {
+        let write_operation = save_json::<Router>(&router_path, router);
+
+        write_operation.is_ok()
     }
 
     fn load_config(config_path: PathBuf) -> (Config, bool) {
@@ -93,20 +104,8 @@ impl Boot {
         }
     }
 
-    fn save_config(config_path: PathBuf, config: &Config) -> bool {
-        let write_operation = save_json::<Config>(&config_path, config);
-
-        write_operation.is_ok()
-    }
-
     fn save_rpc_session(rpc_session_path: PathBuf, rpc_session: &RpcSession) -> bool {
         let write_operation = save_json::<RpcSession>(&rpc_session_path, rpc_session);
-
-        write_operation.is_ok()
-    }
-
-    fn save_router(router_path: PathBuf, router: &Router) -> bool {
-        let write_operation = save_json::<Router>(&router_path, router);
 
         write_operation.is_ok()
     }

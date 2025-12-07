@@ -1,10 +1,11 @@
 extern crate prettytable;
 use std::path::PathBuf;
 
-use crate::models::config::Config;
+use crate::{core::router::Router, models::config::Config};
 
 pub struct BootResult {
     pub config: Config,
+    pub router: Router,
 
     pub runtime_path: PathBuf,
     pub config_path: PathBuf,
