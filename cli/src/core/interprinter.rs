@@ -1,7 +1,7 @@
 use clap::{Parser, command};
 use shlex::Shlex;
 
-use crate::commands::{Commands, echo::echo};
+use crate::commands::{Commands, add_http_route::add_http_route, echo::echo};
 
 #[derive(Parser)]
 struct Cli {
@@ -21,6 +21,7 @@ impl Interprinter{
             Commands::Start => start().await, 
             Commands::Ping => ping().await,
             Commands::Echo(args) => echo(args).await,
+            Commands::AddHttpRoute(args) => add_http_route(args).await
         }
     }
     pub async fn run(&self, input: String) {
