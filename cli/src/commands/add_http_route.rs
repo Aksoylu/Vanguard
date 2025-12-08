@@ -1,12 +1,12 @@
 use crate::{
     core::{errors::rpc_base_error::RPCBaseError, shared_memory::RPC_CLIENT},
     log_error, log_info,
-    models::{
-        commands::{add_http_route_request::AddHttpRouteRequest, add_http_route_response::AddHttpRouteResponse, echo_request::EchoRequest, echo_response::EchoResponse},
-        rpc::{rpc_params::RPCParams, rpc_payload::RPCPayload, rpc_request::RPCRequest},
-    },
+    models::
+        commands::{add_http_route_request::AddHttpRouteRequest, add_http_route_response::AddHttpRouteResponse}
+    ,
 };
 use clap::Args;
+use hyper::StatusCode;
 
 #[derive(Debug, Args)]
 pub struct AddHttpRouteArgs {
@@ -30,13 +30,16 @@ pub async fn add_http_route(args: AddHttpRouteArgs) {
 
     let echo_response = result.unwrap();
 
-    log_info!(
-        "Echo answer from Vanguard Engine: {}",
-        echo_response.message
-    );
+    if echo_response.code == StatusCode::OK.as_u16(){
+        log_info!("New http route added successfully");
+    }
+    else {
+        log_error!("Error while adding new http route: {}", echo_response.message)
+    }
+
+  
 }
 
-// todo here
 async fn execute(input: AddHttpRouteRequest) -> Result<AddHttpRouteResponse, RPCBaseError> {
     let serialized_input = serde_json::to_value(input)
         .map_err(|_| RPCBaseError::build("Object can not serialized"))?;
@@ -50,7 +53,7 @@ async fn execute(input: AddHttpRouteRequest) -> Result<AddHttpRouteResponse, RPC
         let message = &result["message"].as_str().unwrap_or_default().to_string();
 
         Ok(AddHttpRouteResponse {
-            code: code.to_owned(),
+            code: code.to_owned() as u16,
             message: message.to_owned(),
         })
     }?;

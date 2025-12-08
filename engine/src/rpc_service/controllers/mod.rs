@@ -2,7 +2,8 @@ pub mod echo;
 
 pub mod add_http_route;
 pub mod delete_http_route;
-pub mod list_routes;
+// --
+pub mod get_http_route_list;
 
 pub mod add_https_route;
 pub mod delete_https_route;

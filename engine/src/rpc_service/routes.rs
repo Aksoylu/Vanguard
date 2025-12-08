@@ -7,7 +7,8 @@ use super::controllers::{
     add_http_route::add_http_route, add_https_route::add_https_route, add_iws_route::add_iws_route,
     add_secure_iws_route::add_secure_iws_route, delete_http_route::delete_http_route,
     delete_https_route::delete_https_route, delete_iws_route::delete_iws_route,
-    delete_secure_iws_route::delete_secure_iws_route, echo::echo, list_routes::list_routes,
+    delete_secure_iws_route::delete_secure_iws_route, echo::echo, 
+    get_http_route_list::get_http_route_list,
     get_uploaded_ssl_entity_list::get_uploaded_ssl_entity_list,
     delete_ssl_cert::delete_ssl_cert, upload_ssl_cert::upload_ssl_cert
 };
@@ -26,6 +27,6 @@ pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
         ("get_uploaded_ssl_entity_list", Arc::new(get_uploaded_ssl_entity_list) as RpcHandler),
         ("upload_ssl_cert", Arc::new(upload_ssl_cert) as RpcHandler),
         ("delete_ssl_cert", Arc::new(delete_ssl_cert) as RpcHandler),
-        ("list_routes", Arc::new(list_routes) as RpcHandler),
+        ("get_http_route_list", Arc::new(get_http_route_list) as RpcHandler),
     ]
 });
