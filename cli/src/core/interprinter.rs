@@ -1,7 +1,13 @@
-use clap::{Parser, command};
+use clap::{command, Parser};
 use shlex::Shlex;
 
-use crate::commands::{Commands, echo::echo};
+use crate::commands::{
+    Commands, 
+    add_http_route::add_http_route, 
+    delete_http_route::delete_http_route, 
+    echo::echo, 
+    get_http_route_list::get_http_route_list
+};
 
 #[derive(Parser)]
 struct Cli {
@@ -11,16 +17,19 @@ struct Cli {
 
 pub struct Interprinter;
 
-impl Interprinter{
+impl Interprinter {
     pub fn new() -> Interprinter {
-        Interprinter{}
+        Interprinter {}
     }
 
     async fn execute_command(cli: Cli) {
         match cli.command {
-            Commands::Start => start().await, 
+            Commands::Start => start().await,
             Commands::Ping => ping().await,
             Commands::Echo(args) => echo(args).await,
+            Commands::AddHttpRoute(args) => add_http_route(args).await,
+            Commands::DeleteHttpRoute(args) => delete_http_route(args).await,
+            Commands::GetHttpRouteList => get_http_route_list().await
         }
     }
     pub async fn run(&self, input: String) {
@@ -33,10 +42,10 @@ impl Interprinter{
         let mut clap_args = vec!["execute".to_string()];
         clap_args.extend(args);
 
-         match Cli::try_parse_from(clap_args) {
+        match Cli::try_parse_from(clap_args) {
             Ok(cli) => {
-                Self::execute_command(cli).await; 
-            },
+                Self::execute_command(cli).await;
+            }
             Err(e) => {
                 eprintln!("{}", e);
             }

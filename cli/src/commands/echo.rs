@@ -47,7 +47,7 @@ async fn execute(input: EchoRequest) -> Result<EchoResponse, RPCBaseError> {
         let message = &result["message"].as_str().unwrap_or_default().to_string();
 
         Ok(EchoResponse {
-            code: code.to_owned(),
+            code: code.to_owned() as u16,
             message: message.to_owned(),
         })
     }?;

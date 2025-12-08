@@ -8,7 +8,7 @@ use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
-use crate::utils::file_utility::get_absolute_ssl_file_path;
+use crate::utils::file_utility::{delete_file, get_absolute_ssl_file_path};
 use jsonrpc_core::ErrorCode;
 use std::collections::HashMap;
 use std::fs::File;
@@ -149,6 +149,12 @@ pub fn detect_file_type(file_name: String) -> SSlFileType {
     }
 
     SSlFileType::Invalid
+}
+
+pub fn delete_ssl_file(file_path: &String) -> Result<bool, Error>{
+    let absolute_file_path = get_absolute_ssl_file_path(file_path)?;
+    let is_success = delete_file(absolute_file_path);
+    Ok(is_success)
 }
 
 fn create_certified_key(certs: Vec<Certificate>, key: PrivateKey) -> CertifiedKey {

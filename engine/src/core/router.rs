@@ -4,7 +4,7 @@ use std::{collections::HashMap, path::PathBuf};
 use crate::{
     constants::Constants,
     models::{
-        route::{HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
+        route::{self, HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
         ssl_context::SslContext,
     },
     utils::{
@@ -51,16 +51,23 @@ impl Router {
             return (Router::default(), false);
         }
 
-        let router = read_route_operation.unwrap();
+        let mut router = read_route_operation.unwrap();
+
+        let mut save_path = get_runtime_path().clone();
+        save_path.push(Constants::ROUTER_FILENAME);
+
+        router.save_path = save_path;
 
         (router, true)
     }
 
     pub fn save(&self) {
-        let export_data = self.convert_to_json_route_vec();
-        let write_operation = save_json(&self.save_path, &export_data);
 
+        let write_operation = save_json::<Router>(&self.save_path, &self.clone());
         if write_operation.is_err() {
+            let fd = write_operation.err().unwrap();
+            println!("{:?}", fd);
+            println!("{:?}", &self.save_path);
             let save_path_as_string = &self.save_path.to_str().unwrap_or_default();
             eprintln!(
                 "Could not write Router file on Path: {}.\nPlease check your runtime path is exist and Vanguard has correct permissions", 

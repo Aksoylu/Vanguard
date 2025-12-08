@@ -1,7 +1,6 @@
-use jsonrpc_core::{ Value};
-use serde::Deserialize;
-use serde::Serialize;
 use hyper::StatusCode;
+use jsonrpc_core::{Error, ErrorCode, Value};
+use serde::{Deserialize, Serialize};
 
 use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 
@@ -12,17 +11,21 @@ pub struct AddHttpRouteResponse {
 }
 
 impl AddHttpRouteResponse {
-    pub fn build() -> jsonrpc_core::Value {
+    pub fn build() -> Result<Value, Error> {
         let response = AddHttpRouteResponse {
             code: StatusCode::OK.as_u16(),
             message: RpcStatusMessage::OK.to_string(),
         };
 
-        let serialized_json = match serde_json::to_string(&response) {
-            Ok(text) => text,
-            Err(error) => error.to_string(),
-        };
 
-        Value::String(serialized_json)
+        let response_as_json = serde_json::to_value(response).map_err(|error_details| {
+            return Error {
+                code: ErrorCode::InternalError,
+                message: error_details.to_string(),
+                data: None,
+            };
+        })?;
+
+        Ok(response_as_json)
     }
 }
