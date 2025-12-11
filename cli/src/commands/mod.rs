@@ -1,6 +1,9 @@
 use clap::Subcommand;
 
-use crate::commands::{add_http_route::AddHttpRouteArgs, delete_http_route::DeleteHttpRouteArgs, echo::EchoArgs};
+use crate::commands::{
+    add_http_route::AddHttpRouteArgs, delete_http_route::DeleteHttpRouteArgs, echo::EchoArgs,
+    get_route_list::GetRouteListArgs
+};
 
 #[derive(Subcommand)]
 pub enum Commands {
@@ -9,10 +12,10 @@ pub enum Commands {
     Echo(EchoArgs),
     AddHttpRoute(AddHttpRouteArgs),
     DeleteHttpRoute(DeleteHttpRouteArgs),
-    GetHttpRouteList
+    GetRouteList(GetRouteListArgs),
 }
 
-pub mod echo;
 pub mod add_http_route;
 pub mod delete_http_route;
-pub mod get_http_route_list;
+pub mod echo;
+pub mod get_route_list;
