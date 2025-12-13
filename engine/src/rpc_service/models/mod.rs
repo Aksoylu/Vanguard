@@ -28,8 +28,8 @@ pub mod delete_ssl_cert_response;
 pub mod echo_request;
 pub mod echo_response;
 
-pub mod get_http_route_list_request;
-pub mod get_http_route_list_response;
+pub mod get_route_list_request;
+pub mod get_route_list_response;
 
 pub mod get_uploaded_ssl_entity_list_request;
 pub mod get_uploaded_ssl_entity_list_response;

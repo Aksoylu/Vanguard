@@ -2,6 +2,7 @@ mod assets;
 mod boot;
 mod commands;
 mod constants;
+mod common;
 mod core;
 mod models;
 mod utils;

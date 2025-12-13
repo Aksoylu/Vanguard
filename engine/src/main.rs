@@ -1,5 +1,6 @@
 mod assets;
 mod boot;
+mod common;
 mod constants;
 mod core;
 mod models;

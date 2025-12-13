@@ -5,5 +5,5 @@ pub mod add_http_route_request;
 pub mod add_http_route_response;
 pub mod delete_http_route_request;
 pub mod delete_http_route_response;
-pub mod get_http_route_list_request;
-pub mod get_http_route_list_response;
+pub mod get_route_list_request;
+pub mod get_route_list_response;
