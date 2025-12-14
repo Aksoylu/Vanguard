@@ -2,11 +2,7 @@ use clap::{command, Parser};
 use shlex::Shlex;
 
 use crate::commands::{
-    Commands, 
-    add_http_route::add_http_route, 
-    delete_http_route::delete_http_route, 
-    echo::echo, 
-    get_route_list::get_route_list
+    Commands, add_http_route::add_http_route, clear_terminal::clear_terminal, delete_http_route::delete_http_route, echo::echo, exit::exit, get_route_list::get_route_list, version::version
 };
 
 #[derive(Parser)]
@@ -26,6 +22,9 @@ impl Interprinter {
         match cli.command {
             Commands::Start => start().await,
             Commands::Ping => ping().await,
+            Commands::Exit => exit().await,
+            Commands::Version => version().await,
+            Commands::Clear => clear_terminal().await,
             Commands::Echo(args) => echo(args).await,
             Commands::AddHttpRoute(args) => add_http_route(args).await,
             Commands::DeleteHttpRoute(args) => delete_http_route(args).await,
