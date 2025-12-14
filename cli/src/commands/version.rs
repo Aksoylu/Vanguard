@@ -2,13 +2,15 @@ use crate::{
     constants::Constants,
     core::{errors::rpc_base_error::RPCBaseError, shared_memory::RPC_CLIENT},
     log_error, log_info,
-    models::commands::get_build_version_response::GetBuildVersionResponse,
+    models::{
+        base::remote_version_data::RemoteVersionData,
+        commands::get_build_version_response::GetBuildVersionResponse,
+    },
     utils::{console::print_colored, json_utility::create_empty_json_object},
 };
 use crossterm::style::Color;
 use hyper::StatusCode;
 
-/// @todo
 pub async fn version() {
     println!("Vanguard CLI");
     println!("  Build: {}", Constants::VERSION_NUMBER);
@@ -34,11 +36,36 @@ pub async fn version() {
     let engine_version_name = get_engine_version_response.build_version_name;
 
     println!("Vanguard Engine");
-    println!("  Build: {}", &engine_build_number);
-    println!("  Version: {}", &engine_version_name);
+    println!(
+        "  Build: {} ({})",
+        &engine_build_number, &engine_version_name
+    );
 
     println!("Checking for updates ...");
-    // @todo: add check update status using git path
+    let get_remote_version_data = get_latest_version_info_from_repository().await;
+    if get_remote_version_data.is_err() {
+        let error = get_remote_version_data.err().unwrap();
+        log_error!("{}", error.reason);
+        return;
+    }
+
+    let remote_version_data = get_remote_version_data.unwrap();
+
+    println!("Latest Vanguard Version");
+    println!(
+        "  Build: {} ({})",
+        &remote_version_data.version_number, &remote_version_data.version_name
+    );
+
+    if remote_version_data.version_number == Constants::VERSION_NUMBER {
+        print_colored("Your Vanguard version is up to date", Color::Green);
+    } else if engine_build_number >= Constants::VERSION_NUMBER {
+        print_colored("Your Vanguard version is outdated. We strongly suggest you to keep your Vanguard version up to date", Color::Yellow);
+        print!(
+            "You can update your Vanguard version by following instructions at: {}",
+            Constants::UPDATE_MANUAL_URL
+        );
+    }
 }
 
 async fn get_version_info_from_engine() -> Result<GetBuildVersionResponse, RPCBaseError> {
@@ -67,4 +94,25 @@ async fn get_version_info_from_engine() -> Result<GetBuildVersionResponse, RPCBa
     }?;
 
     Ok(lock)
+}
+
+async fn get_latest_version_info_from_repository() -> Result<RemoteVersionData, RPCBaseError> {
+    let response = reqwest::get(Constants::VERSION_CONTROL_URL)
+        .await
+        .map_err(|_| {
+            RPCBaseError::build("Can not get remote version. Please check your WAN access")
+        })?;
+
+    let remote_version_data = response
+        .json::<RemoteVersionData>()
+        .await
+        .map_err(|error| {
+            let error_content = format!(
+                "Can not parse remote version data or IO error occurred: {}",
+                error.to_string()
+            );
+            RPCBaseError::build(error_content.as_str())
+        })?;
+
+    Ok(remote_version_data)
 }

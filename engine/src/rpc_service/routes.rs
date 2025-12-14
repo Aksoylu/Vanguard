@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use std::sync::Arc;
 
-use crate::rpc_service::{rpc_middleware::RpcHandler};
+use crate::rpc_service::{controllers::get_build_version::get_build_version, rpc_middleware::RpcHandler};
 
 use super::controllers::{
     add_http_route::add_http_route, add_https_route::add_https_route, add_iws_route::add_iws_route,
@@ -16,6 +16,7 @@ use super::controllers::{
 pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
     vec![
         ("echo", Arc::new(echo) as RpcHandler),
+        ("get_build_version", Arc::new(get_build_version) as RpcHandler),
         ("add_http_route", Arc::new(add_http_route) as RpcHandler),
         ("add_https_route", Arc::new(add_https_route) as RpcHandler),
         ("add_iws_route", Arc::new(add_iws_route) as RpcHandler),

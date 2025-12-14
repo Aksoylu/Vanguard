@@ -1,8 +1,10 @@
 pub struct Constants {}
 
 impl Constants {
-    pub const VERSION_NUMBER: f32 = 1.0;
+    pub const VERSION_NUMBER: f64 = 1.0;
     pub const VERSION_NAME: &'static str = "v1.0 Beta";
+    pub const VERSION_CONTROL_URL: &'static str = "https://raw.githubusercontent.com/Aksoylu/Vanguard/refs/heads/main/Version";
+    pub const UPDATE_MANUAL_URL: &'static str = "vanguard.umitaksoylu.com/update/manual";
 
     pub const WIN_RUNTIME_PATH: &'static str = "C:\\ProgramData\\Vanguard";
     pub const LINUX_RUNTIME_PATH: &'static str = "/etc/Vanguard";
