@@ -16,3 +16,5 @@ pub mod delete_iws_route;
 
 pub mod add_secure_iws_route;
 pub mod delete_secure_iws_route;
+
+pub mod get_build_version;

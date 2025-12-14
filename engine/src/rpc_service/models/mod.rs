@@ -36,3 +36,5 @@ pub mod get_uploaded_ssl_entity_list_response;
 
 pub mod upload_ssl_cert_request;
 pub mod upload_ssl_cert_response;
+
+pub mod get_build_version_response;
