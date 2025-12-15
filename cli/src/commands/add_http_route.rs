@@ -28,13 +28,13 @@ pub async fn add_http_route(args: AddHttpRouteArgs) {
         return;
     }
 
-    let echo_response = result.unwrap();
+    let response = result.unwrap();
 
-    if echo_response.code == StatusCode::OK.as_u16(){
+    if response.code == StatusCode::OK.as_u16(){
         log_info!("New http route added successfully");
     }
     else {
-        log_error!("Error while adding new http route: {}", echo_response.message)
+        log_error!("Error while adding new http route: {}", response.message)
     }
 
   

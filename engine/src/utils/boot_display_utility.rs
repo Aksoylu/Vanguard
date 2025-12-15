@@ -13,7 +13,7 @@ pub struct BootDisplayUtility {
 
 impl BootDisplayUtility {
     pub fn init(boot_result: BootResult) -> Self {
-        BootDisplayUtility { boot_result }
+        BootDisplayUtility { boot_result: boot_result }
     }
 
     fn add_build_info(&self, table: &mut Table) {

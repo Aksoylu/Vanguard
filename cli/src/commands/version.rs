@@ -61,7 +61,7 @@ pub async fn version() {
         print_colored("Your Vanguard version is up to date", Color::Green);
     } else if engine_build_number >= Constants::VERSION_NUMBER {
         print_colored("Your Vanguard version is outdated. We strongly suggest you to keep your Vanguard version up to date", Color::Yellow);
-        print!(
+        println!(
             "You can update your Vanguard version by following instructions at: {}",
             Constants::UPDATE_MANUAL_URL
         );

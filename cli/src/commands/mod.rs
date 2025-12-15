@@ -20,6 +20,7 @@ pub enum Commands {
     AddHttpRoute(AddHttpRouteArgs),
     DeleteHttpRoute(DeleteHttpRouteArgs),
     GetRouteList(GetRouteListArgs),
+    Status
 }
 
 pub mod add_http_route;
@@ -29,3 +30,4 @@ pub mod get_route_list;
 pub mod clear_terminal;
 pub mod version;
 pub mod exit;
+pub mod get_status;

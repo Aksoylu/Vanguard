@@ -26,15 +26,16 @@ pub async fn delete_http_route(args: DeleteHttpRouteArgs) {
         return;
     }
 
-    let delete_http_route_response = result.unwrap();
+    let response = result.unwrap();
+    println!("response: {:?}", response);
 
-    if delete_http_route_response.code == StatusCode::OK.as_u16() {
+    if response.code == StatusCode::OK.as_u16() {
         log_info!("Http route deleted successfully");
     } else {
         log_error!(
             "Error while deleting http route: {}. Details: {}",
             args.source,
-            delete_http_route_response.message
+            response.message
         )
     }
 }

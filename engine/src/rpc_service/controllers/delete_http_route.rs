@@ -14,5 +14,6 @@ pub fn delete_http_route(params: Value) -> Result<Value, Error> {
     let mut router = ROUTER.write().unwrap();
     router.delete_http_route(domain);
 
-    Ok(DeleteHttpRouteResponse::build())
+    let response = DeleteHttpRouteResponse::build()?;
+    Ok(response)
 }

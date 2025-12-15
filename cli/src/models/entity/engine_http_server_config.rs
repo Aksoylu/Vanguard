@@ -3,24 +3,25 @@ use serde::{Deserialize, Serialize};
 use crate::constants::Constants;
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct HttpsServerConfig {
+pub struct EngineHttpServerConfig {
     pub is_active: bool,
     pub ip_address: String,
     pub port: u16,
 }
 
-impl Default for HttpsServerConfig {
+impl Default for EngineHttpServerConfig {
     fn default() -> Self {
         Self {
-            is_active: Constants::DEFUALT_HTTPS_IS_ACTIVE,
-            ip_address: Constants::DEFAULT_HTTPS_IP.to_string(),
-            port: Constants::DEFAULT_HTTPS_PORT,
+            is_active: Constants::DEFUALT_HTTP_IS_ACTIVE,
+            ip_address: Constants::DEFAULT_HTTP_IP.to_string(),
+            port: Constants::DEFAULT_HTTP_PORT,
         }
     }
+
 }
 
-impl HttpsServerConfig {
-    pub fn get_endpoint(&self) -> String {
+impl EngineHttpServerConfig{
+    pub fn get_endpoint(&self) -> String{
         format!("{}:{}", self.ip_address, self.port)
     }
 }
