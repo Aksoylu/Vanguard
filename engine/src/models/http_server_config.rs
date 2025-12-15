@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::constants::Constants;
 
-#[derive(Debug, Serialize, Deserialize, PartialEq)]
+#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpServerConfig {
     pub is_active: bool,
     pub ip_address: String,

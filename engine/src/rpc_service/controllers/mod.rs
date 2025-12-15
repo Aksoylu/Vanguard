@@ -18,3 +18,4 @@ pub mod add_secure_iws_route;
 pub mod delete_secure_iws_route;
 
 pub mod get_build_version;
+pub mod get_status;

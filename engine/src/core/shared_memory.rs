@@ -4,8 +4,7 @@ use std::sync::{Arc, RwLock};
 use crate::{
     core::{
         http_server::HttpServer, https_server::HttpsServer, log_service::LogService, router::Router,
-    },
-    rpc_service::rpc_server::RPCServer,
+    }, models::boot_result::BootResult, rpc_service::rpc_server::RPCServer
 };
 
 // Here we store static global instances for engine-wide and multithread read-write access
@@ -20,6 +19,9 @@ pub static HTTPS_SERVER: Lazy<Arc<RwLock<HttpsServer>>> =
 
 pub static RPC_SERVER: Lazy<Arc<RwLock<RPCServer>>> =
     Lazy::new(|| Arc::new(RwLock::new(RPCServer::default())));
+
+pub static RUNTIME_BOOT_INFO: Lazy<Arc<RwLock<BootResult>>> =
+    Lazy::new(|| Arc::new(RwLock::new(BootResult::default())));
 
 pub static ROUTER: Lazy<Arc<RwLock<Router>>> =
     Lazy::new(|| Arc::new(RwLock::new(Router::default())));

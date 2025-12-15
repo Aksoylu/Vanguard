@@ -15,7 +15,7 @@ use clap::Parser;
 use crate::assets::banner::print_banner;
 use crate::assets::startup_disclaimer::print_startup_disclaimer;
 
-use crate::core::shared_memory::{HTTPS_SERVER, HTTP_SERVER, RPC_SERVER};
+use crate::core::shared_memory::{HTTP_SERVER, HTTPS_SERVER, RPC_SERVER, RUNTIME_BOOT_INFO};
 use crate::models::application_parameters::ApplicationParameters;
 use crate::models::boot_result::BootResult;
 use crate::utils::{boot_display_utility::BootDisplayUtility, console_utility::approve_dialog};
@@ -28,7 +28,7 @@ async fn main() {
     let boot_result = Boot::init();
     handle_application_params(&boot_result);
 
-    let boot_display = BootDisplayUtility::init(boot_result);
+    let boot_display = BootDisplayUtility::init(boot_result.clone());
     boot_display.render();
 
     let http_server = HTTP_SERVER.read().unwrap().clone();

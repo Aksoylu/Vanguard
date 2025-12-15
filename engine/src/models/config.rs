@@ -6,7 +6,7 @@ use super::{
     logger_config::LoggerConfig
 };
 
-#[derive(Debug, Deserialize, Serialize, PartialEq)]
+#[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
 pub struct Config {
     pub http_server: HttpServerConfig,
     pub https_server: HttpsServerConfig,

@@ -8,3 +8,4 @@ pub mod delete_http_route_request;
 pub mod delete_http_route_response;
 pub mod get_route_list_request;
 pub mod get_route_list_response;
+pub mod get_status_response;

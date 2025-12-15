@@ -1,7 +1,7 @@
 use once_cell::sync::Lazy;
 use std::sync::Arc;
 
-use crate::rpc_service::{controllers::get_build_version::get_build_version, rpc_middleware::RpcHandler};
+use crate::rpc_service::{controllers::{get_build_version::get_build_version,}, rpc_middleware::RpcHandler};
 
 use super::controllers::{
     add_http_route::add_http_route, add_https_route::add_https_route, add_iws_route::add_iws_route,
@@ -10,7 +10,8 @@ use super::controllers::{
     delete_secure_iws_route::delete_secure_iws_route, echo::echo, 
     get_route_list::get_route_list,
     get_uploaded_ssl_entity_list::get_uploaded_ssl_entity_list,
-    delete_ssl_cert::delete_ssl_cert, upload_ssl_cert::upload_ssl_cert
+    delete_ssl_cert::delete_ssl_cert, upload_ssl_cert::upload_ssl_cert,
+    get_status::get_status
 };
 
 pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
@@ -29,5 +30,6 @@ pub static ROUTES: Lazy<Vec<(&'static str, RpcHandler)>> = Lazy::new(|| {
         ("upload_ssl_cert", Arc::new(upload_ssl_cert) as RpcHandler),
         ("delete_ssl_cert", Arc::new(delete_ssl_cert) as RpcHandler),
         ("get_route_list", Arc::new(get_route_list) as RpcHandler),
+        ("get_status", Arc::new(get_status) as RpcHandler)
     ]
 });

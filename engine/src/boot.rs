@@ -4,7 +4,7 @@ use std::path::PathBuf;
 use crate::core::http_server::HttpServer;
 use crate::core::https_server::HttpsServer;
 use crate::core::rpc_session::RpcSession;
-use crate::core::shared_memory::{HTTPS_SERVER, HTTP_SERVER, LOGGER, ROUTER, RPC_SERVER};
+use crate::core::shared_memory::{HTTP_SERVER, HTTPS_SERVER, LOGGER, ROUTER, RPC_SERVER, RUNTIME_BOOT_INFO};
 use crate::models::boot_result::BootResult;
 use crate::rpc_service::rpc_server::RPCServer;
 use crate::utils::file_utility::save_json;
@@ -64,7 +64,7 @@ impl Boot {
 
         Self::save_rpc_session(rpc_session_path.clone(), &rpc_session);
 
-        BootResult {
+        let boot_info = BootResult {
             config,
             router: loaded_router,
             runtime_path,
@@ -73,7 +73,12 @@ impl Boot {
             route_path,
             is_config_loaded_successfully,
             is_router_loaded_successfully,
-        }
+        };
+
+        let mut runtime_boot_info = RUNTIME_BOOT_INFO.write().unwrap();
+        *runtime_boot_info = boot_info.clone();
+
+        boot_info
     }
 
     pub fn save_config(config_path: PathBuf, config: &Config) -> bool {

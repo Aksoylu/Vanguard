@@ -38,3 +38,4 @@ pub mod upload_ssl_cert_request;
 pub mod upload_ssl_cert_response;
 
 pub mod get_build_version_response;
+pub mod get_status_response;

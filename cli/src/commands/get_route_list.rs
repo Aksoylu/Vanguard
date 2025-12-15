@@ -13,9 +13,11 @@ use crate::{
             http_route::HttpRoute, https_route::HttpsRoute, iws_route::IwsRoute,
             secure_iws_route::SecureIwsRoute,
         },
-    }, utils::console::separator,
+    },
+    utils::console::{print_colored, separator},
 };
 use clap::Args;
+use crossterm::style::Color;
 use hyper::StatusCode;
 
 #[derive(Debug, Args, Clone)]
@@ -69,7 +71,6 @@ pub async fn get_route_list(args: GetRouteListArgs) {
         print_secure_iws_routes(get_route_list_response.secure_iws_routes);
     }
     separator(36);
-
 }
 
 async fn execute(input: GetRouteListRequest) -> Result<GetRouteListResponse, RPCBaseError> {
@@ -105,14 +106,15 @@ fn print_http_routes(http_routes: Option<HashMap<String, HttpRoute>>) {
 
     let routes = http_routes.unwrap();
 
-    println!("\n--- 🌐 HTTP Routes ({}) ---", routes.len());
+    println!("\n--- HTTP Routes ({}) ---", routes.len());
     if routes.is_empty() {
         println!("  (No HTTP routes defined)");
         return;
     }
 
     for (i, (domain, route)) in routes.iter().enumerate() {
-        println!("#{}", i + 1);
+        let index = format!("#{}", i + 1);
+        print_colored(index.as_str(), Color::Yellow);
         println!("  Domain: {}", domain);
         println!("  Target: {}", route.target);
     }
@@ -125,7 +127,7 @@ fn print_https_routes(https_routes: Option<HashMap<String, HttpsRoute>>) {
 
     let routes = https_routes.unwrap();
 
-    println!("\n--- 🔒 HTTPS Routes ({}) ---", routes.len());
+    println!("\n--- HTTPS Routes ({}) ---", routes.len());
     if routes.is_empty() {
         println!("  (No HTTPS routes defined)");
         return;
@@ -135,7 +137,8 @@ fn print_https_routes(https_routes: Option<HashMap<String, HttpsRoute>>) {
         let ssl_cert_path = &route.ssl_context.certificate_file_path;
         let ssl_private_key_path = &route.ssl_context.private_key_file_path;
 
-        println!("#{}", i + 1);
+        let index = format!("#{}", i + 1);
+        print_colored(index.as_str(), Color::Yellow);
         println!("  Domain: {}", domain);
         println!("  Target: {}", route.target);
         println!("  SSL Certificate path: {}", ssl_cert_path);
@@ -150,7 +153,7 @@ fn print_iws_routes(iws_routes: Option<HashMap<String, IwsRoute>>) {
     let routes = iws_routes.unwrap();
 
     println!(
-        "\n--- ⚙️ Integrated Web Server (IWS) Routes ({}) ---",
+        "\n--- Integrated Web Server (IWS) Routes ({}) ---",
         routes.len()
     );
     if routes.is_empty() {
@@ -159,7 +162,8 @@ fn print_iws_routes(iws_routes: Option<HashMap<String, IwsRoute>>) {
     }
 
     for (i, (domain, route)) in routes.iter().enumerate() {
-        println!("#{}", i + 1);
+        let index = format!("#{}", i + 1);
+        print_colored(index.as_str(), Color::Yellow);
         println!("  Domain: {}", domain);
         println!("  Serving Path: {}", route.serving_path);
     }
@@ -173,7 +177,7 @@ fn print_secure_iws_routes(secure_iws_routes: Option<HashMap<String, SecureIwsRo
     let routes = secure_iws_routes.unwrap();
 
     println!(
-        "\n--- 🛡️ Secure Integrated Web Server (IWS) ({}) ---",
+        "\n--- Secure Integrated Web Server (IWS) ({}) ---",
         routes.len()
     );
     if routes.is_empty() {
@@ -184,8 +188,8 @@ fn print_secure_iws_routes(secure_iws_routes: Option<HashMap<String, SecureIwsRo
     for (i, (domain, route)) in routes.iter().enumerate() {
         let ssl_cert_path = &route.ssl_context.certificate_file_path;
         let ssl_private_key_path = &route.ssl_context.private_key_file_path;
-
-        println!("#{}", i + 1);
+        let index = format!("#{}", i + 1);
+        print_colored(index.as_str(), Color::Yellow);
         println!("  Domain: {}", domain);
         println!("  Target: {}", route.serving_path);
         println!("  SSL Certificate path: {}", ssl_cert_path);
