@@ -13,5 +13,10 @@ pub struct GetStatusResponse {
     pub route_path: String,
 
     pub is_config_loaded_successfully: bool,
-    pub is_router_loaded_successfully: bool
+    pub is_router_loaded_successfully: bool,
+
+    pub http_route_count: usize,
+    pub https_route_count: usize,
+    pub iws_route_count: usize,
+    pub secure_iws_route_count: usize
 } 

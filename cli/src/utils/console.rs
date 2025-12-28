@@ -1,9 +1,8 @@
 use std::io::{self, stdout, Write};
 
 use crossterm::{
-    execute,
     style::{Color, Print, ResetColor, SetForegroundColor},
-    terminal::{self, Clear, ClearType},
+    terminal::{self, ClearType},
     ExecutableCommand,
 };
 
@@ -50,4 +49,17 @@ pub fn print_colored(text: &str, color: Color) {
         // Handle the error if printing fails
         eprintln!("Error writing colored text: {}", e);
     }
+}
+
+pub fn convert_input_to_boolean(input: &str) -> Option<bool> {
+    let normalized_input = input.trim().to_lowercase();
+
+    if normalized_input == "y" || normalized_input == "yes" {
+        return Some(true);
+    }
+    if normalized_input == "n" || normalized_input == "no" {
+        return Some(false);
+    }
+
+    None
 }
