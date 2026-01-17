@@ -5,6 +5,7 @@ use crate::commands::{
     add_http_route::add_http_route, clear_terminal::clear_terminal,
     delete_http_route::delete_http_route, echo::echo, exit::exit, get_route_list::get_route_list,
     get_status::get_status, version::version, Commands,
+    add_iws_route::add_iws_route
 };
 
 #[derive(Parser)]
@@ -32,6 +33,7 @@ impl Interprinter {
             Commands::DeleteHttpRoute(args) => delete_http_route(args).await,
             Commands::GetRouteList(args) => get_route_list(args).await,
             Commands::Status => get_status().await,
+            Commands::AddIwsRoute(args) => add_iws_route(args).await,
         }
     }
     pub async fn run(&self, input: String) {

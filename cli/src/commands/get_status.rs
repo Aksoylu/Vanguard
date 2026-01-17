@@ -1,4 +1,7 @@
+use std::fmt::format;
+
 use crate::{
+    common::enums::log_level::LogLevel,
     core::{errors::rpc_base_error::RPCBaseError, shared_memory::RPC_CLIENT},
     log_error,
     models::{
@@ -6,9 +9,10 @@ use crate::{
         entity::{
             engine_http_server_config::EngineHttpServerConfig,
             engine_https_server_config::EngineHttpsServerConfig,
+            engine_logger_config::EngineLoggerConfig,
         },
     },
-    utils::{console::separator, json_utility::create_empty_json_object},
+    utils::{console::separator, json_utility::create_empty_json_object, text_utility::status_flag},
 };
 use colored::Colorize;
 use hyper::StatusCode;
@@ -90,19 +94,20 @@ fn print_status_table(data: &GetStatusResponse) {
     table.set_format(table_format());
     println!("{:?}", data);
 
+    /*
     print_engine_info(
-        
         data.runtime_path,
         &data.rpc_session_path,
     );
     print_engine_startup_config(
         &mut table,
         &data.is_config_loaded_successfully,
-        &data.config, 
-        
+        &data.config,
+
         &data.is_router_loaded_successfully,
         &data.route_path,
     );
+     */
 
     print_http_service_status(
         &mut table,
@@ -116,6 +121,14 @@ fn print_status_table(data: &GetStatusResponse) {
         &data.config.https_server,
         &data.https_route_count,
         &data.secure_iws_route_count,
+    );
+
+    print_engine_logger_config(&mut table, &data.runtime_path, &data.config.logger);
+
+    print_config_file(
+        &mut table,
+        data.is_config_loaded_successfully,
+        &data.config_path,
     );
 
     table.printstd();
@@ -167,9 +180,6 @@ fn render_forwarding_status(is_active: bool, route_count: &usize) -> String {
 
 /// @todo
 fn print_engine_info() {}
-
-/// @todo
-fn print_engine_startup_config() {}
 
 fn print_http_service_status(
     table: &mut Table,
@@ -225,5 +235,61 @@ fn print_https_service_status(
     table.add_row(Row::new(vec![
         Cell::new("Secure IWS Forwarding"),
         Cell::new(secure_iws_forwarding_status.as_str()),
+    ]));
+}
+
+fn print_engine_logger_config(
+    table: &mut Table,
+    runtime_path: &String,
+    logger_config: &EngineLoggerConfig,
+) {
+    // printing log file details
+    let file_size_as_mb = logger_config.log_file_size / 1000000;
+    let file_size_as_str = format!("{} ({} mb)", logger_config.log_file_size, file_size_as_mb);
+    let log_file_details = format!(
+        "Maximum log file size: {} | Keeping last {} days",
+        file_size_as_str, logger_config.keep_last_logs
+    );
+
+    table.add_row(Row::new(vec![
+        Cell::new("Log File"),
+        Cell::new(log_file_details.as_str()),
+    ]));
+
+    // printing log levels
+    let mut log_levels_as_string = String::new();
+    for log_level_as_string in &logger_config.log_levels {
+        let logic_log_level: LogLevel = log_level_as_string.parse().unwrap();
+        log_levels_as_string = format!("{} {}", log_levels_as_string, logic_log_level)
+    }
+
+    table.add_row(Row::new(vec![
+        Cell::new("Log Levels"),
+        Cell::new(log_levels_as_string.as_str()),
+    ]));
+
+    // printing log file path
+    let log_file_path = format!("{}/{}", &runtime_path, logger_config.log_dir_name).underline();
+
+    table.add_row(Row::new(vec![
+        Cell::new("Log File Path"),
+        Cell::new(log_file_path.to_string().as_str()),
+    ]));
+}
+
+fn print_config_file(
+    table: &mut Table,
+    is_config_loaded_successfully: bool,
+    config_path: &String,
+) {
+    let formatted_config_file_path = format!(
+        "{} {}",
+        status_flag(is_config_loaded_successfully, "Loaded", "Not Loaded"),
+        config_path.underline()
+    );
+
+    table.add_row(Row::new(vec![
+        Cell::new("Config File"),
+        Cell::new(formatted_config_file_path.as_str()),
     ]));
 }

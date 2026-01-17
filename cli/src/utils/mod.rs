@@ -5,3 +5,4 @@ pub mod file_utility;
 pub mod logger_utility;
 pub mod time_utility;
 pub mod json_utility;
+pub mod text_utility;
