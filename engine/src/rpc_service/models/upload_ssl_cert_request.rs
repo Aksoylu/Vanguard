@@ -1,8 +1,7 @@
-use crate::rpc_service::rpc_error::RPCError;
+use crate::{common::enums::ssl_file_type::SSlFileType, rpc_service::rpc_error::RPCError};
 use crate::utils::base64_utility;
 use crate::utils::rpc_utility::RpcParameter;
 use crate::utils::tls_utility::get_certificate_type;
-use crate::utils::tls_utility::SSlFileType;
 
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};

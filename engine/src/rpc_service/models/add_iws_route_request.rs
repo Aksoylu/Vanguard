@@ -2,6 +2,7 @@ use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
+#[derive(Debug)]
 pub struct AddIwsRouteRequest {
     source: String,
     serving_path: String

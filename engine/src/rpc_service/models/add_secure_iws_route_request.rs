@@ -2,14 +2,14 @@ use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
-pub struct AddSecureIwsRequest {
+pub struct AddSecureIwsRouteRequest {
     source: String,
     serving_path: String,
     ssl_cert_path: String,
     ssl_private_key_path: String,
 }
 
-impl AddSecureIwsRequest {
+impl AddSecureIwsRouteRequest {
     pub fn new(params: Value) -> Result<Self, Error> {
         let source = RpcParameter::extract_string("source", &params);
         let serving_path = RpcParameter::extract_string("serving_path", &params);

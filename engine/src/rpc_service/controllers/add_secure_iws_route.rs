@@ -1,6 +1,7 @@
 use crate::core::shared_memory::ROUTER;
 use crate::rpc_service::models::{
-    add_secure_iws_request::AddSecureIwsRequest, add_secure_iws_response::AddSecureIwsResponse,
+    add_secure_iws_route_request::AddSecureIwsRouteRequest,
+    add_secure_iws_route_response::AddSecureIwsRouteResponse,
 };
 
 use crate::rpc_service::rpc_error::RPCError;
@@ -10,7 +11,7 @@ use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub fn add_secure_iws_route(params: Value) -> Result<Value, Error> {
-    let request = AddSecureIwsRequest::new(params)?;
+    let request = AddSecureIwsRouteRequest::new(params)?;
 
     let source = request.get_source();
     let serving_path = request.get_serving_path();
@@ -29,7 +30,7 @@ pub fn add_secure_iws_route(params: Value) -> Result<Value, Error> {
         &ssl_private_key_path,
     );
 
-    Ok(AddSecureIwsResponse::build())
+    Ok(AddSecureIwsRouteResponse::build())
 }
 
 fn check_route_already_used(source: &String, serving_path: &String) -> Result<(), Error> {

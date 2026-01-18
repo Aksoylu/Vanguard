@@ -5,7 +5,7 @@ use crate::{
     utils::text_utility::{mask_token, pathbuf_to_string, status_flag, warning_flag},
 };
 use colored::Colorize;
-use prettytable::{format, row, Table};
+use prettytable::{Table, format::{self, TableFormat}, row};
 
 pub struct BootDisplayUtility {
     boot_result: BootResult,
@@ -13,7 +13,32 @@ pub struct BootDisplayUtility {
 
 impl BootDisplayUtility {
     pub fn init(boot_result: BootResult) -> Self {
-        BootDisplayUtility { boot_result: boot_result }
+        BootDisplayUtility {
+            boot_result: boot_result,
+        }
+    }
+
+    fn table_format(&self) -> TableFormat {
+        let format = format::FormatBuilder::new()
+            .column_separator(' ')
+            .left_border('\0')
+            .right_border('\0')
+            .padding(2, 1)
+            .separators(
+                &[format::LinePosition::Top],
+                format::LineSeparator::new('─', '┬', '┌', '┐'),
+            )
+            .separators(
+                &[format::LinePosition::Bottom],
+                format::LineSeparator::new('─', '┴', '└', '┘'),
+            )
+            .separators(
+                &[format::LinePosition::Intern],
+                format::LineSeparator::new('─', '┼', '├', '┤'),
+            )
+            .build();
+
+        format
     }
 
     fn add_build_info(&self, table: &mut Table) {
@@ -241,7 +266,8 @@ impl BootDisplayUtility {
 
     pub fn render(&self) {
         let mut table = Table::new();
-        table.set_format(*format::consts::FORMAT_NO_LINESEP_WITH_TITLE);
+        table.set_format(self.table_format());
+
         self.add_build_info(&mut table);
         self.add_runtime_directory(&mut table);
         self.add_config_file(&mut table);

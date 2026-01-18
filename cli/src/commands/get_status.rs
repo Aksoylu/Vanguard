@@ -1,5 +1,3 @@
-use std::fmt::format;
-
 use crate::{
     common::enums::log_level::LogLevel,
     core::{errors::rpc_base_error::RPCBaseError, shared_memory::RPC_CLIENT},
@@ -12,14 +10,15 @@ use crate::{
             engine_logger_config::EngineLoggerConfig,
         },
     },
-    utils::{console::separator, json_utility::create_empty_json_object, text_utility::status_flag},
+    utils::{
+        console::separator, json_utility::create_empty_json_object, text_utility::status_flag,
+    },
 };
 use colored::Colorize;
 use hyper::StatusCode;
 use prettytable::{
-    color,
     format::{self, TableFormat},
-    Attr, Cell, Row, Table,
+    Cell, Row, Table,
 };
 
 pub async fn get_status() {
@@ -277,11 +276,7 @@ fn print_engine_logger_config(
     ]));
 }
 
-fn print_config_file(
-    table: &mut Table,
-    is_config_loaded_successfully: bool,
-    config_path: &String,
-) {
+fn print_config_file(table: &mut Table, is_config_loaded_successfully: bool, config_path: &String) {
     let formatted_config_file_path = format!(
         "{} {}",
         status_flag(is_config_loaded_successfully, "Loaded", "Not Loaded"),
