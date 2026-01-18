@@ -10,6 +10,8 @@ pub mod add_https_route_response;
 
 pub mod add_iws_route_request;
 pub mod add_iws_route_response;
+pub mod add_secure_iws_route_request;
+pub mod add_secure_iws_route_response;
 pub mod delete_http_route_request;
 pub mod delete_http_route_response;
 pub mod delete_https_route_request;

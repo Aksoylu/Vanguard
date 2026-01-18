@@ -2,8 +2,9 @@ use clap::Subcommand;
 
 use crate::commands::{
     add_http_route::AddHttpRouteArgs, add_https_route::AddHttpsRouteArgs,
-    add_iws_route::AddIwsRouteArgs, delete_http_route::DeleteHttpRouteArgs,
-    delete_https_route::DeleteHttpsRouteArgs, echo::EchoArgs, get_route_list::GetRouteListArgs,
+    add_iws_route::AddIwsRouteArgs, add_secure_iws_route::AddSecureIwsRouteArgs,
+    delete_http_route::DeleteHttpRouteArgs, delete_https_route::DeleteHttpsRouteArgs,
+    echo::EchoArgs, get_route_list::GetRouteListArgs,
 };
 
 #[derive(Subcommand)]
@@ -34,11 +35,14 @@ pub enum Commands {
     Status,
     /// Adds a new Internal Web Service route
     AddIwsRoute(AddIwsRouteArgs),
+    /// Adds a new Secure Internal Web Service route with SSL certificate configuration
+    AddSecureIwsRoute(AddSecureIwsRouteArgs),
 }
 
 pub mod add_http_route;
 pub mod add_https_route;
 pub mod add_iws_route;
+pub mod add_secure_iws_route;
 pub mod clear_terminal;
 pub mod delete_http_route;
 pub mod delete_https_route;
