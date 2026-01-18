@@ -23,3 +23,4 @@ pub mod delete_secure_iws_route_response;
 pub mod get_route_list_request;
 pub mod get_route_list_response;
 pub mod get_status_response;
+pub mod get_uploaded_ssl_file_list_response;

@@ -5,7 +5,7 @@ use crate::commands::{
     add_iws_route::AddIwsRouteArgs, add_secure_iws_route::AddSecureIwsRouteArgs,
     delete_http_route::DeleteHttpRouteArgs, delete_https_route::DeleteHttpsRouteArgs,
     delete_iws_route::DeleteIwsRouteArgs, delete_secure_iws_route::DeleteSecureIwsRouteArgs,
-    echo::EchoArgs, get_route_list::GetRouteListArgs,
+    echo::EchoArgs, get_route_list::GetRouteListArgs, get_ssl_files::GetSslFilesArgs,
 };
 
 #[derive(Subcommand)]
@@ -42,6 +42,8 @@ pub enum Commands {
     AddIwsRoute(AddIwsRouteArgs),
     /// Adds a new Secure Internal Web Service route with SSL certificate configuration
     AddSecureIwsRoute(AddSecureIwsRouteArgs),
+    /// Retrieves and displays the list of uploaded SSL files
+    GetSslFiles(GetSslFilesArgs),
 }
 
 pub mod add_http_route;
@@ -56,5 +58,6 @@ pub mod delete_secure_iws_route;
 pub mod echo;
 pub mod exit;
 pub mod get_route_list;
+pub mod get_ssl_files;
 pub mod get_status;
 pub mod version;
