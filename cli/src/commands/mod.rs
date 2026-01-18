@@ -4,7 +4,7 @@ use crate::commands::{
     add_http_route::AddHttpRouteArgs, add_https_route::AddHttpsRouteArgs,
     add_iws_route::AddIwsRouteArgs, add_secure_iws_route::AddSecureIwsRouteArgs,
     delete_http_route::DeleteHttpRouteArgs, delete_https_route::DeleteHttpsRouteArgs,
-    echo::EchoArgs, get_route_list::GetRouteListArgs,
+    delete_iws_route::DeleteIwsRouteArgs, echo::EchoArgs, get_route_list::GetRouteListArgs,
 };
 
 #[derive(Subcommand)]
@@ -29,6 +29,8 @@ pub enum Commands {
     DeleteHttpRoute(DeleteHttpRouteArgs),
     /// Removes an existing HTTPS route by source path
     DeleteHttpsRoute(DeleteHttpsRouteArgs),
+    /// Removes an existing IWS route by source path
+    DeleteIwsRoute(DeleteIwsRouteArgs),
     /// Retrieves and displays the list of configured routes
     GetRouteList(GetRouteListArgs),
     /// Shows current engine status and configuration details
@@ -46,6 +48,7 @@ pub mod add_secure_iws_route;
 pub mod clear_terminal;
 pub mod delete_http_route;
 pub mod delete_https_route;
+pub mod delete_iws_route;
 pub mod echo;
 pub mod exit;
 pub mod get_route_list;
