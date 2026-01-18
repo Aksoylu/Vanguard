@@ -1,33 +1,49 @@
 use clap::Subcommand;
 
 use crate::commands::{
-    add_http_route::AddHttpRouteArgs, delete_http_route::DeleteHttpRouteArgs, echo::EchoArgs,
-    get_route_list::GetRouteListArgs
+    add_http_route::AddHttpRouteArgs, add_https_route::AddHttpsRouteArgs,
+    add_iws_route::AddIwsRouteArgs, delete_http_route::DeleteHttpRouteArgs,
+    delete_https_route::DeleteHttpsRouteArgs, echo::EchoArgs, get_route_list::GetRouteListArgs,
 };
 
 #[derive(Subcommand)]
 pub enum Commands {
+    /// Starts the engine service
     Start,
+    /// Sends a ping request to check engine connectivity
     Ping,
     /// Gracefully shutsdowns CLI
     Exit,
     /// Prints version of current cli and engine build versions & package names & OS information
     Version,
-    // Clears entire terminal buffer and display
+    /// Clears entire terminal buffer and display
     Clear,
     /// Sends a message to engine and prints the response. Expected same message content
     Echo(EchoArgs),
+    /// Adds a new HTTP route mapping from source to target
     AddHttpRoute(AddHttpRouteArgs),
+    /// Adds a new HTTPS route with SSL certificate configuration
+    AddHttpsRoute(AddHttpsRouteArgs),
+    /// Removes an existing HTTP route by source path
     DeleteHttpRoute(DeleteHttpRouteArgs),
+    /// Removes an existing HTTPS route by source path
+    DeleteHttpsRoute(DeleteHttpsRouteArgs),
+    /// Retrieves and displays the list of configured routes
     GetRouteList(GetRouteListArgs),
-    Status
+    /// Shows current engine status and configuration details
+    Status,
+    /// Adds a new Internal Web Service route
+    AddIwsRoute(AddIwsRouteArgs),
 }
 
 pub mod add_http_route;
-pub mod delete_http_route;
-pub mod echo;
-pub mod get_route_list;
+pub mod add_https_route;
+pub mod add_iws_route;
 pub mod clear_terminal;
-pub mod version;
+pub mod delete_http_route;
+pub mod delete_https_route;
+pub mod echo;
 pub mod exit;
+pub mod get_route_list;
 pub mod get_status;
+pub mod version;
