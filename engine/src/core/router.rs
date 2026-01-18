@@ -165,12 +165,16 @@ impl Router {
         self.save();
     }
 
-    pub fn add_iws_route(&mut self, source: &String, route_body: IwsRoute) {
+    pub fn add_iws_route(&mut self, source: &String, serving_path: &String) {
         if self.iws_route_table.contains_key(source) {
             self.iws_route_table.remove(source);
         }
 
-        self.iws_route_table.insert(source.to_owned(), route_body);
+        let new_route = IwsRoute {
+            serving_path: serving_path.to_owned()
+        };
+
+        self.iws_route_table.insert(source.to_owned(), new_route);
         self.save();
     }
 

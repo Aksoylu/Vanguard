@@ -10,7 +10,7 @@ pub fn get_ssl_upload_path() -> PathBuf {
     if !ssl_path.exists() {
         create_path(&ssl_path);
     }
-    
+
     ssl_path
 }
 
@@ -54,6 +54,30 @@ pub fn create_path(path: &PathBuf) {
             "Failed to create  directory on: {}",
             path.to_str().unwrap_or_default()
         );
+    }
+}
+
+pub fn is_path_accessible(path: &PathBuf) -> bool {
+    if !path.exists() {
+        return false;
+    }
+
+    // Try to read metadata to check if the path is accessible
+    let metadata_result = fs::metadata(path);
+    if metadata_result.is_err() {
+        return false;
+    }
+
+    // Check if we have read permissions by trying to access the path
+    if path.is_dir() {
+        // For directories, try to read the directory
+        fs::read_dir(path).is_ok()
+    } else if path.is_file() {
+        // For files, metadata access is sufficient
+        true
+    } else {
+        // Unknown path type
+        false
     }
 }
 

@@ -6,14 +6,14 @@ use serde::Serialize;
 use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 
 #[derive(Serialize, Deserialize)]
-pub struct AddSecureIwsResponse {
+pub struct AddSecureIwsRouteResponse {
     code: u16,
     message: String,
 }
 
-impl AddSecureIwsResponse {
+impl AddSecureIwsRouteResponse {
     pub fn build() -> jsonrpc_core::Value {
-        let response = AddSecureIwsResponse {
+        let response = AddSecureIwsRouteResponse {
             code: StatusCode::OK.as_u16(),
             message: RpcStatusMessage::OK.to_string(),
         };
