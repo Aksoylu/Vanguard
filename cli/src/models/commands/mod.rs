@@ -18,6 +18,8 @@ pub mod delete_https_route_request;
 pub mod delete_https_route_response;
 pub mod delete_iws_route_request;
 pub mod delete_iws_route_response;
+pub mod delete_secure_iws_route_request;
+pub mod delete_secure_iws_route_response;
 pub mod get_route_list_request;
 pub mod get_route_list_response;
 pub mod get_status_response;

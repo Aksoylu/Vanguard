@@ -3,5 +3,5 @@ use serde::Serialize;
 
 #[derive(Serialize, Deserialize)]
 pub struct DeleteSecureIwsRouteRequest {
-    source: String,
+    pub source: String,
 }
