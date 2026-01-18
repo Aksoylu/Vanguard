@@ -7,4 +7,4 @@ pub mod logger_config;
 pub mod route;
 pub mod rpc_server_config;
 pub mod ssl_context;
-pub mod ssl_entity;
+pub mod ssl_file;

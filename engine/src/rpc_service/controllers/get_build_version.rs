@@ -1,6 +1,8 @@
 use jsonrpc_core::{Error, Value};
 
-use crate::{constants::Constants, rpc_service::models::{echo_request::EchoRequest, get_build_version_response::GetBuildVersionResponse}};
+use crate::{
+    constants::Constants, rpc_service::models::get_build_version_response::GetBuildVersionResponse,
+};
 
 pub fn get_build_version(_payload: Value) -> Result<Value, Error> {
     let build_version_number = Constants::VERSION_NUMBER;

@@ -7,6 +7,7 @@ use serde::{Deserialize, Serialize};
 use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 
+use crate::common::enums::ssl_file_type::SSlFileType;
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use crate::utils::file_utility::{delete_file, get_absolute_ssl_file_path};
 use jsonrpc_core::ErrorCode;
@@ -15,13 +16,18 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::Arc;
 
-#[derive(PartialEq, Serialize, Deserialize, Clone, Copy)]
-pub enum SSlFileType {
-    Invalid,
-    PemCertificate,
-    PemPrivateKey,
-}
 
+/// Determines the type of an SSL certificate content by inspecting its header and footer.
+///
+/// # Arguments
+///
+/// * `content` - The string content of the file.
+///
+/// # Returns
+///
+/// * `SSlFileType::PemCertificate` if it matches a PEM certificate pattern.
+/// * `SSlFileType::PemPrivateKey` if it matches a private key pattern.
+/// * `SSlFileType::Invalid` otherwise.
 pub fn get_certificate_type(content: String) -> SSlFileType {
     let lines: Vec<&str> = content.lines().collect();
 
@@ -45,6 +51,16 @@ pub fn get_certificate_type(content: String) -> SSlFileType {
     SSlFileType::Invalid
 }
 
+/// Creates a TLS Acceptor configured with SNI (Server Name Indication) resolution for the given routes.
+///
+/// # Arguments
+///
+/// * `https_routes` - A map of HTTPS routes.
+/// * `secure_iws_routes` - A map of Secure IWS routes.
+///
+/// # Returns
+///
+/// * A `TlsAcceptor` instance initialized with the certificates for the provided routes.
 pub fn create_ssl_context(
     https_routes: HashMap<String, HttpsRoute>,
     secure_iws_routes: HashMap<String, SecureIwsRoute>,
@@ -119,6 +135,18 @@ pub fn create_ssl_context(
     TlsAcceptor::from(Arc::new(tls_config))
 }
 
+/// Validates that an SSL certificate and private key are valid and match each other for the given domain.
+///
+/// # Arguments
+///
+/// * `domain` - The domain name.
+/// * `ssl_cert_path` - Path to the SSL certificate file.
+/// * `ssl_private_key_path` - Path to the SSL private key file.
+///
+/// # Returns
+///
+/// * `Ok(())` if valid.
+/// * `Err` if loading fails or validation fails.
 pub fn validate_ssl_context(
     domain: &String,
     ssl_cert_path: &String,
@@ -141,6 +169,17 @@ pub fn validate_ssl_context(
     Ok(())
 }
 
+/// Detects SSL file type based on the file name extension/name.
+///
+/// # Arguments
+///
+/// * `file_name` - The name of the file.
+///
+/// # Returns
+///
+/// * `SSlFileType::PemCertificate` if the name matches standard certificate names.
+/// * `SSlFileType::PemPrivateKey` if the name matches standard private key names.
+/// * `SSlFileType::Invalid` otherwise.
 pub fn detect_file_type(file_name: String) -> SSlFileType {
     if file_name == "cert.pem" {
         return SSlFileType::PemCertificate;
@@ -151,17 +190,39 @@ pub fn detect_file_type(file_name: String) -> SSlFileType {
     SSlFileType::Invalid
 }
 
-pub fn delete_ssl_file(file_path: &String) -> Result<bool, Error>{
+/// Deletes an SSL file at the specified path.
+///
+/// # Arguments
+///
+/// * `file_path` - The relative or absolute path to the file.
+///
+/// # Returns
+///
+/// * `Ok(true)` if deleted.
+/// * `Ok(false)` if not found/deleted.
+/// * `Err` if path resolution fails.
+pub fn delete_ssl_file(file_path: &String) -> Result<bool, Error> {
     let absolute_file_path = get_absolute_ssl_file_path(file_path)?;
     let is_success = delete_file(absolute_file_path);
     Ok(is_success)
 }
 
+/// Helper to create a CertifiedKey from certificates and a private key.
 fn create_certified_key(certs: Vec<Certificate>, key: PrivateKey) -> CertifiedKey {
     let signing_key = RsaSigningKey::new(&key).unwrap();
     CertifiedKey::new(certs, Arc::new(signing_key))
 }
 
+/// Loads SSL certificates from a file.
+///
+/// # Arguments
+///
+/// * `certificate_file_path` - Path to the certificate file.
+///
+/// # Returns
+///
+/// * `Ok(Vec<Certificate>)` on success.
+/// * `Err` on failure.
 fn load_ssl_certs(certificate_file_path: &String) -> Result<Vec<Certificate>, Error> {
     let absolute_cert_file_path = get_absolute_ssl_file_path(certificate_file_path)?;
     let readed_file = File::open(&absolute_cert_file_path).map_err(|_| Error {
@@ -187,6 +248,16 @@ fn load_ssl_certs(certificate_file_path: &String) -> Result<Vec<Certificate>, Er
     Ok(certs.into_iter().map(Certificate).collect())
 }
 
+/// Loads an SSL private key from a file.
+///
+/// # Arguments
+///
+/// * `private_key_file_path` - Path to the private key file.
+///
+/// # Returns
+///
+/// * `Ok(PrivateKey)` on success.
+/// * `Err` on failure.
 fn load_ssl_private_key(private_key_file_path: &String) -> Result<PrivateKey, Error> {
     let absolute_private_key_file_path = get_absolute_ssl_file_path(private_key_file_path)?;
 

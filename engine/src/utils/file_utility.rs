@@ -8,17 +8,37 @@ use std::path::{Path, PathBuf};
 
 use crate::utils::directory_utility::get_ssl_upload_path;
 
+/// Loads a JSON file and deserializes it into the specified type `T`.
+///
+/// # Arguments
+///
+/// * `file_path` - The path to the JSON file.
+///
+/// # Returns
+///
+/// * `Ok(T)` if the file is successfully read and deserialized.
+/// * `Err` if the file cannot be opened or the content cannot be deserialized.
 pub fn load_json<T>(file_path: &Path) -> Result<T, Box<dyn std::error::Error>>
 where
     T: DeserializeOwned,
 {
-    let mut file = File::open(file_path)?;
-    let mut contents = String::new();
-    file.read_to_string(&mut contents)?;
-    let data: T = serde_json::from_str(&contents)?;
+    let file = File::open(file_path)?;
+    let reader = std::io::BufReader::new(file);
+    let data: T = serde_json::from_reader(reader)?;
     Ok(data)
 }
 
+/// Serializes the given data into a JSON file at the specified path.
+///
+/// # Arguments
+///
+/// * `file_path` - The path where the JSON file will be saved.
+/// * `data` - The data to serialize and save.
+///
+/// # Returns
+///
+/// * `Ok(())` on success.
+/// * `Err` if the file cannot be created or the data cannot be serialized.
 pub fn save_json<T>(file_path: &PathBuf, data: &T) -> Result<(), Box<dyn std::error::Error>>
 where
     T: Serialize,
@@ -28,68 +48,83 @@ where
     Ok(())
 }
 
-/// Writes the given content to a file.
+/// Writes the given string content to a file.
 ///
 /// # Arguments
 ///
-/// * `file_path` - The path to the file where the content will be written.
-/// * `content` - The content to write to the file.
+/// * `file_path` - The destination file path.
+/// * `content` - The string content to write.
 ///
 /// # Returns
 ///
 /// * `Ok(())` on success.
-/// * `Err(io::Error)` if an error occurs during the write process.
+/// * `Err` if an error occurs during the write operation.
 pub fn write_file(file_path: PathBuf, content: &str) -> std::io::Result<()> {
     let mut file = File::create(file_path)?;
     file.write_all(content.as_bytes())?;
     Ok(())
 }
 
+/// Deletes a file at the specified path.
+///
+/// # Arguments
+///
+/// * `file_path` - The path of the file to delete.
+///
+/// # Returns
+///
+/// * `true` if the file was successfully deleted.
+/// * `false` if the file did not exist or could not be deleted.
 pub fn delete_file(file_path: PathBuf) -> bool {
-    if !file_path.exists() {
-        return false;
-    }
-
-    let delete_operation = fs::remove_file(&file_path);
-    delete_operation.is_ok()
+    fs::remove_file(file_path).is_ok()
 }
 
+/// Lists all files in the given directory.
+///
+/// # Arguments
+///
+/// * `parent_path` - The directory path to search.
+///
+/// # Returns
+///
+/// * A vector of file names (strings) found in the directory.
+/// * Returns an empty vector if the directory cannot be read.
 pub fn list_all_files(parent_path: PathBuf) -> Vec<String> {
-    let mut file_names = Vec::new();
-
-    if let Ok(entries) = fs::read_dir(parent_path) {
-        for entry in entries {
-            if let Ok(entry) = entry {
-                let path = entry.path();
-                if path.is_file() {
-                    if let Some(file_name) = path.file_name() {
-                        if let Some(file_name_str) = file_name.to_str() {
-                            file_names.push(file_name_str.to_string());
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    file_names
+    fs::read_dir(parent_path)
+        .map(|entries| {
+            entries
+                .filter_map(|entry| entry.ok())
+                .filter(|entry| entry.path().is_file())
+                .filter_map(|entry| entry.file_name().into_string().ok())
+                .collect()
+        })
+        .unwrap_or_default()
 }
 
+/// Checks if a file exists and is indeed a file.
+///
+/// # Arguments
+///
+/// * `file_path` - The path to check.
+///
+/// # Returns
+///
+/// * `true` if the path exists and is a file.
+/// * `false` otherwise.
 pub fn is_file_exist(file_path: &PathBuf) -> bool {
-    let path = PathBuf::from(file_path);
-
-    if !path.exists() {
-        return false;
-    }
-
-    let read_metadata_operation = fs::metadata(path);
-    if read_metadata_operation.is_err() {
-        return false;
-    }
-
-    read_metadata_operation.unwrap().is_file()
+    file_path.is_file()
 }
 
+/// Reads a file's entire contents as a binary vector.
+///
+/// # Arguments
+///
+/// * `file_path` - The path of the file to read.
+///
+/// # Returns
+///
+/// * `Some(Vec<u8>)` containing the file bytes on success.
+/// * `None` if the file cannot be read.
 pub async fn read_file_as_binary(file_path: &PathBuf) -> Option<Vec<u8>> {
     let file = File::open(file_path);
     if file.is_err() {
@@ -110,37 +145,41 @@ pub async fn read_file_as_binary(file_path: &PathBuf) -> Option<Vec<u8>> {
 /// MIME type means http response type that sent to server. If could not detect, returns "application/octet-stream" as default
 /// # Returns
 ///
-/// * `Mime` on success.
+/// * The detected `Mime` type.
 pub fn get_content_type(file_path: &PathBuf) -> Mime {
     from_path(file_path).first_or_octet_stream()
 }
 
-/// Checks given string and condiers it as path.
-/// If starts with @vanguard, replaces it with Vanguard's current upload path so it allows user to specify
-/// relative path for extending GUI & CLI experience.
-/// Else directly uses it as absolute path
-/// At the end, checks that is file name exist, else throws RPCError
+/// Resolves a file path string to an absolute `PathBuf`.
+///
+/// Supports a custom `@vanguard` prefix to resolve paths relative to the Vanguard upload directory.
+///
+/// # Arguments
+///
+/// * `file_path_as_string` - The raw file path string (e.g., "/abs/path" or "@vanguard/file.txt").
+///
+/// # Returns
+///
+/// * `Ok(PathBuf)` if the resolved path exists and is a file.
+/// * `Err(Error)` with `InternalError` code if the file is not found.
 pub fn get_absolute_ssl_file_path(file_path_as_string: &String) -> Result<PathBuf, Error> {
-    let mut absolute_path = get_ssl_upload_path(); // as default
-
-    if file_path_as_string.starts_with("@vanguard") {
-        let vanguard_relative_path = file_path_as_string.replace("@vanguard/", "");
-
-        absolute_path.push(vanguard_relative_path);
+    let absolute_path = if file_path_as_string.starts_with("@vanguard") {
+        let relative_path = file_path_as_string.replacen("@vanguard/", "", 1);
+        get_ssl_upload_path().join(relative_path)
     } else {
-        absolute_path = PathBuf::from(file_path_as_string)
-    }
+        PathBuf::from(file_path_as_string)
+    };
 
-    if is_file_exist(&absolute_path) {
-        Ok(absolute_path.clone())
+    if absolute_path.is_file() {
+        Ok(absolute_path)
     } else {
-        return Err(Error {
+        Err(Error {
             code: jsonrpc_core::ErrorCode::InternalError,
             message: format!(
                 "File not found at path '{}'",
                 absolute_path.to_string_lossy()
             ),
             data: None,
-        });
+        })
     }
 }
