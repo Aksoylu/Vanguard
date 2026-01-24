@@ -212,21 +212,210 @@ __Notes:__
 - If the route doesn't exist, an error message will be displayed
 - Use `routes http` to view all existing HTTP routes before deletion
 
-### 3.4 @todo@ Adding new Https route
-### 3.5 @todo@ Removing a Https route
-### 3.6 @todo@ Adding a new IWS route
-### 3.7 @todo@ Removing a IWS route
-### 3.7 @todo@ Adding a new IWS route
-### 3.8 @todo@ Removing a IWS route
+### 3.4 Adding new Https route
+
+Adds a new HTTPS route to the Vanguard Engine, mapping a source domain to a target URL with HTTPS & SSL termination.
+
+__Usage:__
+```
+>>> add-https-route <source> <target> <ssl_cert_path> <ssl_private_key_path>
+```
+
+__Parameters:__
+
+- `source`: The source domain to match incoming requests (e.g., `secure.example.com`)
+- `target`: The target URL to forward requests to (e.g., `https://localhost:3443`)
+- `ssl_cert_path`: The absolute path to the SSL certificate file
+- `ssl_private_key_path`: The absolute path to the SSL private key file
+
+__Result:__
+```
+✓ New https route added successfully
+```
+
+__Examples:__
+```
+>>> add-https-route secure.example.com https://localhost:3443 /etc/ssl/certs/cert.pem /etc/ssl/private/key.pem
+>>> add-https-route app.domain.com http://localhost:8080 /var/www/certs/fullchain.pem /var/www/certs/privkey.pem
+```
+
+__Notes:__
+
+- The source domain should not include the protocol
+- The target URL must include the full protocol and address
+- Valid SSL certificate and private key paths are required
+- Route changes take effect immediately
+
+### 3.5 Deleting HTTPS Route
+
+Removes an existing HTTPS route from the Vanguard Engine by its source domain.
+
+__Usage:__
+```
+>>> delete-https-route <source>
+```
+
+__Parameters:__
+
+- `source`: The source domain of the route to delete (e.g., `example.com`)
+
+__Result:__
+```
+✓ Https route deleted successfully
+```
+
+__Examples:__
+```
+>>> delete-https-route example.com
+>>> delete-https-route api.example.com
+>>> delete-https-route subdomain.mysite.com
+```
+
+__Notes:__
+
+- The source domain must match an existing HTTPS route
+- Route deletion takes effect immediately
+- If the route doesn't exist, an error message will be displayed
+- Use `routes https` to view all existing HTTPS routes before deletion
+
+### 3.6 Adding a new IWS route
+
+Adds a new Internal Web Server (IWS) route to the Vanguard Engine, mapping a source domain to a target directory for static file serving.
+
+__Usage:__
+```
+>>> add-iws-route <source> <target>
+```
+
+__Parameters:__
+
+- `source`: The source domain to match incoming requests (e.g., `static.example.com`)
+- `target`: The target directory to serve static files from (e.g., `/var/www/static`)
+
+__Result:__
+```
+✓ New iws route added successfully
+```
+
+__Examples:__
+```
+>>> add-iws-route static.example.com /var/www/static
+>>> add-iws-route app.domain.com /var/www/app
+```
+
+__Notes:__
+
+- The source domain should not include the protocol
+- The target directory must exist and be accessible
+- Route changes take effect immediately
+
+### 3.7 Deleting IWS Route
+
+Removes an existing Internal Web Server (IWS) route from the Vanguard Engine by its source domain.
+
+__Usage:__
+```
+>>> delete-iws-route <source>
+```
+
+__Parameters:__
+
+- `source`: The source domain of the route to delete (e.g., `example.com`)
+
+__Result:__
+```
+✓ IWS route deleted successfully 
+```
+
+__Examples:__
+```
+>>> delete-iws-route example.com
+>>> delete-iws-route api.example.com
+>>> delete-iws-route subdomain.mysite.com
+```
+
+__Notes:__
+
+- The source domain must match an existing IWS route
+- Route deletion takes effect immediately
+- If the route doesn't exist, an error message will be displayed
+- Use `routes iws` to view all existing IWS routes before deletion
+
+### 3.8 Adding a new Secure IWS route
+
+Adds a new Secure Internal Web Server (IWS) route to the Vanguard Engine, mapping a source domain to a target directory for static file serving with HTTPS & SSL termination.
+
+__Usage:__
+```
+>>> add-secure-iws-route <source> <target> <ssl_cert_path> <ssl_private_key_path>
+```
+
+__Parameters:__
+
+- `source`: The source domain to match incoming requests (e.g., `secure-static.example.com`)
+- `target`: The target directory to serve static files from (e.g., `/var/www/secure`)
+- `ssl_cert_path`: The absolute path to the SSL certificate file
+- `ssl_private_key_path`: The absolute path to the SSL private key file
+
+__Result:__
+```
+✓ New secure iws route added successfully
+```
+
+__Examples:__
+```
+>>> add-secure-iws-route secure-static.example.com /var/www/secure /etc/ssl/certs/secure-cert.pem /etc/ssl/private/secure-key.pem
+>>> add-secure-iws-route app.domain.com /var/www/app /var/www/certs/fullchain.pem /var/www/certs/privkey.pem
+```
+
+__Notes:__
+
+- The source domain should not include the protocol
+- The target directory must exist and be accessible
+- Valid SSL certificate and private key paths are required
+- Route changes take effect immediately
+
+### 3.9 Removing a Secure IWS route
+
+Removes an existing Secure Internal Web Server (IWS) route from the Vanguard Engine by its source domain.
+
+__Usage:__
+```
+>>> delete-secure-iws-route <source>
+```
+
+__Parameters:__
+
+- `source`: The source domain of the route to delete (e.g., `example.com`)
+
+__Result:__
+```
+✓ Secure iws route deleted successfully
+```
+
+__Examples:__
+```
+>>> delete-secure-iws-route example.com
+>>> delete-secure-iws-route api.example.com
+>>> delete-secure-iws-route subdomain.mysite.com
+```
+
+__Notes:__
+
+- The source domain must match an existing Secure IWS route
+- Route deletion takes effect immediately
+- If the route doesn't exist, an error message will be displayed
+- Use `routes secure-iws` to view all existing Secure IWS routes before deletion
 
 ## 4. SSL & TLS Management
 @@todo@@ About SSL support of Vanguard
 @@todo@@ Use cases of SSL with Vanguard
 
-## 5. Load Balancing
+## 5. Load Balancing
+
 ### 5.1 @todo@ Creating new load balancing task
 #### 5.1.1 @todo@ Supported Load Balancing Algorithms
-### 5.2 @todo@ Listing current load balancing tasks
+### 5.2 @todo@ Listing current load balancing tasks
 ### 5.3 @todo@ Configuring a load balancing task
 ### 5.4 @todo@ Removing a load balancing task
 
