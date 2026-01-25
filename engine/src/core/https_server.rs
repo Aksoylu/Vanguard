@@ -60,7 +60,6 @@ impl HttpsServer {
     }
 
     pub async fn start(&self) {
-        let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor =
             create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
 
@@ -71,11 +70,10 @@ impl HttpsServer {
         loop {
             let (stream, _) = listener.accept().await.unwrap();
             let tls_acceptor: TlsAcceptor = ssl_context.clone();
-            let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
-            let self_clone = self.clone();
+            let https_server = Arc::new(self.clone());
             tokio::spawn(async move {
-                self_clone
-                    .lifecycle(tls_acceptor, stream, https_server)
+                https_server
+                    .lifecycle(tls_acceptor, stream)
                     .await;
             });
         }
@@ -85,7 +83,6 @@ impl HttpsServer {
         &self,
         tls_acceptor: TlsAcceptor,
         stream: tokio::net::TcpStream,
-        https_server: Arc<Mutex<HttpsServer>>,
     ) {
         let remote_client_addr = match stream.peer_addr() {
             Ok(addr) => addr,
@@ -95,6 +92,7 @@ impl HttpsServer {
             }
         };
 
+        let self_clone = Arc::new(self.clone());
         tokio::spawn(async move {
             let stream = match tls_acceptor.accept(stream).await {
                 Ok(stream) => stream,
@@ -105,13 +103,11 @@ impl HttpsServer {
             };
 
             let service = service_fn(move |req: Request<Body>| {
-                let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
+                let self_clone = Arc::clone(&self_clone);
                 let client_ip = remote_client_addr.ip();
 
                 async move {
-                    let data: tokio::sync::MutexGuard<HttpsServer> = https_server.lock().await;
-
-                    match data.handle_request(req, client_ip).await {
+                    match self_clone.handle_request(req, client_ip).await {
                         Ok(response) => Ok::<_, hyper::Error>(response),
                         Err(err) => {
                             return Ok::<_, hyper::Error>(Response::new(Body::from(

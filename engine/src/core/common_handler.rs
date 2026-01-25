@@ -1,10 +1,10 @@
-use hyper::client::HttpConnector;
 use hyper::header::HeaderValue;
 use hyper::StatusCode;
-use hyper::{Body, Client, Request, Response};
+use hyper::{Body, Request, Response};
 use std::net::IpAddr;
 use std::path::PathBuf;
 
+use crate::core::shared_memory::HTTP_CLIENT;
 use crate::log_info;
 
 use crate::render::Render;
@@ -51,10 +51,7 @@ impl CommonHandler {
 
         let new_request = Request::from_parts(parts, body);
 
-        let http = HttpConnector::new();
-        let client: Client<HttpConnector> = Client::builder().build(http);
-
-        let response = client.request(new_request).await?;
+        let response = HTTP_CLIENT.request(new_request).await?;
 
         let elapsed_time = start_time.elapsed().as_millis();
 
@@ -114,6 +111,7 @@ impl CommonHandler {
         }
 
         let content_type = get_content_type(&serving_path);
+        let content_length = file_content.as_ref().unwrap().len();
 
         log_info!(
             "{} |IWS EXECUTION| {} {} {} ({} ms) from {} to {} via ip {}",
@@ -126,8 +124,11 @@ impl CommonHandler {
             &serving_path.display(),
             &client_ip
         );
+
         return Ok(Response::builder()
             .header("Content-Type", content_type.as_ref())
+            .header("Content-Length", content_length.to_string())
+            .header("Connection", "keep-alive")
             .body(Body::from(file_content.unwrap()))
             .unwrap());
     }
@@ -183,8 +184,12 @@ impl CommonHandler {
             &client_ip
         );
 
+        let content_length = dir_content.len();
+
         return Ok(Response::builder()
             .header("Content-Type", "text/html")
+            .header("Content-Length", content_length.to_string())
+            .header("Connection", "keep-alive")
             .body(Body::from(dir_content))
             .unwrap());
     }
