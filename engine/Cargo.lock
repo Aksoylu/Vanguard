@@ -2487,6 +2487,7 @@ dependencies = [
  "tera",
  "tokio 1.38.0",
  "tokio-rustls 0.23.4",
+ "tokio-util",
 ]
 
 [[package]]

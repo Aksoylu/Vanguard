@@ -1,6 +1,7 @@
-use hyper::header::HeaderValue;
+use hyper::header::{self, HeaderValue};
 use hyper::StatusCode;
 use hyper::{Body, Request, Response};
+use std::fs::Metadata;
 use std::net::IpAddr;
 use std::path::PathBuf;
 
@@ -8,7 +9,10 @@ use crate::core::shared_memory::HTTP_CLIENT;
 use crate::log_info;
 
 use crate::render::Render;
-use crate::utils::file_utility::{get_content_type, is_file_exist, read_file_as_binary};
+use crate::utils::file_utility::{
+    generate_file_tag, get_content_type, is_file_exist, open_file
+};
+use tokio_util::io::ReaderStream;
 
 pub enum Protocol {
     HTTP,
@@ -74,6 +78,7 @@ impl CommonHandler {
         protocol: Protocol,
         request_host: &String,
         serving_path: &PathBuf,
+        metadata: &Metadata,
         req: Request<Body>,
         client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
@@ -88,30 +93,41 @@ impl CommonHandler {
         let request_method = req.method().clone();
         let request_path = original_uri.path().to_string();
 
-        let file_content: Option<Vec<u8>> = read_file_as_binary(&serving_path).await;
+        // Getting file size and last modified info, then we can create a etag
+        let content_type = get_content_type(&serving_path);
+        let content_length = metadata.len();
+        let last_modified = metadata
+            .modified()
+            .ok()
+            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+            .map(|d| d.as_secs())
+            .unwrap_or(0);
 
-        let elapsed_time = start_time.elapsed().as_millis();
+        let file_etag = generate_file_tag(content_length, last_modified);
 
-        if file_content.is_none() {
-            log_info!(
-                "{} |IWS RECORD FOUND| {} {} {} ({} ms) from {} via ip {}",
-                protocol_name,
-                request_method,
-                request_path,
-                StatusCode::NOT_FOUND.as_u16(),
-                elapsed_time,
-                request_host,
-                &client_ip
-            );
-
-            return Ok(Response::builder()
-                .status(StatusCode::FOUND)
-                .body(Body::from("302 - Requested file is empty"))
-                .unwrap());
+        // Is file up to date in client, we should return 301 NOT_MODIFIED
+        if let Some(if_none_match) = req.headers().get(header::IF_NONE_MATCH) {
+            if if_none_match == file_etag.as_str() {
+                return Ok(Response::builder()
+                    .status(StatusCode::NOT_MODIFIED)
+                    .body(Body::empty())
+                    .unwrap());
+            }
         }
 
-        let content_type = get_content_type(&serving_path);
-        let content_length = file_content.as_ref().unwrap().len();
+        let file_pointer = open_file(serving_path).await;
+        if file_pointer.is_none() {
+            return Ok(Response::builder()
+                .status(StatusCode::NOT_FOUND)
+                .body(Body::empty())
+                .unwrap());
+        }
+        
+        // Zero-copy streaming body
+        let content_stream = ReaderStream::new(file_pointer.unwrap());
+        let body = Body::wrap_stream(content_stream);
+
+        let elapsed_time = start_time.elapsed().as_millis();
 
         log_info!(
             "{} |IWS EXECUTION| {} {} {} ({} ms) from {} to {} via ip {}",
@@ -128,8 +144,9 @@ impl CommonHandler {
         return Ok(Response::builder()
             .header("Content-Type", content_type.as_ref())
             .header("Content-Length", content_length.to_string())
+            .header("ETag", file_etag)
             .header("Connection", "keep-alive")
-            .body(Body::from(file_content.unwrap()))
+            .body(body)
             .unwrap());
     }
 
@@ -151,14 +168,17 @@ impl CommonHandler {
 
         let index_html_path = serving_path.join("index.html");
         if is_file_exist(&index_html_path) {
-            return CommonHandler::iws_static_file_execution(
-                protocol,
-                request_host,
-                &index_html_path,
-                req,
-                client_ip,
-            )
-            .await;
+            if let Ok(metadata) = tokio::fs::metadata(&index_html_path).await {
+                return CommonHandler::iws_static_file_execution(
+                    protocol,
+                    request_host,
+                    &index_html_path,
+                    &metadata,
+                    req,
+                    client_ip,
+                )
+                .await;
+            }
         }
 
         let original_uri = req.uri().clone();

@@ -236,6 +236,7 @@ impl HttpServer {
                 Protocol::HTTP,
                 request_host,
                 &requested_disk_path,
+                &metadata,
                 req,
                 client_ip,
             )
