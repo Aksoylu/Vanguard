@@ -42,6 +42,7 @@ impl Interprinter {
             Commands::AddIwsRoute(args) => add_iws_route(args).await,
             Commands::AddSecureIwsRoute(args) => add_secure_iws_route(args).await,
             Commands::GetSslFiles(args) => get_ssl_files(args).await,
+            Commands::Logs(args) => logs(args).await,
         }
     }
     pub async fn run(&self, input: String) {

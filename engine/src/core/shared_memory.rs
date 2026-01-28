@@ -1,10 +1,13 @@
+use hyper::{client::HttpConnector, Client};
 use once_cell::sync::Lazy;
 use std::sync::{Arc, RwLock};
 
 use crate::{
     core::{
         http_server::HttpServer, https_server::HttpsServer, log_service::LogService, router::Router,
-    }, models::boot_result::BootResult, rpc_service::rpc_server::RPCServer
+    },
+    models::boot_result::BootResult,
+    rpc_service::rpc_server::RPCServer,
 };
 
 // Here we store static global instances for engine-wide and multithread read-write access
@@ -25,3 +28,9 @@ pub static RUNTIME_BOOT_INFO: Lazy<Arc<RwLock<BootResult>>> =
 
 pub static ROUTER: Lazy<Arc<RwLock<Router>>> =
     Lazy::new(|| Arc::new(RwLock::new(Router::default())));
+
+pub static HTTP_CLIENT: Lazy<Client<HttpConnector>> = Lazy::new(|| {
+    let mut http = HttpConnector::new();
+    http.set_nodelay(true);
+    Client::builder().build(http)
+});

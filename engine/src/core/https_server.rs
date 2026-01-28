@@ -2,7 +2,7 @@ use hyper::{server::conn::Http, service::service_fn, Body, Request, Response};
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
-use tokio::{net::TcpListener, sync::Mutex};
+use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 
 use crate::constants::Constants;
@@ -12,8 +12,6 @@ use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use crate::{log_debug, log_error, log_info};
 
 use crate::render::Render;
-use crate::utils::directory_utility::is_directory_exist;
-use crate::utils::file_utility::is_file_exist;
 use crate::utils::network_utility::{extract_host, parse_ip_address};
 use crate::utils::tls_utility::create_ssl_context;
 
@@ -60,7 +58,6 @@ impl HttpsServer {
     }
 
     pub async fn start(&self) {
-        let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor =
             create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
 
@@ -71,11 +68,10 @@ impl HttpsServer {
         loop {
             let (stream, _) = listener.accept().await.unwrap();
             let tls_acceptor: TlsAcceptor = ssl_context.clone();
-            let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
-            let self_clone = self.clone();
+            let https_server = Arc::new(self.clone());
             tokio::spawn(async move {
-                self_clone
-                    .lifecycle(tls_acceptor, stream, https_server)
+                https_server
+                    .lifecycle(tls_acceptor, stream)
                     .await;
             });
         }
@@ -85,7 +81,6 @@ impl HttpsServer {
         &self,
         tls_acceptor: TlsAcceptor,
         stream: tokio::net::TcpStream,
-        https_server: Arc<Mutex<HttpsServer>>,
     ) {
         let remote_client_addr = match stream.peer_addr() {
             Ok(addr) => addr,
@@ -95,6 +90,7 @@ impl HttpsServer {
             }
         };
 
+        let self_clone = Arc::new(self.clone());
         tokio::spawn(async move {
             let stream = match tls_acceptor.accept(stream).await {
                 Ok(stream) => stream,
@@ -105,13 +101,11 @@ impl HttpsServer {
             };
 
             let service = service_fn(move |req: Request<Body>| {
-                let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
+                let self_clone = Arc::clone(&self_clone);
                 let client_ip = remote_client_addr.ip();
 
                 async move {
-                    let data: tokio::sync::MutexGuard<HttpsServer> = https_server.lock().await;
-
-                    match data.handle_request(req, client_ip).await {
+                    match self_clone.handle_request(req, client_ip).await {
                         Ok(response) => Ok::<_, hyper::Error>(response),
                         Err(err) => {
                             return Ok::<_, hyper::Error>(Response::new(Body::from(
@@ -199,7 +193,26 @@ impl HttpsServer {
         let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);
         requested_disk_path.push(url_path);
 
-        if is_file_exist(&requested_disk_path) {
+        let read_metadata = tokio::fs::metadata(&requested_disk_path).await;
+        if read_metadata.is_err() {
+            log_debug!(
+                "HTTPS outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
+                &request_host,
+                &current_iws_route.serving_path
+            );
+
+            return CommonHandler::iws_route_not_found_error(
+                Protocol::HTTPS,
+                request_host,
+                req,
+                client_ip,
+            )
+            .await;
+        }
+
+        let metadata = read_metadata.unwrap();
+
+        if metadata.is_file() {
             log_debug!(
                 "HTTPS outband IWS request source ({}) is known. Serving file from disk (Secure IWS registry) at path: {}",
                 &request_host,
@@ -210,13 +223,14 @@ impl HttpsServer {
                 Protocol::HTTPS,
                 request_host,
                 &requested_disk_path,
+                &metadata,
                 req,
                 client_ip,
             )
             .await;
         }
 
-        if is_directory_exist(&requested_disk_path) {
+        if metadata.is_dir() {
             log_debug!(
                 "HTTPS outband IWS request source ({}) is known. Serving directory from disk (Secure IWS registry) at path: {}",
                 &request_host,
