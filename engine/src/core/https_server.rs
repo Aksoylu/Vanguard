@@ -15,6 +15,9 @@ use crate::render::Render;
 use crate::utils::network_utility::{extract_host, parse_ip_address};
 use crate::utils::tls_utility::create_ssl_context;
 
+use tokio::net::TcpStream as TokioTcpStream;
+use tokio::sync::oneshot as TokioChannel;
+
 // Global Http Server Instance: Initially empty default config, updated in Runtime init
 
 #[derive(Clone)]
@@ -70,36 +73,61 @@ impl HttpsServer {
             let tls_acceptor: TlsAcceptor = ssl_context.clone();
             let https_server = Arc::new(self.clone());
             tokio::spawn(async move {
-                https_server
-                    .lifecycle(tls_acceptor, stream)
-                    .await;
+                https_server.lifecycle(tls_acceptor, stream).await;
             });
         }
     }
 
-    async fn lifecycle(
-        &self,
-        tls_acceptor: TlsAcceptor,
-        stream: tokio::net::TcpStream,
-    ) {
-        let remote_client_addr = match stream.peer_addr() {
+    async fn lifecycle(&self, tls_acceptor: TlsAcceptor, tcp_stream: tokio::net::TcpStream) {
+        let remote_client_addr = match tcp_stream.peer_addr() {
             Ok(addr) => addr,
-            Err(_) => {
-                log_error!("Unable to get client address");
+            Err(error) => {
+                log_error!("Unable to get client address: {}", error.to_string());
                 return;
             }
         };
 
         let self_clone = Arc::new(self.clone());
         tokio::spawn(async move {
-            let stream = match tls_acceptor.accept(stream).await {
-                Ok(stream) => stream,
+            // 1. Creating a "oneshot" channel to receive the negotiated protocol from the TLS handshake.
+            let (transmitter, receiver) = TokioChannel::channel();
+
+            // 2. Performing the TLS handshake.
+            // Here we are using `accept_with` to peek into the session and see if the client wants HTTP/2 (h2).
+            let accept_tls = tls_acceptor
+                .accept_with(tcp_stream, |session| {
+                    let negotiated_protocol = session.alpn_protocol().map(|p| p.to_vec());
+                    let stream_result = transmitter.send(negotiated_protocol);
+
+                    if stream_result.is_err() {
+                        log_error!(
+                            "Unable to send negotiated protocol: {:?}",
+                            stream_result.err().unwrap()
+                        );
+                        return;
+                    }
+                })
+                .await;
+
+            // 3. Handling the TLS handshake result.
+            let tls_stream = match accept_tls {
+                Ok(tls_stream) => tls_stream,
                 Err(e) => {
-                    log_error!("TLS accept error: {:?}", e);
+                    log_error!("TLS Handshake failed: {:?}", e);
                     return;
                 }
             };
 
+            // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
+            let mut server_engine = Http::new();
+            if let Ok(Some(protocol)) = receiver.await {
+                if protocol == b"h2" {
+                    log_debug!("HTTP/2 connection negotiated via ALPN");
+                    server_engine.http2_only(true);
+                }
+            }
+
+            // 5. Creating a service instance to handle incoming requests.
             let service = service_fn(move |req: Request<Body>| {
                 let self_clone = Arc::clone(&self_clone);
                 let client_ip = remote_client_addr.ip();
@@ -116,8 +144,7 @@ impl HttpsServer {
                 }
             });
 
-            let http = Http::new();
-            if let Err(e) = http.serve_connection(stream, service).await {
+            if let Err(e) = server_engine.serve_connection(tls_stream, service).await {
                 log_error!("Server error: {}", e);
             }
         });
