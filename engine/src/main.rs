@@ -15,7 +15,7 @@ use clap::Parser;
 use crate::assets::banner::print_banner;
 use crate::assets::startup_disclaimer::print_startup_disclaimer;
 
-use crate::core::shared_memory::{HTTP_SERVER, HTTPS_SERVER, RPC_SERVER, RUNTIME_BOOT_INFO};
+use crate::core::shared_memory::{HTTP_SERVER, HTTPS_SERVER, RPC_SERVER};
 use crate::models::application_parameters::ApplicationParameters;
 use crate::models::boot_result::BootResult;
 use crate::utils::{boot_display_utility::BootDisplayUtility, console_utility::approve_dialog};

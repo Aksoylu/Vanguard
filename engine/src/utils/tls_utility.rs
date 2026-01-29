@@ -127,10 +127,12 @@ pub fn create_ssl_context(
         sni_resolver.add(source.as_str(), certified_key).unwrap();
     }
 
-    let tls_config = ServerConfig::builder()
+    let mut tls_config = ServerConfig::builder()
         .with_safe_defaults()
         .with_no_client_auth()
         .with_cert_resolver(Arc::new(sni_resolver));
+
+    tls_config.alpn_protocols = vec![b"h2".to_vec(), b"http/1.1".to_vec()];
 
     TlsAcceptor::from(Arc::new(tls_config))
 }

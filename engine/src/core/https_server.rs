@@ -1,21 +1,23 @@
-use hyper::{server::conn::Http, service::service_fn, Body, Request, Response};
+use hyper::{server::conn::Http, service::service_fn, Body, Request, Response, StatusCode};
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
-use tokio::{net::TcpListener, sync::Mutex};
+use tokio::net::TcpListener;
 use tokio_rustls::TlsAcceptor;
 
 use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
 use crate::core::shared_memory::ROUTER;
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
+use crate::utils::time_utility::run_in_time_buffer;
 use crate::{log_debug, log_error, log_info};
 
 use crate::render::Render;
-use crate::utils::directory_utility::is_directory_exist;
-use crate::utils::file_utility::is_file_exist;
 use crate::utils::network_utility::{extract_host, parse_ip_address};
 use crate::utils::tls_utility::create_ssl_context;
+
+use tokio::net::TcpStream as TokioTcpStream;
+use tokio::sync::oneshot as TokioChannel;
 
 // Global Http Server Instance: Initially empty default config, updated in Runtime init
 
@@ -60,7 +62,6 @@ impl HttpsServer {
     }
 
     pub async fn start(&self) {
-        let https_server: Arc<Mutex<HttpsServer>> = Arc::new(Mutex::new(self.clone()));
         let ssl_context: TlsAcceptor =
             create_ssl_context(self.https_routes.clone(), self.secure_iws_routes.clone());
 
@@ -71,59 +72,105 @@ impl HttpsServer {
         loop {
             let (stream, _) = listener.accept().await.unwrap();
             let tls_acceptor: TlsAcceptor = ssl_context.clone();
-            let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
-            let self_clone = self.clone();
+            let https_server = Arc::new(self.clone());
             tokio::spawn(async move {
-                self_clone
-                    .lifecycle(tls_acceptor, stream, https_server)
-                    .await;
+                https_server.lifecycle(tls_acceptor, stream).await;
             });
         }
     }
 
-    async fn lifecycle(
-        &self,
-        tls_acceptor: TlsAcceptor,
-        stream: tokio::net::TcpStream,
-        https_server: Arc<Mutex<HttpsServer>>,
-    ) {
-        let remote_client_addr = match stream.peer_addr() {
+    async fn lifecycle(&self, tls_acceptor: TlsAcceptor, tcp_stream: TokioTcpStream) {
+        let remote_client_addr = match tcp_stream.peer_addr() {
             Ok(addr) => addr,
-            Err(_) => {
-                log_error!("Unable to get client address");
+            Err(error) => {
+                log_error!("Unable to get client address: {}", error.to_string());
                 return;
             }
         };
 
+        let https_server = Arc::new(self.clone());
         tokio::spawn(async move {
-            let stream = match tls_acceptor.accept(stream).await {
-                Ok(stream) => stream,
+            // 1. Creating a "oneshot" channel to receive the negotiated protocol from the TLS handshake.
+            let (transmitter, receiver) = TokioChannel::channel();
+
+            // 2. Performing the TLS handshake.
+            // Here we are using `accept_with` to peek into the session and see if the client wants HTTP/2 (h2).
+            let accept_tls = tls_acceptor
+                .accept_with(tcp_stream, |session| {
+                    let negotiated_protocol = session.alpn_protocol().map(|p| p.to_vec());
+                    let stream_result = transmitter.send(negotiated_protocol);
+
+                    if stream_result.is_err() {
+                        log_error!(
+                            "Unable to send negotiated protocol: {:?}",
+                            stream_result.err().unwrap()
+                        );
+                        return;
+                    }
+                })
+                .await;
+
+            // 3. Handling the TLS handshake result.
+            let tls_stream = match accept_tls {
+                Ok(tls_stream) => tls_stream,
                 Err(e) => {
-                    log_error!("TLS accept error: {:?}", e);
+                    log_error!("TLS Handshake failed: {:?}", e);
                     return;
                 }
             };
 
+            // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
+            let mut server_engine = Http::new();
+
+            // 5. Setting timeouts and limits for scalability
+            server_engine
+                .http2_keep_alive_timeout(std::time::Duration::from_secs(
+                    Constants::DEFAULT_POOL_IDLE_TIMEOUT,
+                ))
+                .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32);
+
+            if let Ok(Some(protocol)) = receiver.await {
+                if protocol == b"h2" {
+                    log_debug!("HTTP/2 connection negotiated via ALPN");
+                    server_engine.http2_only(true);
+                }
+            }
+
+            // 6. Creating a service instance to handle incoming requests.
             let service = service_fn(move |req: Request<Body>| {
-                let https_server: Arc<Mutex<HttpsServer>> = Arc::clone(&https_server);
+                let https_server_instance = Arc::clone(&https_server);
                 let client_ip = remote_client_addr.ip();
 
                 async move {
-                    let data: tokio::sync::MutexGuard<HttpsServer> = https_server.lock().await;
+                    let response = run_in_time_buffer(
+                        Constants::DEFAULT_SERVER_READ_TIMEOUT,
+                        https_server_instance.handle_request(req, client_ip),
+                    )
+                    .await;
 
-                    match data.handle_request(req, client_ip).await {
-                        Ok(response) => Ok::<_, hyper::Error>(response),
-                        Err(err) => {
-                            return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                Render::internal_server_error("/", format!("{:?}", err).as_str()),
-                            )));
-                        }
+                    if response.is_err() {
+                        return Ok::<_, hyper::Error>(Response::new(Body::from(
+                            Render::internal_server_error("/", "Request timed out"),
+                        )));
                     }
+
+                    let completed_response = response.unwrap();
+
+                    if completed_response.is_err() {
+                        return Ok::<_, hyper::Error>(Response::new(Body::from(
+                            Render::internal_server_error(
+                                "/",
+                                format!("{:?}", completed_response.err().unwrap()).as_str(),
+                            ),
+                        )));
+                    }
+
+                    let result = completed_response.unwrap();
+                    return Ok::<_, hyper::Error>(result);
                 }
             });
 
-            let http = Http::new();
-            if let Err(e) = http.serve_connection(stream, service).await {
+            if let Err(e) = server_engine.serve_connection(tls_stream, service).await {
                 log_error!("Server error: {}", e);
             }
         });
@@ -199,7 +246,26 @@ impl HttpsServer {
         let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);
         requested_disk_path.push(url_path);
 
-        if is_file_exist(&requested_disk_path) {
+        let read_metadata = tokio::fs::metadata(&requested_disk_path).await;
+        if read_metadata.is_err() {
+            log_debug!(
+                "HTTPS outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
+                &request_host,
+                &current_iws_route.serving_path
+            );
+
+            return CommonHandler::iws_route_not_found_error(
+                Protocol::HTTPS,
+                request_host,
+                req,
+                client_ip,
+            )
+            .await;
+        }
+
+        let metadata = read_metadata.unwrap();
+
+        if metadata.is_file() {
             log_debug!(
                 "HTTPS outband IWS request source ({}) is known. Serving file from disk (Secure IWS registry) at path: {}",
                 &request_host,
@@ -210,13 +276,14 @@ impl HttpsServer {
                 Protocol::HTTPS,
                 request_host,
                 &requested_disk_path,
+                &metadata,
                 req,
                 client_ip,
             )
             .await;
         }
 
-        if is_directory_exist(&requested_disk_path) {
+        if metadata.is_dir() {
             log_debug!(
                 "HTTPS outband IWS request source ({}) is known. Serving directory from disk (Secure IWS registry) at path: {}",
                 &request_host,

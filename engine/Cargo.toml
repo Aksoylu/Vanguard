@@ -10,6 +10,8 @@ repository = "https://github.com/Aksoylu/Vanguard"
 [dependencies]
 hyper = { version = "0.14", features = ["full"] }
 tokio = { version = "1", features = ["full"] }
+tokio-util = { version = "0.7", features = ["io"] }
+bytes = "1.5"
 serde = { version = "1.0", features = ["derive"] }
 clap = { version = "4.4", features = ["derive"] }
 serde_json = "1.0"

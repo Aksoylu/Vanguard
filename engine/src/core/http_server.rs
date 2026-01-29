@@ -1,16 +1,15 @@
 use hyper::{
+    server::conn::AddrStream,
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
-    path::PathBuf,
 };
-use tokio::sync::Mutex;
 
 use crate::{
     constants::Constants,
@@ -22,9 +21,8 @@ use crate::{
     models::route::{HttpRoute, IwsRoute},
     render::Render,
     utils::{
-        directory_utility::is_directory_exist,
-        file_utility::is_file_exist,
         network_utility::{extract_host, parse_ip_address},
+        time_utility::run_in_time_buffer,
     },
 };
 
@@ -69,9 +67,9 @@ impl HttpServer {
     }
 
     pub async fn start(&self) {
-        let http_server = Arc::new(Mutex::new(self.clone()));
+        let http_server = Arc::new(self.clone());
 
-        let make_svc = make_service_fn(|connection: &hyper::server::conn::AddrStream| {
+        let make_svc = make_service_fn(|connection: &AddrStream| {
             let client = connection.remote_addr();
             let http_server = Arc::clone(&http_server);
 
@@ -81,19 +79,31 @@ impl HttpServer {
                     let client_ip = client.ip();
 
                     async move {
-                        let data = http_server.lock().await;
+                        let response = run_in_time_buffer(
+                            Constants::DEFAULT_SERVER_READ_TIMEOUT,
+                            http_server.handle_request(req, client_ip),
+                        )
+                        .await;
 
-                        match data.handle_request(req, client_ip).await {
-                            Ok(response) => Ok::<_, hyper::Error>(response),
-                            Err(err) => {
-                                return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                    Render::internal_server_error(
-                                        "/",
-                                        format!("{:?}", err).as_str(),
-                                    ),
-                                )));
-                            }
+                        if response.is_err() {
+                            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                                Render::internal_server_error("/", "Request timed out"),
+                            )));
                         }
+
+                        let completed_response = response.unwrap();
+
+                        if completed_response.is_err() {
+                            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                                Render::internal_server_error(
+                                    "/",
+                                    format!("{:?}", completed_response.err().unwrap()).as_str(),
+                                ),
+                            )));
+                        }
+
+                        let result = completed_response.unwrap();
+                        return Ok::<_, hyper::Error>(result);
                     }
                 }))
             }
@@ -101,8 +111,15 @@ impl HttpServer {
 
         log_info!("Vanguard Engine Http server started on {:?}", &self.socket);
 
-        if let Err(e) = Server::bind(&self.socket).serve(make_svc).await {
-            log_error!("Vanguard Engine Http server error {:?}", e);
+        let server_engine = Server::bind(&self.socket)
+            .tcp_nodelay(true)
+            .http1_keepalive(true)
+            .serve(make_svc)
+            .await;
+
+        if server_engine.is_err() {
+            let error = server_engine.err().unwrap();
+            log_error!("Vanguard Engine Http server error {:?}", error);
         }
     }
 
@@ -209,7 +226,26 @@ impl HttpServer {
         let mut requested_disk_path: PathBuf = PathBuf::from(&current_iws_route.serving_path);
         requested_disk_path.push(url_path);
 
-        if is_file_exist(&requested_disk_path) {
+        let read_metadata = tokio::fs::metadata(&requested_disk_path).await;
+        if read_metadata.is_err() {
+            log_debug!(
+                "HTTP outband IWS request source ({}) is known. But requested path '{}' doesn't exist",
+                &request_host,
+                &current_iws_route.serving_path
+            );
+
+            return CommonHandler::iws_route_not_found_error(
+                Protocol::HTTP,
+                request_host,
+                req,
+                client_ip,
+            )
+            .await;
+        }
+
+        let metadata = read_metadata.unwrap();
+
+        if metadata.is_file() {
             log_debug!(
                 "HTTP outband IWS request source ({}) is known. Serving file from disk (IWS registry) at path: {}",
                 &request_host,
@@ -220,13 +256,14 @@ impl HttpServer {
                 Protocol::HTTP,
                 request_host,
                 &requested_disk_path,
+                &metadata,
                 req,
                 client_ip,
             )
             .await;
         }
 
-        if is_directory_exist(&requested_disk_path) {
+        if metadata.is_dir() {
             log_debug!(
                 "HTTP outband IWS request source ({}) is known. Serving directory from disk (IWS registry) at path: {}",
                 &request_host,

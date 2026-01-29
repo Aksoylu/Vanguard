@@ -2,7 +2,7 @@ use jsonrpc_core::Error;
 use mime_guess::{from_path, Mime};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
-use std::fs::{self, File};
+use std::fs::{self, File, Metadata};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
 
@@ -182,4 +182,26 @@ pub fn get_absolute_ssl_file_path(file_path_as_string: &String) -> Result<PathBu
             data: None,
         })
     }
+}
+
+pub async fn open_file(file_path: &PathBuf) -> Option<tokio::fs::File> {
+    let file_stream = tokio::fs::File::open(file_path).await.ok();
+    file_stream
+}
+
+pub fn generate_file_tag(content_length: u64, last_modified: u64) -> String {
+    let file_tag = format!("W/\"{:x}-{:x}\"", content_length, last_modified);
+
+    file_tag
+}
+
+pub fn get_last_modified(metadata: &Metadata) -> u64 {
+    let unix_epoch_timestamp = metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    unix_epoch_timestamp
 }
