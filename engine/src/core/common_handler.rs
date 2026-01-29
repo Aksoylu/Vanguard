@@ -10,8 +10,9 @@ use crate::log_info;
 
 use crate::render::Render;
 use crate::utils::file_utility::{
-    generate_file_tag, get_content_type, is_file_exist, open_file
+    generate_file_tag, get_content_type, get_last_modified, is_file_exist, open_file,
 };
+use crate::utils::time_utility::{run_in_time_buffer, start_clock, stop_clock};
 use tokio_util::io::ReaderStream;
 
 pub enum Protocol {
@@ -55,7 +56,32 @@ impl CommonHandler {
 
         let new_request = Request::from_parts(parts, body);
 
-        let response = HTTP_CLIENT.request(new_request).await?;
+        let response = run_in_time_buffer(
+            crate::constants::Constants::DEFAULT_HTTP_CLIENT_TIMEOUT,
+            HTTP_CLIENT.request(new_request),
+        )
+        .await;
+
+        if response.is_err() {
+            log_info!(
+                "{} |TIMEOUT| {} {} from {} to {} via ip {}",
+                protocol_name,
+                request_method,
+                request_path,
+                request_host,
+                &endpoint_to_navigate,
+                &client_ip
+            );
+            return Ok(Response::builder()
+                .status(StatusCode::GATEWAY_TIMEOUT)
+                .body(Body::from(Render::internal_server_error(
+                    request_host,
+                    "Upstream request timed out",
+                )))
+                .unwrap());
+        }
+
+        let response = response.unwrap()?;
 
         let elapsed_time = start_time.elapsed().as_millis();
 
@@ -96,12 +122,7 @@ impl CommonHandler {
         // Getting file size and last modified info, then we can create a etag
         let content_type = get_content_type(&serving_path);
         let content_length = metadata.len();
-        let last_modified = metadata
-            .modified()
-            .ok()
-            .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
-            .map(|d| d.as_secs())
-            .unwrap_or(0);
+        let last_modified = get_last_modified(metadata);
 
         let file_etag = generate_file_tag(content_length, last_modified);
 
@@ -122,7 +143,7 @@ impl CommonHandler {
                 .body(Body::empty())
                 .unwrap());
         }
-        
+
         // Zero-copy streaming body
         let content_stream = ReaderStream::new(file_pointer.unwrap());
         let body = Body::wrap_stream(content_stream);
@@ -159,7 +180,7 @@ impl CommonHandler {
         req: Request<Body>,
         client_ip: IpAddr,
     ) -> Result<Response<Body>, hyper::Error> {
-        let start_time: std::time::Instant = std::time::Instant::now();
+        let start_time = start_clock();
 
         let protocol_name = match protocol {
             Protocol::HTTP => "HTTP",
@@ -190,7 +211,7 @@ impl CommonHandler {
 
         let dir_content: String = Render::directory_explorer_page(&absolute_path, &url_path);
 
-        let elapsed_time = start_time.elapsed().as_millis();
+        let elapsed_time = stop_clock(start_time);
 
         log_info!(
             "{} |IWS EXECUTION| {} {} {} ({} ms) from {} to {} via ip {}",

@@ -1,4 +1,4 @@
-use hyper::{server::conn::Http, service::service_fn, Body, Request, Response};
+use hyper::{server::conn::Http, service::service_fn, Body, Request, Response, StatusCode};
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
@@ -9,6 +9,7 @@ use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
 use crate::core::shared_memory::ROUTER;
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
+use crate::utils::time_utility::run_in_time_buffer;
 use crate::{log_debug, log_error, log_info};
 
 use crate::render::Render;
@@ -78,7 +79,7 @@ impl HttpsServer {
         }
     }
 
-    async fn lifecycle(&self, tls_acceptor: TlsAcceptor, tcp_stream: tokio::net::TcpStream) {
+    async fn lifecycle(&self, tls_acceptor: TlsAcceptor, tcp_stream: TokioTcpStream) {
         let remote_client_addr = match tcp_stream.peer_addr() {
             Ok(addr) => addr,
             Err(error) => {
@@ -87,7 +88,7 @@ impl HttpsServer {
             }
         };
 
-        let self_clone = Arc::new(self.clone());
+        let https_server = Arc::new(self.clone());
         tokio::spawn(async move {
             // 1. Creating a "oneshot" channel to receive the negotiated protocol from the TLS handshake.
             let (transmitter, receiver) = TokioChannel::channel();
@@ -120,6 +121,14 @@ impl HttpsServer {
 
             // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
             let mut server_engine = Http::new();
+
+            // 5. Setting timeouts and limits for scalability
+            server_engine
+                .http2_keep_alive_timeout(std::time::Duration::from_secs(
+                    Constants::DEFAULT_POOL_IDLE_TIMEOUT,
+                ))
+                .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32);
+
             if let Ok(Some(protocol)) = receiver.await {
                 if protocol == b"h2" {
                     log_debug!("HTTP/2 connection negotiated via ALPN");
@@ -127,20 +136,37 @@ impl HttpsServer {
                 }
             }
 
-            // 5. Creating a service instance to handle incoming requests.
+            // 6. Creating a service instance to handle incoming requests.
             let service = service_fn(move |req: Request<Body>| {
-                let self_clone = Arc::clone(&self_clone);
+                let https_server_instance = Arc::clone(&https_server);
                 let client_ip = remote_client_addr.ip();
 
                 async move {
-                    match self_clone.handle_request(req, client_ip).await {
-                        Ok(response) => Ok::<_, hyper::Error>(response),
-                        Err(err) => {
-                            return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                Render::internal_server_error("/", format!("{:?}", err).as_str()),
-                            )));
-                        }
+                    let response = run_in_time_buffer(
+                        Constants::DEFAULT_SERVER_READ_TIMEOUT,
+                        https_server_instance.handle_request(req, client_ip),
+                    )
+                    .await;
+
+                    if response.is_err() {
+                        return Ok::<_, hyper::Error>(Response::new(Body::from(
+                            Render::internal_server_error("/", "Request timed out"),
+                        )));
                     }
+
+                    let completed_response = response.unwrap();
+
+                    if completed_response.is_err() {
+                        return Ok::<_, hyper::Error>(Response::new(Body::from(
+                            Render::internal_server_error(
+                                "/",
+                                format!("{:?}", completed_response.err().unwrap()).as_str(),
+                            ),
+                        )));
+                    }
+
+                    let result = completed_response.unwrap();
+                    return Ok::<_, hyper::Error>(result);
                 }
             });
 

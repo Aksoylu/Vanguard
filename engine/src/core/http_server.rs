@@ -1,17 +1,15 @@
 use hyper::{
+    server::conn::AddrStream,
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
 
-use std::sync::Arc;
+use std::{path::PathBuf, sync::Arc};
 
 use std::{
     collections::HashMap,
     net::{IpAddr, SocketAddr},
-    path::PathBuf,
 };
-// No tokio imports needed here for fs or sync
-
 
 use crate::{
     constants::Constants,
@@ -24,6 +22,7 @@ use crate::{
     render::Render,
     utils::{
         network_utility::{extract_host, parse_ip_address},
+        time_utility::run_in_time_buffer,
     },
 };
 
@@ -70,7 +69,7 @@ impl HttpServer {
     pub async fn start(&self) {
         let http_server = Arc::new(self.clone());
 
-        let make_svc = make_service_fn(|connection: &hyper::server::conn::AddrStream| {
+        let make_svc = make_service_fn(|connection: &AddrStream| {
             let client = connection.remote_addr();
             let http_server = Arc::clone(&http_server);
 
@@ -80,17 +79,31 @@ impl HttpServer {
                     let client_ip = client.ip();
 
                     async move {
-                        match http_server.handle_request(req, client_ip).await {
-                            Ok(response) => Ok::<_, hyper::Error>(response),
-                            Err(err) => {
-                                return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                    Render::internal_server_error(
-                                        "/",
-                                        format!("{:?}", err).as_str(),
-                                    ),
-                                )));
-                            }
+                        let response = run_in_time_buffer(
+                            Constants::DEFAULT_SERVER_READ_TIMEOUT,
+                            http_server.handle_request(req, client_ip),
+                        )
+                        .await;
+
+                        if response.is_err() {
+                            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                                Render::internal_server_error("/", "Request timed out"),
+                            )));
                         }
+
+                        let completed_response = response.unwrap();
+
+                        if completed_response.is_err() {
+                            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                                Render::internal_server_error(
+                                    "/",
+                                    format!("{:?}", completed_response.err().unwrap()).as_str(),
+                                ),
+                            )));
+                        }
+
+                        let result = completed_response.unwrap();
+                        return Ok::<_, hyper::Error>(result);
                     }
                 }))
             }
@@ -98,8 +111,15 @@ impl HttpServer {
 
         log_info!("Vanguard Engine Http server started on {:?}", &self.socket);
 
-        if let Err(e) = Server::bind(&self.socket).serve(make_svc).await {
-            log_error!("Vanguard Engine Http server error {:?}", e);
+        let server_engine = Server::bind(&self.socket)
+            .tcp_nodelay(true)
+            .http1_keepalive(true)
+            .serve(make_svc)
+            .await;
+
+        if server_engine.is_err() {
+            let error = server_engine.err().unwrap();
+            log_error!("Vanguard Engine Http server error {:?}", error);
         }
     }
 

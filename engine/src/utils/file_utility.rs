@@ -194,3 +194,14 @@ pub fn generate_file_tag(content_length: u64, last_modified: u64) -> String {
 
     file_tag
 }
+
+pub fn get_last_modified(metadata: &Metadata) -> u64 {
+    let unix_epoch_timestamp = metadata
+        .modified()
+        .ok()
+        .and_then(|t| t.duration_since(std::time::UNIX_EPOCH).ok())
+        .map(|d| d.as_secs())
+        .unwrap_or(0);
+
+    unix_epoch_timestamp
+}
