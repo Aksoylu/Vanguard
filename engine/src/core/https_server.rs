@@ -1,4 +1,4 @@
-use hyper::{server::conn::Http, service::service_fn, Body, Request, Response, StatusCode};
+use hyper::{server::conn::Http, service::service_fn, Body, Request, Response};
 use std::net::IpAddr;
 use std::path::PathBuf;
 use std::{collections::HashMap, net::SocketAddr, sync::Arc};
@@ -7,7 +7,8 @@ use tokio_rustls::TlsAcceptor;
 
 use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
-use crate::core::shared_memory::ROUTER;
+use crate::core::connection_lock::ConnectionLock;
+use crate::core::shared_memory::{CONNECTION_MANAGER, ROUTER};
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
 use crate::utils::time_utility::run_in_time_buffer;
 use crate::{log_debug, log_error, log_info};
@@ -17,7 +18,7 @@ use crate::utils::network_utility::{extract_host, parse_ip_address};
 use crate::utils::tls_utility::create_ssl_context;
 
 use tokio::net::TcpStream as TokioTcpStream;
-use tokio::sync::oneshot as TokioChannel;
+use tokio::sync::oneshot::{self as TokioChannel};
 
 // Global Http Server Instance: Initially empty default config, updated in Runtime init
 
@@ -70,25 +71,30 @@ impl HttpsServer {
         log_info!("Vanguard Engine Https server started on {:?}", &self.socket);
 
         loop {
-            let (stream, _) = listener.accept().await.unwrap();
+            let (tcp_stream, client) = listener.accept().await.unwrap();
             let tls_acceptor: TlsAcceptor = ssl_context.clone();
             let https_server = Arc::new(self.clone());
+            let client_ip = client.ip();
+
+            let start_new_connection = CONNECTION_MANAGER.try_acquire_connection();
+
             tokio::spawn(async move {
-                https_server.lifecycle(tls_acceptor, stream).await;
+                https_server
+                    .execute_request(tls_acceptor, tcp_stream, client_ip, start_new_connection)
+                    .await;
             });
         }
     }
 
-    async fn lifecycle(&self, tls_acceptor: TlsAcceptor, tcp_stream: TokioTcpStream) {
-        let remote_client_addr = match tcp_stream.peer_addr() {
-            Ok(addr) => addr,
-            Err(error) => {
-                log_error!("Unable to get client address: {}", error.to_string());
-                return;
-            }
-        };
-
+    async fn execute_request(
+        &self,
+        tls_acceptor: TlsAcceptor,
+        tcp_stream: TokioTcpStream,
+        client_ip: IpAddr,
+        start_new_connection: Option<ConnectionLock>,
+    ) {
         let https_server = Arc::new(self.clone());
+        let connection_lock = Arc::new(start_new_connection);
         tokio::spawn(async move {
             // 1. Creating a "oneshot" channel to receive the negotiated protocol from the TLS handshake.
             let (transmitter, receiver) = TokioChannel::channel();
@@ -120,15 +126,7 @@ impl HttpsServer {
             };
 
             // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
-            let mut server_engine = Http::new();
-
-            // 5. Setting timeouts and limits for scalability
-            server_engine
-                .http2_keep_alive_timeout(std::time::Duration::from_secs(
-                    Constants::DEFAULT_POOL_IDLE_TIMEOUT,
-                ))
-                .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32);
-
+            let mut server_engine = https_server.get_server_engine();
             if let Ok(Some(protocol)) = receiver.await {
                 if protocol == b"h2" {
                     log_debug!("HTTP/2 connection negotiated via ALPN");
@@ -139,41 +137,98 @@ impl HttpsServer {
             // 6. Creating a service instance to handle incoming requests.
             let service = service_fn(move |req: Request<Body>| {
                 let https_server_instance = Arc::clone(&https_server);
-                let client_ip = remote_client_addr.ip();
+                let connection_lock = Arc::clone(&connection_lock);
 
-                async move {
-                    let response = run_in_time_buffer(
-                        Constants::DEFAULT_SERVER_READ_TIMEOUT,
-                        https_server_instance.handle_request(req, client_ip),
-                    )
-                    .await;
-
-                    if response.is_err() {
-                        return Ok::<_, hyper::Error>(Response::new(Body::from(
-                            Render::internal_server_error("/", "Request timed out"),
-                        )));
-                    }
-
-                    let completed_response = response.unwrap();
-
-                    if completed_response.is_err() {
-                        return Ok::<_, hyper::Error>(Response::new(Body::from(
-                            Render::internal_server_error(
-                                "/",
-                                format!("{:?}", completed_response.err().unwrap()).as_str(),
-                            ),
-                        )));
-                    }
-
-                    let result = completed_response.unwrap();
-                    return Ok::<_, hyper::Error>(result);
-                }
+                async move { https_server_instance.lifecycle(req, client_ip, &connection_lock).await }
             });
 
             if let Err(e) = server_engine.serve_connection(tls_stream, service).await {
                 log_error!("Server error: {}", e);
             }
         });
+    }
+
+    /// @TODO: it will be build by using current configurations
+    fn get_server_engine(&self) -> Http {
+        let mut server_engine = Http::new();
+
+        // 5. Setting timeouts and limits for scalability
+        server_engine
+            .http1_header_read_timeout(std::time::Duration::from_secs(
+                Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT,
+            ))
+            .max_buf_size(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
+            .http2_keep_alive_timeout(std::time::Duration::from_secs(
+                Constants::DEFAULT_POOL_IDLE_TIMEOUT,
+            ))
+            .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32);
+
+        server_engine
+    }
+
+    /// Executes the request lifecycle
+    async fn lifecycle(
+        &self,
+        req: Request<Body>,
+        client_ip: IpAddr,
+        connection_lock: &Option<ConnectionLock>,
+    ) -> Result<Response<Body>, hyper::Error> {
+        if connection_lock.is_none() {
+            log_error!(
+                "Rejecting request from ip address {:?}: Max connections reached",
+                client_ip
+            );
+
+            return Ok::<_, hyper::Error>(
+                Response::builder()
+                    .status(hyper::StatusCode::SERVICE_UNAVAILABLE)
+                    .body(Body::from(Render::internal_server_error(
+                        "/",
+                        "Max connections reached",
+                    )))
+                    .unwrap(),
+            );
+        }
+
+        if !CONNECTION_MANAGER.check_rate_limit(client_ip) {
+            log_info!("Rate limit exceeded for ip address {:?}", client_ip);
+            return Ok::<_, hyper::Error>(
+                Response::builder()
+                    .status(hyper::StatusCode::TOO_MANY_REQUESTS)
+                    .body(Body::from(Render::internal_server_error(
+                        "/",
+                        "Rate limit exceeded",
+                    )))
+                    .unwrap(),
+            );
+        }
+
+        CONNECTION_MANAGER.increment_total_requests();
+        let response = run_in_time_buffer(
+            Constants::DEFAULT_SERVER_READ_TIMEOUT,
+            self.handle_request(req, client_ip),
+        )
+        .await;
+
+        if response.is_err() {
+            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                Render::internal_server_error("/", "Request timed out"),
+            )));
+        }
+
+        let completed_response = response.unwrap();
+
+        if completed_response.is_err() {
+            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                Render::internal_server_error(
+                    "/",
+                    format!("{:?}", completed_response.err().unwrap()).as_str(),
+                ),
+            )));
+        }
+
+        let result = completed_response.unwrap();
+        Ok::<_, hyper::Error>(result)
     }
 
     async fn handle_https_route(

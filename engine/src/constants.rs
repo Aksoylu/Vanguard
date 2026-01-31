@@ -43,5 +43,8 @@ impl Constants {
     pub const DEFAULT_MAX_IDLE_CONNS_PER_HOST: usize = 100;
     pub const DEFAULT_SERVER_READ_TIMEOUT: u64 = 30; // 30 seconds
     pub const DEFAULT_SERVER_WRITE_TIMEOUT: u64 = 30; // 30 seconds
-    pub const DEFAULT_AUTO_BUFFER_START: usize = 4096; // 4 KB
+    pub const DEFAULT_MAX_CONNECTIONS: usize = 10000;
+    pub const DEFAULT_HTTP1_HEADER_READ_TIMEOUT: u64 = 10; // 10 seconds
+    pub const DEFAULT_MAX_REQUEST_BODY_SIZE: u64 = 10 * 1024 * 1024; // 10 MB
+    pub const DEFAULT_MAX_REQUESTS_PER_MINUTE: u32 = 120; // 2 RPS on average
 }

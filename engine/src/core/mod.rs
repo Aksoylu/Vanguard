@@ -5,3 +5,6 @@ pub mod log_service;
 pub mod common_handler;
 pub mod rpc_session;
 pub mod shared_memory;
+pub mod connection_manager;
+pub mod http_proxy_client;
+pub mod connection_lock;
