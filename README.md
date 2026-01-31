@@ -18,5 +18,9 @@ Welcome to Vanguard's official Github Page
 | Pattern Based Routing & Upstream HTTPS support  | Allowing routings with patterns like *.example.com etc.| ⚠️ Not Started Yet |
 | GUI Application   | A web based control panel (GUI application) for controlling Vanguard Engine (server)  realtime  | ⚠️ Not Started Yet |
 | Live Metrics Implementation  | Tracking real-time metrics that allows administration to track request rates, latencies, frequencies| ⚠️ Not Started Yet |
+| Load Balancer Implementation  | Implementing load balance mechanism to Vanguard engine, with various load balancing  algorithms| ⚠️ Not Started Yet |
+|  Health Checks |Health check mechanism allow Vanguard's load balancer to decide that ensure backend apps are available before routing traffic to them.| ⚠️ Not Started Yet |
+|  Rate Limiting | Very specific configurable rate limiting mechanism to prevent abuse and protect backend services & Vanguard's itself.| ⚠️ Not Started Yet |
+|   IP Blocking | IP based client blocking mechanism to prevent abuse and protect backend services & Vanguard's itself.| ⚠️ Not Started Yet |
 | Buffer Tuning  | Adjusting buffer sizes for read/write streams can optimize throughput | ⚠️ Not Started Yet  |
 | Real-Time Logging & Monitoring  | A feature allows user to track real time logs fromf Vanguard system for monitoring errors & warnings. | ⚠️ Not Started Yet |
