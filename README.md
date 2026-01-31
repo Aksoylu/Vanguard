@@ -16,6 +16,7 @@ Welcome to Vanguard's official Github Page
 | Zero-Copy  Support  | Instead of reading files with buffer, transfering them directly to the network socket without memory allocation | ✅ Done  |
 | Enhanced Scalability  |  Implement scalability measures for handling large number of requests. Including http timeouts, server read and maximum connection limitations etc. | ⌛ In Progress  |
 |  Rate Limiting | Very specific configurable rate limiting mechanism to prevent abuse and protect backend services & Vanguard's itself.| ⌛ In Progress  |
+|  Documentation & Landing Page | Official things for Vanguard| ⌛ In Progress  |
 | Pattern Based Routing & Upstream HTTPS support  | Allowing routings with patterns like *.example.com etc.| ⚠️ Not Started Yet |
 | GUI Application   | A web based control panel (GUI application) for controlling Vanguard Engine (server)  realtime  | ⚠️ Not Started Yet |
 | Live Metrics Implementation  | Tracking real-time metrics that allows administration to track request rates, latencies, frequencies| ⚠️ Not Started Yet |
