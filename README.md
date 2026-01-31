@@ -1,7 +1,7 @@
 # Vanguard
 Welcome to Vanguard's official Github Page
 
-# Project Status
+## Roadmap & Status
 | ⭐ Feature                | ℹ️ Explanation                                                                                       | 🚀 Status      |
 |--------------------------|------------------------------------------------------------------------------------------------------|----------------|
 | DNS Integration          | Allows Vanguard to access DNS records and navigate following request to your standalone app           | ✅ Done        |
@@ -11,6 +11,12 @@ Welcome to Vanguard's official Github Page
 | Dynamic Data & Engine Config Support   | A runtime config path implementation. Works in Vanguard's lifecycle. Has observers to local storage upgrade on any real-time changes | ✅ Done  |
 | Integrated Web Server    | An Integrated web server provides ability to serve a directory with its all contents without any external web server solution. Also allows domain & DNS bindings | ✅ Done  |
 | Warning & Error Logging  | A feature which responsible of realtime logging of Vanguard system errors & warnings. Logs can be viewed on filesystem or CLI |  ✅ Done |
-| CLI Application   | A shell (CLI) application for controlling Vanguard Engine (server) realtime | ⌛ In Progress  |
+| CLI Application   | A shell (CLI) application for controlling Vanguard Engine (server) realtime | ✅ Done  |
+| Keep-Alive Connection Support   | Keep-Alive connection type implemented to IWS&Secure IWS engines so clients doesn't need to  reconnect for every asset (css, js, images)  | ✅ Done  |
+| Zero-Copy  Support  | Instead of reading files with buffer, transfering them directly to the network socket without memory allocation | ✅ Done  |
+| Enhanced Scalability  |  Implement scalability measures for handling large number of requests. Including http timeouts, server read and maximum connection limitations etc. | ⌛ In Progress  |
+| Pattern Based Routing & Upstream HTTPS support  | Allowing routings with patterns like *.example.com etc.| ⚠️ Not Started Yet |
 | GUI Application   | A web based control panel (GUI application) for controlling Vanguard Engine (server)  realtime  | ⚠️ Not Started Yet |
+| Live Metrics Implementation  | Tracking real-time metrics that allows administration to track request rates, latencies, frequencies| ⚠️ Not Started Yet |
+| Buffer Tuning  | Adjusting buffer sizes for read/write streams can optimize throughput | ⚠️ Not Started Yet  |
 | Real-Time Logging & Monitoring  | A feature allows user to track real time logs fromf Vanguard system for monitoring errors & warnings. | ⚠️ Not Started Yet |
