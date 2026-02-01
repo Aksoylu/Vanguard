@@ -2,8 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use super::{
     http_server_config::HttpServerConfig, https_server_config::HttpsServerConfig,
-    rpc_server_config::RpcServerConfig,
-    logger_config::LoggerConfig
+    logger_config::LoggerConfig, rpc_server_config::RpcServerConfig,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -11,7 +10,7 @@ pub struct Config {
     pub http_server: HttpServerConfig,
     pub https_server: HttpsServerConfig,
     pub rpc_server: RpcServerConfig,
-    pub logger: LoggerConfig
+    pub logger: LoggerConfig,
 }
 
 impl Default for Config {
@@ -20,7 +19,7 @@ impl Default for Config {
             http_server: Default::default(),
             https_server: Default::default(),
             rpc_server: Default::default(),
-            logger: Default::default()
+            logger: Default::default(),
         }
     }
 }
@@ -41,15 +40,15 @@ impl Config {
             return Err("HTTPS server port is 0".into());
         }
 
-        if self.rpc_server.ip_address.is_empty(){
+        if self.rpc_server.ip_address.is_empty() {
             return Err("RPC server IP address is empty".into());
         }
 
-        if self.rpc_server.port == 0{
+        if self.rpc_server.port == 0 {
             return Err("RPC server port is 0".into());
         }
 
-        if self.rpc_server.private_secret_key.is_empty(){
+        if self.rpc_server.private_secret_key.is_empty() {
             return Err("RPC server private key is empty".into());
         }
 

@@ -1,4 +1,5 @@
-use crate::models::route::{HttpRoute, HttpsRoute, IwsRoute, SecureIwsRoute};
+use crate::models::http_route::HttpRoute;
+use crate::models::route::{HttpsRoute, IwsRoute, SecureIwsRoute};
 use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 use hyper::StatusCode;
 use jsonrpc_core::Value;

@@ -20,7 +20,7 @@ use crate::{
         common_handler::{CommonHandler, Protocol}, connection_lock::ConnectionLock, shared_memory::{CONNECTION_MANAGER, ROUTER}
     },
     log_debug, log_error, log_info,
-    models::route::{HttpRoute, IwsRoute},
+    models::{http_route::HttpRoute, route::IwsRoute},
     render::Render,
     utils::{
         network_utility::{extract_host, parse_ip_address},

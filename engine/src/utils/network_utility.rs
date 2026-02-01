@@ -23,3 +23,30 @@ pub fn parse_ip_address(value: String) -> Ipv4Addr {
 fn str_to_i8(value: &str) -> u8 {
     value.parse::<u8>().unwrap()
 }
+
+
+/// Checks if a string is a valid IP address.
+///
+/// # Arguments
+///
+/// * `ip` - The string to check.
+///
+/// # Returns
+///
+/// * `true` if the string is a valid IP address, `false` otherwise.
+pub fn is_valid_ip(ip: &str) -> bool {
+    ip.parse::<std::net::IpAddr>().is_ok()
+}
+
+/// Checks if a string is a valid port number.
+///
+/// # Arguments
+///
+/// * `port` - The string to check.
+///
+/// # Returns
+///
+/// * `true` if the string is a valid port number, `false` otherwise.
+pub fn is_valid_port(port: &str) -> bool {
+    port.parse::<u16>().is_ok()
+}

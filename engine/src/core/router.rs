@@ -2,15 +2,12 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
-    constants::Constants,
-    models::{
-        route::{self, HttpRoute, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
-        ssl_context::SslContext,
-    },
-    utils::{
+    constants::Constants, core::shared_memory::RUNTIME_BOOT_INFO, models::{
+        http_route::HttpRoute, route::{self, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute}, ssl_context::SslContext, upstream_settings::UpstreamSettings
+    }, utils::{
         directory_utility::get_runtime_path,
         file_utility::{load_json, save_json},
-    },
+    }
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
@@ -129,13 +126,23 @@ impl Router {
         export_data
     }
 
-    pub fn add_http_route(&mut self, source: &String, target: &String) {
+    pub fn add_http_route(&mut self, source: &String, target: &String, upstream_settings: Option<UpstreamSettings>) {
         if self.http_route_table.contains_key(source) {
             self.http_route_table.remove(source);
         }
+        
+        let mut final_upstream_settings =  UpstreamSettings::default();
 
+        if upstream_settings.is_some() {
+            final_upstream_settings = upstream_settings.unwrap();
+        } else {
+            let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
+            final_upstream_settings = runtime_boot_info.config.http_server.upstream_settings.clone();
+        }
+        
         let new_route = HttpRoute {
             target: target.to_owned(),
+            upstream_settings: final_upstream_settings,
         };
 
         self.http_route_table.insert(source.to_owned(), new_route);
