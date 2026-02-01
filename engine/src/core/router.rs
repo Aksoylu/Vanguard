@@ -2,12 +2,18 @@ use serde::{Deserialize, Serialize};
 use std::{collections::HashMap, path::PathBuf};
 
 use crate::{
-    constants::Constants, core::shared_memory::RUNTIME_BOOT_INFO, models::{
-        http_route::HttpRoute, route::{self, HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute}, ssl_context::SslContext, upstream_settings::UpstreamSettings
-    }, utils::{
+    constants::Constants,
+    core::shared_memory::RUNTIME_BOOT_INFO,
+    models::{
+        http_route::HttpRoute,
+        route::{HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
+        ssl_context::SslContext,
+        traffic_policy::TrafficPolicy,
+    },
+    utils::{
         directory_utility::get_runtime_path,
         file_utility::{load_json, save_json},
-    }
+    },
 };
 
 #[derive(Clone, PartialEq, Serialize, Deserialize, Debug)]
@@ -59,7 +65,6 @@ impl Router {
     }
 
     pub fn save(&self) {
-
         let write_operation = save_json::<Router>(&self.save_path, &self.clone());
         if write_operation.is_err() {
             let fd = write_operation.err().unwrap();
@@ -126,23 +131,28 @@ impl Router {
         export_data
     }
 
-    pub fn add_http_route(&mut self, source: &String, target: &String, upstream_settings: Option<UpstreamSettings>) {
+    pub fn add_http_route(
+        &mut self,
+        source: &String,
+        target: &String,
+        traffic_policy: Option<TrafficPolicy>,
+    ) {
         if self.http_route_table.contains_key(source) {
             self.http_route_table.remove(source);
         }
-        
-        let mut final_upstream_settings =  UpstreamSettings::default();
 
-        if upstream_settings.is_some() {
-            final_upstream_settings = upstream_settings.unwrap();
+        let mut final_traffic_policy = TrafficPolicy::default();
+
+        if traffic_policy.is_some() {
+            final_traffic_policy = traffic_policy.unwrap();
         } else {
             let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
-            final_upstream_settings = runtime_boot_info.config.http_server.upstream_settings.clone();
+            final_traffic_policy = runtime_boot_info.config.http_server.traffic_policy.clone();
         }
-        
+
         let new_route = HttpRoute {
             target: target.to_owned(),
-            upstream_settings: final_upstream_settings,
+            traffic_policy: final_traffic_policy,
         };
 
         self.http_route_table.insert(source.to_owned(), new_route);
@@ -178,7 +188,7 @@ impl Router {
         }
 
         let new_route = IwsRoute {
-            serving_path: serving_path.to_owned()
+            serving_path: serving_path.to_owned(),
         };
 
         self.iws_route_table.insert(source.to_owned(), new_route);

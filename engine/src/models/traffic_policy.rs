@@ -8,14 +8,23 @@ fn default_max_request_body_size() -> u64 {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub struct UpstreamSettings {
+pub struct TrafficPolicy {
+    #[serde(default = "default_http_client_timeout")]
     pub http_client_timeout: u64,
+
+    #[serde(default = "default_pool_idle_timeout")]
     pub pool_idle_timeout: u64,
+
+    #[serde(default = "default_max_idle_conns_per_host")]
     pub max_idle_conns_per_host: usize,
+
+    #[serde(default = "default_server_read_timeout")]
     pub server_read_timeout: u64,
+
+    #[serde(default = "default_server_write_timeout")]
     pub server_write_timeout: u64,
-    pub max_connections: usize,
-    pub http1_header_read_timeout: u64,
+
+    #[serde(default = "default_max_requests_per_minute")]
     pub max_requests_per_minute: u32,
 
     #[serde(default = "default_max_request_body_size")]
@@ -23,7 +32,7 @@ pub struct UpstreamSettings {
     pub max_request_body_size: u64,
 }
 
-impl Default for UpstreamSettings {
+impl Default for TrafficPolicy {
     fn default() -> Self {
         Self {
             http_client_timeout: Constants::DEFAULT_HTTP_CLIENT_TIMEOUT,
@@ -31,12 +40,34 @@ impl Default for UpstreamSettings {
             max_idle_conns_per_host: Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST,
             server_read_timeout: Constants::DEFAULT_SERVER_READ_TIMEOUT,
             server_write_timeout: Constants::DEFAULT_SERVER_WRITE_TIMEOUT,
-            max_connections: Constants::DEFAULT_MAX_CONNECTIONS,
-            http1_header_read_timeout: Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT,
             max_request_body_size: Constants::DEFAULT_MAX_REQUEST_BODY_SIZE,
             max_requests_per_minute: Constants::DEFAULT_MAX_REQUESTS_PER_MINUTE,
         }
     }
+}
+
+fn default_http_client_timeout() -> u64 {
+    Constants::DEFAULT_HTTP_CLIENT_TIMEOUT
+}
+
+fn default_pool_idle_timeout() -> u64 {
+    Constants::DEFAULT_POOL_IDLE_TIMEOUT
+}
+
+fn default_server_read_timeout() -> u64 {
+    Constants::DEFAULT_SERVER_READ_TIMEOUT
+}
+
+fn default_server_write_timeout() -> u64 {
+    Constants::DEFAULT_SERVER_WRITE_TIMEOUT
+}
+
+fn default_max_requests_per_minute() -> u32 {
+    Constants::DEFAULT_MAX_REQUESTS_PER_MINUTE
+}
+
+fn default_max_idle_conns_per_host() -> usize {
+    Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST
 }
 
 fn deserialize_size<'de, D>(deserializer: D) -> Result<u64, D::Error>

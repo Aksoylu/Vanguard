@@ -1,21 +1,21 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{core::shared_memory::RUNTIME_BOOT_INFO, models::upstream_settings::UpstreamSettings};
+use crate::{core::shared_memory::RUNTIME_BOOT_INFO, models::traffic_policy::TrafficPolicy};
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct HttpRoute {
     pub target: String,
-    #[serde(default = "use_global_upstream_settings")]
-    pub upstream_settings: UpstreamSettings,
+    #[serde(default = "inherit_traffic_policy_from_parent")]
+    pub traffic_policy: TrafficPolicy,
 }
 
-fn use_global_upstream_settings() -> UpstreamSettings {
+fn inherit_traffic_policy_from_parent() -> TrafficPolicy {
     let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
-    let upstream_settins = runtime_boot_info
+    let inherited_traffic_policy = runtime_boot_info
         .config
         .http_server
-        .upstream_settings
+        .traffic_policy
         .clone();
 
-    upstream_settins
+    inherited_traffic_policy
 }

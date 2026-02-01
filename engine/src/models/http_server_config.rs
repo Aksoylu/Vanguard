@@ -1,14 +1,15 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{constants::Constants, models::upstream_settings::UpstreamSettings};
+use crate::{constants::Constants, models::traffic_policy::TrafficPolicy};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpServerConfig {
     pub is_active: bool,
     pub ip_address: String,
     pub port: u16,
+
     #[serde(default = "default_upstream_settings")]
-    pub upstream_settings: UpstreamSettings,
+    pub traffic_policy: TrafficPolicy,
 }
 
 impl Default for HttpServerConfig {
@@ -17,7 +18,7 @@ impl Default for HttpServerConfig {
             is_active: Constants::DEFUALT_HTTP_IS_ACTIVE,
             ip_address: Constants::DEFAULT_HTTP_IP.to_string(),
             port: Constants::DEFAULT_HTTP_PORT,
-            upstream_settings: UpstreamSettings::default(),
+            traffic_policy: TrafficPolicy::default(),
         }
     }
 
@@ -29,6 +30,6 @@ impl HttpServerConfig{
     }
 }
 
-fn default_upstream_settings() -> UpstreamSettings {
-    UpstreamSettings::default()
+fn default_upstream_settings() -> TrafficPolicy {
+    TrafficPolicy::default()
 }

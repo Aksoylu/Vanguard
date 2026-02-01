@@ -29,8 +29,8 @@ impl Default for ConnectionManager {
 impl ConnectionManager {
     /// Tries to acquire a connection
     pub fn try_acquire_connection(&self) -> Option<ConnectionLock> {
-        let current = self.active_connections.load(Ordering::Relaxed);
-        if current >= Constants::DEFAULT_MAX_CONNECTIONS {
+        let current = self.active_connections.load(Ordering::Relaxed) as u64;
+        if current >= Constants::DEFAULT_MAXIMUM_TOTAL_CONNECTIONS {
             return None;
         }
 

@@ -1,5 +1,7 @@
 use serde::{Deserialize, Serialize};
 
+use crate::models::global_settings::GlobalSettings;
+
 use super::{
     http_server_config::HttpServerConfig, https_server_config::HttpsServerConfig,
     logger_config::LoggerConfig, rpc_server_config::RpcServerConfig,
@@ -11,6 +13,9 @@ pub struct Config {
     pub https_server: HttpsServerConfig,
     pub rpc_server: RpcServerConfig,
     pub logger: LoggerConfig,
+
+    #[serde(default = "default_global_settings")]
+    pub global_settings: GlobalSettings,
 }
 
 impl Default for Config {
@@ -20,8 +25,13 @@ impl Default for Config {
             https_server: Default::default(),
             rpc_server: Default::default(),
             logger: Default::default(),
+            global_settings: Default::default(),
         }
     }
+}
+
+fn default_global_settings() -> GlobalSettings {
+    GlobalSettings::default()
 }
 
 impl Config {
