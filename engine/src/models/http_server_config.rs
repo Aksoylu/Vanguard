@@ -8,8 +8,12 @@ pub struct HttpServerConfig {
     pub ip_address: String,
     pub port: u16,
 
-    #[serde(default = "default_upstream_settings")]
+    #[serde(default = "use_default_traffic_policy")]
     pub traffic_policy: TrafficPolicy,
+}
+
+fn use_default_traffic_policy() -> TrafficPolicy {
+    TrafficPolicy::default()
 }
 
 impl Default for HttpServerConfig {
@@ -30,6 +34,3 @@ impl HttpServerConfig{
     }
 }
 
-fn default_upstream_settings() -> TrafficPolicy {
-    TrafficPolicy::default()
-}

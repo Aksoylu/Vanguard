@@ -7,8 +7,13 @@ pub struct HttpsServerConfig {
     pub is_active: bool,
     pub ip_address: String,
     pub port: u16,
-    #[serde(default = "default_traffic_policy")]
+
+    #[serde(default = "use_default_traffic_policy")]
     pub traffic_policy: TrafficPolicy,
+}
+
+fn use_default_traffic_policy() -> TrafficPolicy {
+    TrafficPolicy::default()
 }
 
 impl Default for HttpsServerConfig {
@@ -26,8 +31,4 @@ impl HttpsServerConfig {
     pub fn get_endpoint(&self) -> String {
         format!("{}:{}", self.ip_address, self.port)
     }
-}
-
-fn default_traffic_policy() -> TrafficPolicy {
-    TrafficPolicy::default()
 }
