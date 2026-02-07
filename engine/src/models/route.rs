@@ -1,11 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use super::ssl_context::SslContext;
 
-#[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
-pub struct HttpRoute {
-    pub target: String,
-}
+use super::ssl_context::SslContext;
 
 #[derive(Debug, Serialize, Deserialize, Default, PartialEq, Clone)]
 pub struct HttpsRoute {

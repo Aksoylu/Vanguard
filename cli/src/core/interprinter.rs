@@ -2,12 +2,23 @@ use clap::{command, Parser};
 use shlex::Shlex;
 
 use crate::commands::{
-    add_http_route::add_http_route, add_https_route::add_https_route, add_iws_route::add_iws_route,
-    add_secure_iws_route::add_secure_iws_route, clear_terminal::clear_terminal,
-    delete_http_route::delete_http_route, delete_https_route::delete_https_route,
-    delete_iws_route::delete_iws_route, delete_secure_iws_route::delete_secure_iws_route,
-    echo::echo, exit::exit, get_route_list::get_route_list, get_ssl_files::get_ssl_files,
-    get_status::get_status, version::version, Commands,
+    Commands,
+    add_http_route::add_http_route,
+    add_https_route::add_https_route,
+    add_iws_route::add_iws_route,
+    add_secure_iws_route::add_secure_iws_route,
+    clear_terminal::clear_terminal,
+    delete_http_route::delete_http_route,
+    delete_https_route::delete_https_route,
+    delete_iws_route::delete_iws_route,
+    delete_secure_iws_route::delete_secure_iws_route,
+    echo::echo,
+    exit::exit,
+    get_route_list::get_route_list,
+    get_ssl_files::get_ssl_files,
+    get_status::get_status,
+    logs::logs,
+    version::version,
 };
 
 #[derive(Parser)]

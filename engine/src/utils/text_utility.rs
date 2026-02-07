@@ -90,3 +90,47 @@ pub fn normalize_string(input_string: &str) -> String {
         .collect::<String>()
         .to_lowercase()
 }
+
+/// Parses a human-readable size string into bytes.
+///
+/// Supports units: B, KB, MB, GB (case-insensitive).
+/// If no unit is provided, it defaults to KB.
+///
+/// # Arguments
+///
+/// * `input` - The size string to parse (e.g., "10mb", "1gb", "1024").
+///
+/// # Returns
+///
+/// * A `Result` containing the size in bytes or an error message.
+pub fn parse_str_as_size(input: &str) -> Result<u64, String> {
+    let normalized = normalize_string(input);
+    if normalized.is_empty() {
+        return Err("Input string is empty".to_string());
+    }
+
+    let split_index = normalized.find(|c: char| !c.is_numeric());
+
+    let (num_part, unit_part) = match split_index {
+        Some(index) => (&normalized[..index], &normalized[index..]),
+        None => (&normalized[..], ""),
+    };
+
+    if num_part.is_empty() {
+        return Err(format!("Invalid size format: '{}'", input));
+    }
+
+    let value: u64 = num_part
+        .parse()
+        .map_err(|_| format!("Invalid numeric value: '{}'", num_part))?;
+
+    let multiplier: u64 = match unit_part {
+        "kb" | "k" => 1024,
+        "mb" | "m" => 1024 * 1024,
+        "gb" | "g" => 1024 * 1024 * 1024,
+        "" | "b" => 1,
+        _ => return Err(format!("Invalid unit: '{}'", unit_part)),
+    };
+
+    Ok(value * multiplier)
+}

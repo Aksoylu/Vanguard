@@ -15,7 +15,7 @@ use clap::Parser;
 use crate::assets::banner::print_banner;
 use crate::assets::startup_disclaimer::print_startup_disclaimer;
 
-use crate::core::shared_memory::{HTTP_SERVER, HTTPS_SERVER, RPC_SERVER};
+use crate::core::shared_memory::{HTTPS_SERVER, HTTP_SERVER, RPC_SERVER, SHUTDOWN_SIGNAL};
 use crate::models::application_parameters::ApplicationParameters;
 use crate::models::boot_result::BootResult;
 use crate::utils::{boot_display_utility::BootDisplayUtility, console_utility::approve_dialog};
@@ -28,21 +28,42 @@ async fn main() {
     let boot_result = Boot::init();
     handle_application_params(&boot_result);
 
+    let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
+
     let boot_display = BootDisplayUtility::init(boot_result.clone());
     boot_display.render();
 
     let http_server = HTTP_SERVER.read().unwrap().clone();
-    tokio::spawn(async move {
+    let http_handle = tokio::spawn(async move {
         http_server.start().await;
     });
 
     let https_server = HTTPS_SERVER.read().unwrap().clone();
-    tokio::spawn(async move {
+    let https_handle = tokio::spawn(async move {
         https_server.start().await;
     });
 
     let jrpc_server = RPC_SERVER.read().unwrap().clone();
-    jrpc_server.start().await;
+    let jrpc_handle = tokio::spawn(async move {
+        jrpc_server.start().await;
+    });
+
+    tokio::select! {
+        _on_console_interrupt = tokio::signal::ctrl_c() => {
+            println!("\n[Vanguard] SIGINT System Call received. Initiating graceful shutdown...");
+            let event_sent = SHUTDOWN_SIGNAL.publisher.send(true);
+            if event_sent.is_err() {
+                println!("[Vanguard] Error sending shutdown signal");
+            }
+        }
+        _on_shutdown = shutdown_event.wait_for(|&is_kill| is_kill) => {
+            println!("\n[Vanguard] SIGTERM System Call received. Initiating graceful shutdown...");
+        }
+    }
+
+    let _wait_for_join_all = tokio::join!(http_handle, https_handle, jrpc_handle);
+    println!("[Vanguard] All servers closed cleanly.");
+    println!("[Vanguard] Engine process exit.");
 }
 
 fn handle_application_params(boot_result: &BootResult) {

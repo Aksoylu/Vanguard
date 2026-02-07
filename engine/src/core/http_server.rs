@@ -1,5 +1,8 @@
 use hyper::{
-    server::conn::AddrStream,
+    server::{
+        conn::{AddrIncoming, AddrStream},
+        Builder,
+    },
     service::{make_service_fn, service_fn},
     Body, Request, Response, Server,
 };
@@ -15,10 +18,11 @@ use crate::{
     constants::Constants,
     core::{
         common_handler::{CommonHandler, Protocol},
-        shared_memory::ROUTER,
+        connection_lock::ConnectionLock,
+        shared_memory::{CONNECTION_MANAGER, ROUTER, SHUTDOWN_SIGNAL},
     },
     log_debug, log_error, log_info,
-    models::route::{HttpRoute, IwsRoute},
+    models::{http_route::HttpRoute, route::IwsRoute},
     render::Render,
     utils::{
         network_utility::{extract_host, parse_ip_address},
@@ -69,41 +73,23 @@ impl HttpServer {
     pub async fn start(&self) {
         let http_server = Arc::new(self.clone());
 
+        // Creates a service factory
         let make_svc = make_service_fn(|connection: &AddrStream| {
             let client = connection.remote_addr();
             let http_server = Arc::clone(&http_server);
 
             async move {
+                let start_new_connection = Arc::new(CONNECTION_MANAGER.try_acquire_connection());
+
                 Ok::<_, hyper::Error>(service_fn(move |req| {
                     let http_server = Arc::clone(&http_server);
                     let client_ip = client.ip();
+                    let connection_lock = Arc::clone(&start_new_connection);
 
                     async move {
-                        let response = run_in_time_buffer(
-                            Constants::DEFAULT_SERVER_READ_TIMEOUT,
-                            http_server.handle_request(req, client_ip),
-                        )
-                        .await;
-
-                        if response.is_err() {
-                            return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                Render::internal_server_error("/", "Request timed out"),
-                            )));
-                        }
-
-                        let completed_response = response.unwrap();
-
-                        if completed_response.is_err() {
-                            return Ok::<_, hyper::Error>(Response::new(Body::from(
-                                Render::internal_server_error(
-                                    "/",
-                                    format!("{:?}", completed_response.err().unwrap()).as_str(),
-                                ),
-                            )));
-                        }
-
-                        let result = completed_response.unwrap();
-                        return Ok::<_, hyper::Error>(result);
+                        http_server
+                            .lifecycle(req, client_ip, &connection_lock)
+                            .await
                     }
                 }))
             }
@@ -111,16 +97,128 @@ impl HttpServer {
 
         log_info!("Vanguard Engine Http server started on {:?}", &self.socket);
 
+        let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
+        let shutdown_signal = async move {
+            let _on_shutdown = shutdown_event.wait_for(|&s| s).await;
+        };
+
+        let execution_result = self
+            .get_server_engine()
+            .serve(make_svc)
+            .with_graceful_shutdown(shutdown_signal)
+            .await;
+
+        if execution_result.is_err() {
+            let error = execution_result.err().unwrap();
+            log_error!("Vanguard Engine Http server error {:?}", error);
+        }
+    }
+
+    /// @TODO: it will be build by using current configurations
+    fn get_server_engine(&self) -> Builder<AddrIncoming> {
         let server_engine = Server::bind(&self.socket)
             .tcp_nodelay(true)
             .http1_keepalive(true)
-            .serve(make_svc)
-            .await;
+            .http1_header_read_timeout(std::time::Duration::from_secs(
+                Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT,
+            ))
+            .tcp_keepalive(Some(std::time::Duration::from_secs(
+                Constants::DEFAULT_POOL_IDLE_TIMEOUT,
+            )))
+            .http1_max_buf_size(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
+            .http1_only(true);
 
-        if server_engine.is_err() {
-            let error = server_engine.err().unwrap();
-            log_error!("Vanguard Engine Http server error {:?}", error);
+        server_engine
+    }
+
+    /// Executes the request lifecycle
+    async fn lifecycle(
+        &self,
+        req: Request<Body>,
+        client_ip: IpAddr,
+        connection_lock: &Option<ConnectionLock>,
+    ) -> Result<Response<Body>, hyper::Error> {
+        let request_host = extract_host(&req);
+
+        // Global Request Body Size Check
+        let content_length = crate::utils::http_utility::get_content_length(&req);
+        if content_length.is_err() {
+            return Ok(Response::builder()
+                .status(hyper::StatusCode::BAD_REQUEST)
+                .body(Body::from(Render::internal_server_error(
+                    &request_host,
+                    content_length.err().unwrap().get_message(),
+                )))
+                .unwrap());
         }
+
+        let parsed_content_length = content_length.unwrap();
+        if parsed_content_length > Constants::DEFAULT_MAX_REQUEST_BODY_SIZE {
+            return Ok(Response::builder()
+                .status(hyper::StatusCode::PAYLOAD_TOO_LARGE)
+                .body(Body::from(Render::internal_server_error(
+                    &request_host,
+                    "Payload too large",
+                )))
+                .unwrap());
+        }
+
+        if connection_lock.is_none() {
+            log_error!(
+                "Rejecting request from ip address {:?}: Max connections reached",
+                client_ip
+            );
+
+            return Ok::<_, hyper::Error>(
+                Response::builder()
+                    .status(hyper::StatusCode::SERVICE_UNAVAILABLE)
+                    .body(Body::from(Render::internal_server_error(
+                        "/",
+                        "Max connections reached",
+                    )))
+                    .unwrap(),
+            );
+        }
+
+        if !CONNECTION_MANAGER.check_rate_limit(client_ip) {
+            log_info!("Rate limit exceeded for ip address {:?}", client_ip);
+            return Ok::<_, hyper::Error>(
+                Response::builder()
+                    .status(hyper::StatusCode::TOO_MANY_REQUESTS)
+                    .body(Body::from(Render::internal_server_error(
+                        "/",
+                        "Rate limit exceeded",
+                    )))
+                    .unwrap(),
+            );
+        }
+
+        CONNECTION_MANAGER.increment_total_requests();
+        let response = run_in_time_buffer(
+            Constants::DEFAULT_SERVER_READ_TIMEOUT,
+            self.handle_request(req, client_ip),
+        )
+        .await;
+
+        if response.is_err() {
+            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                Render::internal_server_error("/", "Request timed out"),
+            )));
+        }
+
+        let completed_response = response.unwrap();
+
+        if completed_response.is_err() {
+            return Ok::<_, hyper::Error>(Response::new(Body::from(
+                Render::internal_server_error(
+                    "/",
+                    format!("{:?}", completed_response.err().unwrap()).as_str(),
+                ),
+            )));
+        }
+
+        let result = completed_response.unwrap();
+        Ok::<_, hyper::Error>(result)
     }
 
     async fn handle_request(

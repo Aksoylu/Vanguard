@@ -1,11 +1,11 @@
-use hyper::{client::HttpConnector, Client};
 use once_cell::sync::Lazy;
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    constants::Constants,
     core::{
-        http_server::HttpServer, https_server::HttpsServer, log_service::LogService, router::Router,
+        connection_manager::ConnectionManager, http_proxy_client::HttpProxyClient,
+        http_server::HttpServer, https_server::HttpsServer, log_service::LogService,
+        router::Router, shutdown_signal::ShutdownSignal,
     },
     models::boot_result::BootResult,
     rpc_service::rpc_server::RPCServer,
@@ -30,13 +30,8 @@ pub static RUNTIME_BOOT_INFO: Lazy<Arc<RwLock<BootResult>>> =
 pub static ROUTER: Lazy<Arc<RwLock<Router>>> =
     Lazy::new(|| Arc::new(RwLock::new(Router::default())));
 
-pub static HTTP_CLIENT: Lazy<Client<HttpConnector>> = Lazy::new(|| {
-    let mut http = HttpConnector::new();
-    http.set_nodelay(true);
-    http.set_keepalive(Some(std::time::Duration::from_secs(Constants::DEFAULT_POOL_IDLE_TIMEOUT)));
+pub static CONNECTION_MANAGER: Lazy<ConnectionManager> = Lazy::new(|| ConnectionManager::default());
 
-    Client::builder()
-        .pool_idle_timeout(std::time::Duration::from_secs(Constants::DEFAULT_POOL_IDLE_TIMEOUT))
-        .pool_max_idle_per_host(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST)
-        .build(http)
-});
+pub static HTTP_CLIENT: Lazy<HttpProxyClient> = Lazy::new(|| HttpProxyClient::default());
+
+pub static SHUTDOWN_SIGNAL: Lazy<ShutdownSignal> = Lazy::new(|| ShutdownSignal::new());
