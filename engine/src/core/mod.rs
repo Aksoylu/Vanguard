@@ -8,3 +8,4 @@ pub mod shared_memory;
 pub mod connection_manager;
 pub mod http_proxy_client;
 pub mod connection_lock;
+pub mod shutdown_signal;

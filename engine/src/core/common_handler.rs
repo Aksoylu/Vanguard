@@ -12,7 +12,6 @@ use crate::render::Render;
 use crate::utils::file_utility::{
     generate_file_tag, get_content_type, get_last_modified, is_file_exist, open_file,
 };
-use crate::utils::http_utility::get_content_length;
 use crate::utils::time_utility::{run_in_time_buffer, start_clock, stop_clock};
 use tokio_util::io::ReaderStream;
 
@@ -41,28 +40,6 @@ impl CommonHandler {
         let original_uri = req.uri().clone();
         let request_method = req.method().clone();
         let request_path = original_uri.path().to_string();
-        let content_length = get_content_length(&req);
-
-        if content_length.is_err() {
-            return Ok(Response::builder()
-                .status(StatusCode::BAD_REQUEST)
-                .body(Body::from(Render::internal_server_error(
-                    request_host,
-                    content_length.err().unwrap().get_message(),
-                )))
-                .unwrap());
-        }
-
-        let parsed_content_length = content_length.unwrap();
-        if parsed_content_length > crate::constants::Constants::DEFAULT_MAX_REQUEST_BODY_SIZE {
-            return Ok(Response::builder()
-                .status(StatusCode::PAYLOAD_TOO_LARGE)
-                .body(Body::from(Render::internal_server_error(
-                    request_host,
-                    "Payload too large",
-                )))
-                .unwrap());
-        }
 
         let mut new_uri = format!("http://{}{}", endpoint_to_navigate, request_path);
         if let Some(query) = original_uri.query() {

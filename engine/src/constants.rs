@@ -43,6 +43,12 @@ impl Constants {
     pub const DEFAULT_MAXIMUM_TOTAL_CONNECTIONS: u64 = 10000; // 10k connections in same time
     pub const DEFAULT_SERVER_READ_TIMEOUT: u64 = 30; // 30 seconds
 
+    pub const DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE: u32 = 1024 * 1024; // 1MB
+    pub const DEFAULT_HTTP2_STREAM_WINDOW_SIZE: u32 = 1024 * 1024; // 1MB
+    pub const DEFAULT_HTTP2_MAX_FRAME_SIZE: u32 = 16384; // 16KB
+    pub const DEFAULT_HTTP2_MAX_HEADER_LIST_SIZE: u32 = 16384; // 16KB
+    
+
     // All Scalability & Performance Settings
     pub const DEFAULT_HTTP_CLIENT_TIMEOUT: u64 = 30; // 30 seconds
     pub const DEFAULT_POOL_IDLE_TIMEOUT: u64 = 60; // 60 seconds

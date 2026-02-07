@@ -2,10 +2,10 @@ use once_cell::sync::Lazy;
 use std::sync::{Arc, RwLock};
 
 use crate::{
-    core::connection_manager::ConnectionManager,
-    core::http_proxy_client::HttpProxyClient,
     core::{
-        http_server::HttpServer, https_server::HttpsServer, log_service::LogService, router::Router,
+        connection_manager::ConnectionManager, http_proxy_client::HttpProxyClient,
+        http_server::HttpServer, https_server::HttpsServer, log_service::LogService,
+        router::Router, shutdown_signal::ShutdownSignal,
     },
     models::boot_result::BootResult,
     rpc_service::rpc_server::RPCServer,
@@ -33,3 +33,5 @@ pub static ROUTER: Lazy<Arc<RwLock<Router>>> =
 pub static CONNECTION_MANAGER: Lazy<ConnectionManager> = Lazy::new(|| ConnectionManager::default());
 
 pub static HTTP_CLIENT: Lazy<HttpProxyClient> = Lazy::new(|| HttpProxyClient::default());
+
+pub static SHUTDOWN_SIGNAL: Lazy<ShutdownSignal> = Lazy::new(|| ShutdownSignal::new());

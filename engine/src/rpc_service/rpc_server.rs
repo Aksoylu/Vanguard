@@ -3,7 +3,10 @@ use jsonrpc_core::IoHandler;
 use crate::core::rpc_session::RpcSession;
 use crate::rpc_service::routes::ROUTES;
 use crate::rpc_service::rpc_middleware::RpcMiddleware;
-use crate::{log_info, utils::network_utility::parse_ip_address};
+use crate::{
+    core::shared_memory::SHUTDOWN_SIGNAL, log_info,
+    utils::network_utility::parse_ip_address,
+};
 
 use jsonrpc_http_server::ServerBuilder;
 
@@ -59,6 +62,10 @@ impl RPCServer {
 
         log_info!("Vanguard Engine JRPC server started on {}", &endpoint);
 
-        server.wait();
+        let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
+        tokio::spawn(async move {
+            let _on_shutdown = shutdown_event.wait_for(|&s| s).await;
+            server.close();
+        });
     }
 }

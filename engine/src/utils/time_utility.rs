@@ -1,30 +1,24 @@
 use std::future::Future;
-
 use chrono::Utc;
 use tokio::time::timeout;
 use tokio::time::error::Elapsed;
-
 use std::time::Instant as Clock;
-
 
 /// Returns the current timestamp in seconds.
 pub fn get_current_timestamp() -> i64 {
     Utc::now().timestamp()
 }
 
-pub fn start_clock() -> Clock{
+pub fn start_clock() -> Clock {
     let start_time: Clock = Clock::now();
-
     start_time
 }
 
 /// Takes Clock as parameter, returns elapsed time as ms n U128 type
-pub fn stop_clock(start_time: Clock) -> u128{
+pub fn stop_clock(start_time: Clock) -> u128 {
     let elapsed_time = start_time.elapsed().as_millis();
-
     elapsed_time
 }
-
 
 /// Converts a u64 value to a Duration.
 pub fn u64_to_duration(value: u64) -> std::time::Duration {

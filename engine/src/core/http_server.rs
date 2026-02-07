@@ -17,7 +17,9 @@ use std::{
 use crate::{
     constants::Constants,
     core::{
-        common_handler::{CommonHandler, Protocol}, connection_lock::ConnectionLock, shared_memory::{CONNECTION_MANAGER, ROUTER}
+        common_handler::{CommonHandler, Protocol},
+        connection_lock::ConnectionLock,
+        shared_memory::{CONNECTION_MANAGER, ROUTER, SHUTDOWN_SIGNAL},
     },
     log_debug, log_error, log_info,
     models::{http_route::HttpRoute, route::IwsRoute},
@@ -95,7 +97,16 @@ impl HttpServer {
 
         log_info!("Vanguard Engine Http server started on {:?}", &self.socket);
 
-        let execution_result = self.get_server_engine().serve(make_svc).await;
+        let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
+        let shutdown_signal = async move {
+            let _on_shutdown = shutdown_event.wait_for(|&s| s).await;
+        };
+
+        let execution_result = self
+            .get_server_engine()
+            .serve(make_svc)
+            .with_graceful_shutdown(shutdown_signal)
+            .await;
 
         if execution_result.is_err() {
             let error = execution_result.err().unwrap();
@@ -114,7 +125,8 @@ impl HttpServer {
             .tcp_keepalive(Some(std::time::Duration::from_secs(
                 Constants::DEFAULT_POOL_IDLE_TIMEOUT,
             )))
-            .http1_max_buf_size(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize);
+            .http1_max_buf_size(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
+            .http1_only(true);
 
         server_engine
     }
@@ -126,6 +138,31 @@ impl HttpServer {
         client_ip: IpAddr,
         connection_lock: &Option<ConnectionLock>,
     ) -> Result<Response<Body>, hyper::Error> {
+        let request_host = extract_host(&req);
+
+        // Global Request Body Size Check
+        let content_length = crate::utils::http_utility::get_content_length(&req);
+        if content_length.is_err() {
+            return Ok(Response::builder()
+                .status(hyper::StatusCode::BAD_REQUEST)
+                .body(Body::from(Render::internal_server_error(
+                    &request_host,
+                    content_length.err().unwrap().get_message(),
+                )))
+                .unwrap());
+        }
+
+        let parsed_content_length = content_length.unwrap();
+        if parsed_content_length > Constants::DEFAULT_MAX_REQUEST_BODY_SIZE {
+            return Ok(Response::builder()
+                .status(hyper::StatusCode::PAYLOAD_TOO_LARGE)
+                .body(Body::from(Render::internal_server_error(
+                    &request_host,
+                    "Payload too large",
+                )))
+                .unwrap());
+        }
+
         if connection_lock.is_none() {
             log_error!(
                 "Rejecting request from ip address {:?}: Max connections reached",

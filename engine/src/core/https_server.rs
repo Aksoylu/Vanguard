@@ -8,8 +8,9 @@ use tokio_rustls::TlsAcceptor;
 use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
 use crate::core::connection_lock::ConnectionLock;
-use crate::core::shared_memory::{CONNECTION_MANAGER, ROUTER};
+use crate::core::shared_memory::{CONNECTION_MANAGER, ROUTER, SHUTDOWN_SIGNAL};
 use crate::models::route::{HttpsRoute, SecureIwsRoute};
+use crate::utils::http_utility::get_content_length;
 use crate::utils::time_utility::run_in_time_buffer;
 use crate::{log_debug, log_error, log_info};
 
@@ -70,19 +71,32 @@ impl HttpsServer {
 
         log_info!("Vanguard Engine Https server started on {:?}", &self.socket);
 
+        let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
+        let on_shutdown = async move {
+            let _on_shutdown = shutdown_event.wait_for(|&s| s).await;
+        };
+        tokio::pin!(on_shutdown);
+
         loop {
-            let (tcp_stream, client) = listener.accept().await.unwrap();
-            let tls_acceptor: TlsAcceptor = ssl_context.clone();
-            let https_server = Arc::new(self.clone());
-            let client_ip = client.ip();
+            tokio::select! {
+                _on_shutdown = &mut on_shutdown => {
+                    break;
+                }
+                result = listener.accept() => {
+                    let (tcp_stream, client) = result.unwrap();
+                    let tls_acceptor: TlsAcceptor = ssl_context.clone();
+                    let https_server = Arc::new(self.clone());
+                    let client_ip = client.ip();
 
-            let start_new_connection = CONNECTION_MANAGER.try_acquire_connection();
+                    let start_new_connection = CONNECTION_MANAGER.try_acquire_connection();
 
-            tokio::spawn(async move {
-                https_server
-                    .execute_request(tls_acceptor, tcp_stream, client_ip, start_new_connection)
-                    .await;
-            });
+                    tokio::spawn(async move {
+                        https_server
+                            .execute_request(tls_acceptor, tcp_stream, client_ip, start_new_connection)
+                            .await;
+                    });
+                }
+            }
         }
     }
 
@@ -139,7 +153,11 @@ impl HttpsServer {
                 let https_server_instance = Arc::clone(&https_server);
                 let connection_lock = Arc::clone(&connection_lock);
 
-                async move { https_server_instance.lifecycle(req, client_ip, &connection_lock).await }
+                async move {
+                    https_server_instance
+                        .lifecycle(req, client_ip, &connection_lock)
+                        .await
+                }
             });
 
             if let Err(e) = server_engine.serve_connection(tls_stream, service).await {
@@ -161,7 +179,11 @@ impl HttpsServer {
             .http2_keep_alive_timeout(std::time::Duration::from_secs(
                 Constants::DEFAULT_POOL_IDLE_TIMEOUT,
             ))
-            .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32);
+            .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32)
+            .http2_initial_connection_window_size(Some(Constants::DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE))
+            .http2_initial_stream_window_size(Some(Constants::DEFAULT_HTTP2_STREAM_WINDOW_SIZE))
+            .http2_max_frame_size(Some(Constants::DEFAULT_HTTP2_MAX_FRAME_SIZE))
+            .http2_max_header_list_size(Constants::DEFAULT_HTTP2_MAX_HEADER_LIST_SIZE);
 
         server_engine
     }
@@ -173,6 +195,31 @@ impl HttpsServer {
         client_ip: IpAddr,
         connection_lock: &Option<ConnectionLock>,
     ) -> Result<Response<Body>, hyper::Error> {
+        let request_host = extract_host(&req);
+
+        // Global Request Body Size Check
+        let content_length = get_content_length(&req);
+        if content_length.is_err() {
+            return Ok(Response::builder()
+                .status(hyper::StatusCode::BAD_REQUEST)
+                .body(Body::from(Render::internal_server_error(
+                    &request_host,
+                    content_length.err().unwrap().get_message(),
+                )))
+                .unwrap());
+        }
+
+        let parsed_content_length = content_length.unwrap();
+        if parsed_content_length > Constants::DEFAULT_MAX_REQUEST_BODY_SIZE {
+            return Ok(Response::builder()
+                .status(hyper::StatusCode::PAYLOAD_TOO_LARGE)
+                .body(Body::from(Render::internal_server_error(
+                    &request_host,
+                    "Payload too large",
+                )))
+                .unwrap());
+        }
+
         if connection_lock.is_none() {
             log_error!(
                 "Rejecting request from ip address {:?}: Max connections reached",
