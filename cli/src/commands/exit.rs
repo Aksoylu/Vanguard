@@ -1,6 +1,6 @@
 use std::process;
 
-/// @todo
+/// @todo implement graceful shutdown here
 pub async fn exit() {
     process::exit(0);
 }

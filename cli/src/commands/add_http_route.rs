@@ -12,6 +12,7 @@ use hyper::StatusCode;
 pub struct AddHttpRouteArgs {
     pub source: String,
     pub target: String
+    // todo: implement traffic policy here ! 
 }
 
 pub async fn add_http_route(args: AddHttpRouteArgs) {
