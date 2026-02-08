@@ -3,7 +3,7 @@ use std::str::FromStr;
 
 use jsonrpc_core::Value;
 
-use crate::models::traffic_policy::TrafficPolicy;
+use crate::models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy;
 
 pub struct RpcParameter {}
 
@@ -33,9 +33,9 @@ impl RpcParameter {
     /// Extracts a traffic_policy parameter from JSON-RPC params and deserializes it.
     /// Returns a default TrafficPolicy if the parameter is missing or invalid.
     /// This allows clients to optionally provide custom traffic policies per route.
-    pub fn extract_traffic_policy(parameter_name: &str, params: &Value) -> Option<TrafficPolicy> {
+    pub fn extract_traffic_policy(parameter_name: &str, params: &Value) -> Option<ScopeTrafficPolicy> {
         params
             .get(parameter_name)
-            .and_then(|v| serde_json::from_value::<TrafficPolicy>(v.clone()).ok())
+            .and_then(|v| serde_json::from_value::<ScopeTrafficPolicy>(v.clone()).ok())
     }
 }

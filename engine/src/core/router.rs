@@ -8,7 +8,7 @@ use crate::{
         http_route::HttpRoute,
         route::{HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
         ssl_context::SslContext,
-        traffic_policy::TrafficPolicy,
+        traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
     },
     utils::{
         directory_utility::get_runtime_path,
@@ -135,13 +135,13 @@ impl Router {
         &mut self,
         source: &String,
         target: &String,
-        traffic_policy: Option<TrafficPolicy>,
+        traffic_policy: Option<ScopeTrafficPolicy>,
     ) {
         if self.http_route_table.contains_key(source) {
             self.http_route_table.remove(source);
         }
 
-        let mut final_traffic_policy = TrafficPolicy::default();
+        let mut final_traffic_policy = ScopeTrafficPolicy::default();
 
         if traffic_policy.is_some() {
             final_traffic_policy = traffic_policy.unwrap();

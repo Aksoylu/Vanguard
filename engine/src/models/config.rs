@@ -1,10 +1,10 @@
 use serde::{Deserialize, Serialize};
 
-use crate::models::global_settings::GlobalSettings;
+use crate::models::settings::logger_settings::LoggerSettings;
 
 use super::{
     http_server_config::HttpServerConfig, https_server_config::HttpsServerConfig,
-    logger_config::LoggerConfig, rpc_server_config::RpcServerConfig,
+    rpc_server_config::RpcServerConfig, traffic_policy::global_traffic_policy::GlobalTrafficPolicy,
 };
 
 #[derive(Debug, Clone, Deserialize, Serialize, PartialEq)]
@@ -12,10 +12,10 @@ pub struct Config {
     pub http_server: HttpServerConfig,
     pub https_server: HttpsServerConfig,
     pub rpc_server: RpcServerConfig,
-    pub logger: LoggerConfig,
+    pub logger: LoggerSettings,
 
-    #[serde(default = "default_global_settings")]
-    pub global_settings: GlobalSettings,
+    #[serde(default = "default_global_traffic_policy")]
+    pub global_traffic_policy: GlobalTrafficPolicy,
 }
 
 impl Default for Config {
@@ -25,13 +25,13 @@ impl Default for Config {
             https_server: Default::default(),
             rpc_server: Default::default(),
             logger: Default::default(),
-            global_settings: Default::default(),
+            global_traffic_policy: Default::default(),
         }
     }
 }
 
-fn default_global_settings() -> GlobalSettings {
-    GlobalSettings::default()
+fn default_global_traffic_policy() -> GlobalTrafficPolicy {
+    GlobalTrafficPolicy::default()
 }
 
 impl Config {

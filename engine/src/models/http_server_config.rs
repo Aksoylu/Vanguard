@@ -1,6 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{constants::Constants, models::traffic_policy::TrafficPolicy};
+use crate::{
+    constants::Constants, models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
+};
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
 pub struct HttpServerConfig {
@@ -9,11 +11,11 @@ pub struct HttpServerConfig {
     pub port: u16,
 
     #[serde(default = "use_default_traffic_policy")]
-    pub traffic_policy: TrafficPolicy,
+    pub traffic_policy: ScopeTrafficPolicy,
 }
 
-fn use_default_traffic_policy() -> TrafficPolicy {
-    TrafficPolicy::default()
+fn use_default_traffic_policy() -> ScopeTrafficPolicy {
+    ScopeTrafficPolicy::default()
 }
 
 impl Default for HttpServerConfig {
@@ -22,15 +24,13 @@ impl Default for HttpServerConfig {
             is_active: Constants::DEFUALT_HTTP_IS_ACTIVE,
             ip_address: Constants::DEFAULT_HTTP_IP.to_string(),
             port: Constants::DEFAULT_HTTP_PORT,
-            traffic_policy: TrafficPolicy::default(),
+            traffic_policy: ScopeTrafficPolicy::default(),
         }
     }
-
 }
 
-impl HttpServerConfig{
-    pub fn get_endpoint(&self) -> String{
+impl HttpServerConfig {
+    pub fn get_endpoint(&self) -> String {
         format!("{}:{}", self.ip_address, self.port)
     }
 }
-

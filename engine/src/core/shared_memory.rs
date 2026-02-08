@@ -5,9 +5,9 @@ use crate::{
     core::{
         connection_manager::ConnectionManager, http_proxy_client::HttpProxyClient,
         http_server::HttpServer, https_server::HttpsServer, log_service::LogService,
-        router::Router, shutdown_signal::ShutdownSignal,
+        router::Router
     },
-    models::boot_result::BootResult,
+    models::{boot_result::BootResult, shutdown_signal::ShutdownSignal},
     rpc_service::rpc_server::RPCServer,
 };
 
