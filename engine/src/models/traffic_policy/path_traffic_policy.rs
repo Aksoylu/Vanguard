@@ -10,7 +10,7 @@ pub struct PathTrafficPolicy {
     pub max_request_body_size: u64,
 
     #[serde(default = "default_max_requests_per_minute")]
-    pub max_requests_per_minute: u32
+    pub max_requests_per_minute: u32,
 }
 
 impl Default for PathTrafficPolicy {
@@ -22,7 +22,7 @@ impl Default for PathTrafficPolicy {
         }
     }
 }
-
+// todo: inherit from parent (scope) traffic policy
 fn default_http_client_timeout() -> u64 {
     Constants::DEFAULT_HTTP_CLIENT_TIMEOUT
 }

@@ -6,13 +6,13 @@ use crate::models::settings::upstream_settings::UpstreamSettings;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
 pub struct ScopeTrafficPolicy {
-    #[serde(default)]
+    #[serde(default = "default_http1_protocol_settings")]
     pub http1_protocol_settings: Http1ProtocolSettings,
 
-    #[serde(default)]
+    #[serde(default = "default_http2_protocol_settings")]
     pub http2_protocol_settings: Http2ProtocolSettings,
 
-    #[serde(default)]
+    #[serde(default = "default_upstream_settings")]
     pub upstream_settings: UpstreamSettings,
 }
 
@@ -24,4 +24,17 @@ impl Default for ScopeTrafficPolicy {
             upstream_settings: UpstreamSettings::default(),
         }
     }
+}
+
+// todo: inherit from parent (global) traffic policy
+fn default_http1_protocol_settings() -> Http1ProtocolSettings {
+    Http1ProtocolSettings::default()
+}
+
+fn default_http2_protocol_settings() -> Http2ProtocolSettings {
+    Http2ProtocolSettings::default()
+}
+
+fn default_upstream_settings() -> UpstreamSettings {
+    UpstreamSettings::default()
 }

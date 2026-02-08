@@ -8,7 +8,8 @@ use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 
 use crate::common::enums::ssl_file_type::SSlFileType;
-use crate::models::route::{HttpsRoute, SecureIwsRoute};
+use crate::models::route::https_route::HttpsRoute;
+use crate::models::route::secure_iws_route::SecureIwsRoute;
 use crate::utils::file_utility::{delete_file, get_absolute_ssl_file_path};
 use jsonrpc_core::ErrorCode;
 use std::collections::HashMap;
