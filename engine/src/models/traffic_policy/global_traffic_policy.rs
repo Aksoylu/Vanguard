@@ -1,11 +1,8 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    models::settings::{
-        http1_protocol_settings::Http1ProtocolSettings,
-        http2_protocol_settings::Http2ProtocolSettings, server_settings::ServerSettings,
-        upstream_settings::UpstreamSettings,
-    },
+use crate::models::settings::{
+    http1_protocol_settings::Http1ProtocolSettings, http2_protocol_settings::Http2ProtocolSettings,
+    server_settings::ServerSettings, upstream_settings::UpstreamSettings,
 };
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]

@@ -90,6 +90,7 @@ impl Router {
                 target: Some(http_route.target.clone()),
                 ssl: None,
                 serving_path: None,
+                traffic_policy: Some(http_route.traffic_policy.clone()),
             });
         }
 
@@ -100,6 +101,7 @@ impl Router {
                 target: Some(https_route.target.clone()),
                 ssl: Some(https_route.ssl_context.clone()),
                 serving_path: None,
+                traffic_policy: Some(https_route.traffic_policy.clone()),
             })
         }
 
@@ -110,6 +112,7 @@ impl Router {
                 target: None,
                 ssl: None,
                 serving_path: Some(iws_route.serving_path.clone()),
+                traffic_policy: Some(iws_route.traffic_policy.clone()),
             })
         }
 
@@ -120,6 +123,7 @@ impl Router {
                 target: None,
                 ssl: Some(secure_iws_route.ssl_context.clone()),
                 serving_path: Some(secure_iws_route.serving_path.clone()),
+                traffic_policy: Some(secure_iws_route.traffic_policy.clone()),
             })
         }
 
