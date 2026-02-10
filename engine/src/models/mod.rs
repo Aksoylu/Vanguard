@@ -9,4 +9,5 @@ pub mod ssl_file;
 pub mod shutdown_signal;
 pub mod settings;
 pub mod traffic_policy;
+pub mod reload_signal;
 pub mod route;

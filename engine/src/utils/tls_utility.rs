@@ -3,7 +3,6 @@ use rustls::server::ResolvesServerCertUsingSni;
 use rustls::sign::{CertifiedKey, RsaSigningKey};
 use rustls::{Certificate, PrivateKey};
 use rustls_pemfile::{certs, pkcs8_private_keys};
-use serde::{Deserialize, Serialize};
 use tokio_rustls::rustls::{self, ServerConfig};
 use tokio_rustls::TlsAcceptor;
 

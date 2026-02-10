@@ -15,14 +15,21 @@ use std::{
 };
 
 use crate::{
-    constants::Constants, core::{
+    constants::Constants,
+    core::{
         common_handler::{CommonHandler, Protocol},
         connection_lock::ConnectionLock,
-        shared_memory::{CONNECTION_MANAGER, ROUTER, SHUTDOWN_SIGNAL},
-    }, log_debug, log_error, log_info, models::route::{http_route::HttpRoute, iws_route::IwsRoute}, render::Render, utils::{
+        shared_memory::{
+            CONNECTION_MANAGER, RELOAD_SIGNAL, ROUTER, RUNTIME_BOOT_INFO, SHUTDOWN_SIGNAL,
+        },
+    },
+    log_debug, log_error, log_info,
+    models::route::{http_route::HttpRoute, iws_route::IwsRoute},
+    render::Render,
+    utils::{
         network_utility::{extract_host, parse_ip_address},
         time_utility::run_in_time_buffer,
-    }
+    },
 };
 
 #[derive(Debug, Clone)]
@@ -67,45 +74,64 @@ impl HttpServer {
 
     pub async fn start(&self) {
         let http_server = Arc::new(self.clone());
-
-        // Creates a service factory
-        let make_svc = make_service_fn(|connection: &AddrStream| {
-            let client = connection.remote_addr();
-            let http_server = Arc::clone(&http_server);
-
-            async move {
-                let start_new_connection = Arc::new(CONNECTION_MANAGER.try_acquire_connection());
-
-                Ok::<_, hyper::Error>(service_fn(move |req| {
-                    let http_server = Arc::clone(&http_server);
-                    let client_ip = client.ip();
-                    let connection_lock = Arc::clone(&start_new_connection);
-
-                    async move {
-                        http_server
-                            .lifecycle(req, client_ip, &connection_lock)
-                            .await
-                    }
-                }))
-            }
-        });
-
         log_info!("Vanguard Engine Http server started on {:?}", &self.socket);
 
-        let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
-        let shutdown_signal = async move {
-            let _on_shutdown = shutdown_event.wait_for(|&s| s).await;
-        };
+        loop {
+            // Creates a fresh service factory for each server instance
+            let http_server_clone = Arc::clone(&http_server);
+            let make_svc = make_service_fn(move |connection: &AddrStream| {
+                let client = connection.remote_addr();
+                let http_server = Arc::clone(&http_server_clone);
 
-        let execution_result = self
-            .get_server_engine()
-            .serve(make_svc)
-            .with_graceful_shutdown(shutdown_signal)
-            .await;
+                async move {
+                    let start_new_connection = Arc::new(CONNECTION_MANAGER.try_acquire_connection());
 
-        if execution_result.is_err() {
-            let error = execution_result.err().unwrap();
-            log_error!("Vanguard Engine Http server error {:?}", error);
+                    Ok::<_, hyper::Error>(service_fn(move |req| {
+                        let http_server = Arc::clone(&http_server);
+                        let client_ip = client.ip();
+                        let connection_lock = Arc::clone(&start_new_connection);
+
+                        async move {
+                            http_server
+                                .lifecycle(req, client_ip, &connection_lock)
+                                .await
+                        }
+                    }))
+                }
+            });
+
+            let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
+            let mut reload_event = RELOAD_SIGNAL.subscriber.clone();
+
+            let shutdown_signal = async move {
+                tokio::select! {
+                    _ = shutdown_event.wait_for(|&s| s) => {
+                        log_info!("HTTP Server received shutdown signal.");
+                    }
+                    _ = reload_event.wait_for(|&r| r) => {
+                        log_info!("HTTP Server received reload signal. Restarting engine...");
+                    }
+                }
+            };
+
+            let execution_result = self
+                .get_server_engine()
+                .serve(make_svc)
+                .with_graceful_shutdown(shutdown_signal)
+                .await;
+
+            if execution_result.is_err() {
+                let error = execution_result.err().unwrap();
+                log_error!("Vanguard Engine Http server error {:?}", error);
+                break;
+            }
+
+            if *SHUTDOWN_SIGNAL.subscriber.borrow() {
+                log_info!("HTTP Server shutting down loop.");
+                break;
+            }
+
+            log_info!("HTTP Server reloading engine with new configuration...");
         }
     }
 
@@ -135,6 +161,12 @@ impl HttpServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let request_host = extract_host(&req);
 
+        // Clone traffic_policy to drop the RwLockReadGuard immediately
+        let traffic_policy = {
+            let runtime_info = RUNTIME_BOOT_INFO.read().unwrap();
+            runtime_info.config.http_server.traffic_policy.clone()
+        };
+
         // Global Request Body Size Check
         let content_length = crate::utils::http_utility::get_content_length(&req);
         if content_length.is_err() {
@@ -148,7 +180,7 @@ impl HttpServer {
         }
 
         let parsed_content_length = content_length.unwrap();
-        if parsed_content_length > Constants::DEFAULT_MAX_REQUEST_BODY_SIZE {
+        if parsed_content_length > traffic_policy.upstream_settings.max_request_body_size {
             return Ok(Response::builder()
                 .status(hyper::StatusCode::PAYLOAD_TOO_LARGE)
                 .body(Body::from(Render::internal_server_error(
@@ -190,7 +222,7 @@ impl HttpServer {
 
         CONNECTION_MANAGER.increment_total_requests();
         let response = run_in_time_buffer(
-            Constants::DEFAULT_SERVER_READ_TIMEOUT,
+            traffic_policy.upstream_settings.http_client_timeout,
             self.handle_request(req, client_ip),
         )
         .await;
@@ -275,6 +307,7 @@ impl HttpServer {
                 &current_http_route.target,
                 req,
                 client_ip.clone(),
+                &current_http_route.traffic_policy,
             )
             .await;
         }

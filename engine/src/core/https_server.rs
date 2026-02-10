@@ -140,6 +140,7 @@ impl HttpsServer {
                 }
             };
 
+            // @todo: get request host and select server engine here
             // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
             let mut server_engine = https_server.get_server_engine();
             if let Ok(Some(protocol)) = receiver.await {
@@ -305,6 +306,7 @@ impl HttpsServer {
                 &current_https_route.target,
                 req,
                 client_ip.clone(),
+                &current_https_route.traffic_policy,
             )
             .await;
         }
