@@ -1,4 +1,4 @@
-use crate::{rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use crate::{models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy, rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
@@ -7,6 +7,7 @@ pub struct AddSecureIwsRouteRequest {
     serving_path: String,
     ssl_cert_path: String,
     ssl_private_key_path: String,
+    traffic_policy: Option<ScopeTrafficPolicy>,
 }
 
 impl AddSecureIwsRouteRequest {
@@ -15,6 +16,7 @@ impl AddSecureIwsRouteRequest {
         let serving_path = RpcParameter::extract_string("serving_path", &params);
         let ssl_cert_path = RpcParameter::extract_string("ssl_cert_path", &params);
         let ssl_private_key_path = RpcParameter::extract_string("ssl_private_key_path", &params);
+        let traffic_policy = RpcParameter::extract_traffic_policy("traffic_policy", &params);
 
         if source.is_none() {
             return Err(RPCError::build(
@@ -49,6 +51,7 @@ impl AddSecureIwsRouteRequest {
             serving_path: serving_path.unwrap(),
             ssl_cert_path: ssl_cert_path.unwrap(),
             ssl_private_key_path: ssl_private_key_path.unwrap(),
+            traffic_policy,
         })
     }
 
@@ -67,5 +70,9 @@ impl AddSecureIwsRouteRequest {
 
     pub fn get_ssl_private_key_path(&self) -> String {
         self.ssl_private_key_path.clone()
+    }
+
+    pub fn get_traffic_policy(&self) -> Option<ScopeTrafficPolicy> {
+        self.traffic_policy.clone()
     }
 }

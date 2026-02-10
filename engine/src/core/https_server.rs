@@ -9,7 +9,8 @@ use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
 use crate::core::connection_lock::ConnectionLock;
 use crate::core::shared_memory::{CONNECTION_MANAGER, ROUTER, SHUTDOWN_SIGNAL};
-use crate::models::route::{HttpsRoute, SecureIwsRoute};
+use crate::models::route::https_route::HttpsRoute;
+use crate::models::route::secure_iws_route::SecureIwsRoute;
 use crate::utils::http_utility::get_content_length;
 use crate::utils::time_utility::run_in_time_buffer;
 use crate::{log_debug, log_error, log_info};
@@ -139,6 +140,7 @@ impl HttpsServer {
                 }
             };
 
+            // @todo: get request host and select server engine here
             // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
             let mut server_engine = https_server.get_server_engine();
             if let Ok(Some(protocol)) = receiver.await {
@@ -304,6 +306,7 @@ impl HttpsServer {
                 &current_https_route.target,
                 req,
                 client_ip.clone(),
+                &current_https_route.traffic_policy,
             )
             .await;
         }

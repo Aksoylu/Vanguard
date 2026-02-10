@@ -19,13 +19,20 @@ pub fn add_https_route(params: Value) -> Result<Value, Error> {
     let target: String = request.get_target();
     let ssl_cert_path: String = request.get_ssl_cert_path();
     let ssl_private_key_path: String = request.get_ssl_private_key_path();
+    let traffic_policy = request.get_traffic_policy();
 
     validate_ssl_context(&source, &ssl_cert_path, &ssl_private_key_path)?;
 
     check_route_already_used(&source)?;
 
     let mut router = ROUTER.write().unwrap();
-    router.add_https_route(&source, &target, &ssl_cert_path, &ssl_private_key_path);
+    router.add_https_route(
+        &source,
+        &target,
+        &ssl_cert_path,
+        &ssl_private_key_path,
+        traffic_policy,
+    );
 
     Ok(AddHttpsRouteResponse::build(None))
 }

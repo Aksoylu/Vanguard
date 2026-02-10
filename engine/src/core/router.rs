@@ -5,10 +5,12 @@ use crate::{
     constants::Constants,
     core::shared_memory::RUNTIME_BOOT_INFO,
     models::{
-        http_route::HttpRoute,
-        route::{HttpsRoute, IwsRoute, JsonRoute, SecureIwsRoute},
+        route::{
+            http_route::HttpRoute, https_route::HttpsRoute, iws_route::IwsRoute,
+            json_route::JsonRoute, secure_iws_route::SecureIwsRoute,
+        },
         ssl_context::SslContext,
-        traffic_policy::TrafficPolicy,
+        traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
     },
     utils::{
         directory_utility::get_runtime_path,
@@ -88,6 +90,7 @@ impl Router {
                 target: Some(http_route.target.clone()),
                 ssl: None,
                 serving_path: None,
+                traffic_policy: Some(http_route.traffic_policy.clone()),
             });
         }
 
@@ -98,6 +101,7 @@ impl Router {
                 target: Some(https_route.target.clone()),
                 ssl: Some(https_route.ssl_context.clone()),
                 serving_path: None,
+                traffic_policy: Some(https_route.traffic_policy.clone()),
             })
         }
 
@@ -108,6 +112,7 @@ impl Router {
                 target: None,
                 ssl: None,
                 serving_path: Some(iws_route.serving_path.clone()),
+                traffic_policy: Some(iws_route.traffic_policy.clone()),
             })
         }
 
@@ -118,6 +123,7 @@ impl Router {
                 target: None,
                 ssl: Some(secure_iws_route.ssl_context.clone()),
                 serving_path: Some(secure_iws_route.serving_path.clone()),
+                traffic_policy: Some(secure_iws_route.traffic_policy.clone()),
             })
         }
 
@@ -135,24 +141,22 @@ impl Router {
         &mut self,
         source: &String,
         target: &String,
-        traffic_policy: Option<TrafficPolicy>,
+        input_traffic_policy: Option<ScopeTrafficPolicy>,
     ) {
         if self.http_route_table.contains_key(source) {
             self.http_route_table.remove(source);
         }
 
-        let mut final_traffic_policy = TrafficPolicy::default();
-
-        if traffic_policy.is_some() {
-            final_traffic_policy = traffic_policy.unwrap();
+        let traffic_policy = if input_traffic_policy.is_some() {
+            input_traffic_policy.unwrap()
         } else {
             let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
-            final_traffic_policy = runtime_boot_info.config.http_server.traffic_policy.clone();
-        }
+            runtime_boot_info.config.http_server.traffic_policy.clone()
+        };
 
         let new_route = HttpRoute {
             target: target.to_owned(),
-            traffic_policy: final_traffic_policy,
+            traffic_policy,
         };
 
         self.http_route_table.insert(source.to_owned(), new_route);
@@ -165,10 +169,18 @@ impl Router {
         target: &String,
         ssl_cert_path: &String,
         ssl_private_key_path: &String,
+        input_traffic_policy: Option<ScopeTrafficPolicy>,
     ) {
         if self.https_route_table.contains_key(source) {
             self.https_route_table.remove(source);
         }
+
+        let traffic_policy = if input_traffic_policy.is_some() {
+            input_traffic_policy.unwrap()
+        } else {
+            let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
+            runtime_boot_info.config.https_server.traffic_policy.clone()
+        };
 
         let new_route = HttpsRoute {
             target: target.to_owned(),
@@ -176,19 +188,33 @@ impl Router {
                 certificate_file_path: ssl_cert_path.to_owned(),
                 private_key_file_path: ssl_private_key_path.to_owned(),
             },
+            traffic_policy,
         };
 
         self.https_route_table.insert(source.to_owned(), new_route);
         self.save();
     }
 
-    pub fn add_iws_route(&mut self, source: &String, serving_path: &String) {
+    pub fn add_iws_route(
+        &mut self,
+        source: &String,
+        serving_path: &String,
+        input_traffic_policy: Option<ScopeTrafficPolicy>,
+    ) {
         if self.iws_route_table.contains_key(source) {
             self.iws_route_table.remove(source);
         }
 
+        let traffic_policy = if input_traffic_policy.is_some() {
+            input_traffic_policy.unwrap()
+        } else {
+            let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
+            runtime_boot_info.config.http_server.traffic_policy.clone()
+        };
+
         let new_route = IwsRoute {
             serving_path: serving_path.to_owned(),
+            traffic_policy,
         };
 
         self.iws_route_table.insert(source.to_owned(), new_route);
@@ -201,10 +227,18 @@ impl Router {
         serving_path: &String,
         ssl_cert_path: &String,
         ssl_private_key_path: &String,
+        input_traffic_policy: Option<ScopeTrafficPolicy>,
     ) {
         if self.secure_iws_route_table.contains_key(source) {
             self.secure_iws_route_table.remove(source);
         }
+
+        let traffic_policy = if input_traffic_policy.is_some() {
+            input_traffic_policy.unwrap()
+        } else {
+            let runtime_boot_info = RUNTIME_BOOT_INFO.read().unwrap();
+            runtime_boot_info.config.https_server.traffic_policy.clone()
+        };
 
         let new_route: SecureIwsRoute = SecureIwsRoute {
             serving_path: serving_path.to_owned(),
@@ -213,6 +247,7 @@ impl Router {
                 certificate_file_path: ssl_cert_path.to_owned(),
                 private_key_file_path: ssl_private_key_path.to_owned(),
             },
+            traffic_policy,
         };
 
         self.secure_iws_route_table

@@ -1,11 +1,11 @@
-use crate::{models::traffic_policy::TrafficPolicy, rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
+use crate::{models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy, rpc_service::rpc_error::RPCError, utils::rpc_utility::RpcParameter};
 use hyper::StatusCode;
 use jsonrpc_core::{Error, Value};
 
 pub struct AddHttpRouteRequest {
     source: String,
     target: String,
-    traffic_policy: Option<TrafficPolicy>,
+    traffic_policy: Option<ScopeTrafficPolicy>,
 }
 
 impl AddHttpRouteRequest {
@@ -44,7 +44,7 @@ impl AddHttpRouteRequest {
         self.target.clone()
     }
 
-    pub fn get_traffic_policy(&self) -> Option<TrafficPolicy> {
+    pub fn get_traffic_policy(&self) -> Option<ScopeTrafficPolicy> {
         self.traffic_policy.clone()
     }
 }

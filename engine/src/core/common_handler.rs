@@ -5,7 +5,8 @@ use std::fs::Metadata;
 use std::net::IpAddr;
 use std::path::PathBuf;
 
-use crate::core::shared_memory::HTTP_CLIENT;
+use crate::core::shared_memory::HTTP_PROXY_MANAGER;
+use crate::models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy;
 use crate::log_info;
 
 use crate::render::Render;
@@ -29,6 +30,7 @@ impl CommonHandler {
         endpoint_to_navigate: &String,
         req: Request<Body>,
         client_ip: IpAddr,
+        traffic_policy: &ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         let start_time: std::time::Instant = std::time::Instant::now();
 
@@ -56,9 +58,11 @@ impl CommonHandler {
 
         let new_request = Request::from_parts(parts, body);
 
+        let client = HTTP_PROXY_MANAGER.get(traffic_policy);
+
         let response = run_in_time_buffer(
-            crate::constants::Constants::DEFAULT_HTTP_CLIENT_TIMEOUT,
-            HTTP_CLIENT.request(new_request),
+            traffic_policy.upstream_settings.http_client_timeout,
+            client.request(new_request),
         )
         .await;
 

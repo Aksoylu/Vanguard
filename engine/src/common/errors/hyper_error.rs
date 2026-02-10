@@ -1,4 +1,3 @@
-use hyper::{Request, Body};
 use std::fmt;
 
 #[derive(Debug)]
