@@ -11,9 +11,12 @@ pub struct HttpsServerConfig {
     pub ip_address: String,
     pub port: u16,
 
-    #[serde(default)]
-    #[serde(skip_serializing_if = "Option::is_none")]
-    pub traffic_policy: Option<ScopeTrafficPolicy>,
+    #[serde(default = "use_default_traffic_policy")]
+    pub traffic_policy: ScopeTrafficPolicy,
+}
+
+fn use_default_traffic_policy() -> ScopeTrafficPolicy {
+    ScopeTrafficPolicy::default()
 }
 
 impl Default for HttpsServerConfig {
@@ -22,7 +25,7 @@ impl Default for HttpsServerConfig {
             is_active: Constants::DEFUALT_HTTPS_IS_ACTIVE,
             ip_address: Constants::DEFAULT_HTTPS_IP.to_string(),
             port: Constants::DEFAULT_HTTPS_PORT,
-            traffic_policy: None,
+            traffic_policy: ScopeTrafficPolicy::default(),
         }
     }
 }

@@ -20,8 +20,8 @@ impl HttpProxyManager {
         // Build a unique key for the given traffic policy
         let key = format!(
             "{}_{}",
-            traffic_policy.upstream_settings.get_pool_idle_timeout(),
-            traffic_policy.upstream_settings.get_max_idle_conns_per_host()
+            traffic_policy.upstream_settings.pool_idle_timeout,
+            traffic_policy.upstream_settings.max_idle_conns_per_host
         );
 
         // First try to read with a read lock by given key
@@ -40,8 +40,8 @@ impl HttpProxyManager {
         }
 
         let client = Arc::new(HttpClient::init(
-            traffic_policy.upstream_settings.get_pool_idle_timeout(),
-            traffic_policy.upstream_settings.get_max_idle_conns_per_host(),
+            traffic_policy.upstream_settings.pool_idle_timeout,
+            traffic_policy.upstream_settings.max_idle_conns_per_host,
         ));
 
         http_caller.insert(key, Arc::clone(&client));
