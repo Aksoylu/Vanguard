@@ -1,5 +1,7 @@
-use crate::models::http_route::HttpRoute;
-use crate::models::route::{HttpsRoute, IwsRoute, SecureIwsRoute};
+use crate::models::route::http_route::HttpRoute;
+use crate::models::route::https_route::HttpsRoute;
+use crate::models::route::iws_route::IwsRoute;
+use crate::models::route::secure_iws_route::SecureIwsRoute;
 use crate::rpc_service::rpc_status_message::RpcStatusMessage;
 use hyper::StatusCode;
 use jsonrpc_core::Value;
@@ -28,7 +30,7 @@ impl GetRouteListResponse {
             secure_iws_routes: None,
         };
 
-        return instance
+        instance
     }
 
      pub fn build(&self) -> jsonrpc_core::Value {

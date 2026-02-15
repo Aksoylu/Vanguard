@@ -16,13 +16,13 @@ pub fn start_clock() -> Clock {
 
 /// Takes Clock as parameter, returns elapsed time as ms n U128 type
 pub fn stop_clock(start_time: Clock) -> u128 {
-    let elapsed_time = start_time.elapsed().as_millis();
-    elapsed_time
+    
+    start_time.elapsed().as_millis()
 }
 
-/// Converts a u64 value to a Duration.
+/// Converts a u64 value representing milliseconds to a Duration.
 pub fn u64_to_duration(value: u64) -> std::time::Duration {
-    std::time::Duration::from_secs(value)
+    std::time::Duration::from_millis(value)
 }
 
 /// Runs a future with a timeout.

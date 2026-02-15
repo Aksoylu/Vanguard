@@ -17,6 +17,7 @@ pub fn add_secure_iws_route(params: Value) -> Result<Value, Error> {
     let serving_path = request.get_serving_path();
     let ssl_cert_path: String = request.get_ssl_cert_path();
     let ssl_private_key_path: String = request.get_ssl_private_key_path();
+    let traffic_policy = request.get_traffic_policy();
 
     validate_ssl_context(&source, &ssl_cert_path, &ssl_private_key_path)?;
 
@@ -28,6 +29,7 @@ pub fn add_secure_iws_route(params: Value) -> Result<Value, Error> {
         &serving_path,
         &ssl_cert_path,
         &ssl_private_key_path,
+        traffic_policy,
     );
 
     Ok(AddSecureIwsRouteResponse::build())
@@ -37,7 +39,7 @@ fn check_route_already_used(source: &String, serving_path: &String) -> Result<()
     let router = ROUTER.read().unwrap();
     let all_route_list = router.list_routes();
 
-    let normalized_new_source = normalize_string(&source);
+    let normalized_new_source = normalize_string(source);
 
     for each_route in all_route_list {
         let normalized_current_source = normalize_string(&each_route.source);

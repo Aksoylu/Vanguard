@@ -13,6 +13,7 @@ pub fn add_iws_route(params: Value) -> Result<Value, Error> {
 
     let source = request.get_source();
     let serving_path = request.get_serving_path();
+    let traffic_policy = request.get_traffic_policy();
 
     let parsed_serving_path = PathBuf::from_str(serving_path.as_str()).unwrap_or_default();
 
@@ -24,7 +25,7 @@ pub fn add_iws_route(params: Value) -> Result<Value, Error> {
     }
 
     let mut router = ROUTER.write().unwrap();
-    router.add_iws_route(&source, &serving_path);
+    router.add_iws_route(&source, &serving_path, traffic_policy);
 
     let response = AddIwsRouteResponse::build()?;
 

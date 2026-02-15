@@ -3,14 +3,12 @@ use serde::{Deserialize, Deserializer, Serialize};
 use crate::constants::Constants;
 
 #[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
-pub struct LoggerConfig {
+pub struct LoggerSettings {
     #[serde(default = "default_log_dir_name")]
     pub log_dir_name: String,
 
-    #[serde(
-        default = "default_log_levels",
-        deserialize_with = "deserialize_log_levels"
-    )]
+    #[serde(default = "default_log_levels")]
+    #[serde(deserialize_with = "deserialize_log_levels")]
     pub log_levels: Vec<String>,
 
     #[serde(default = "default_log_file_size")]
@@ -20,7 +18,7 @@ pub struct LoggerConfig {
     pub keep_last_logs: usize,
 }
 
-impl Default for LoggerConfig {
+impl Default for LoggerSettings {
     fn default() -> Self {
         Self {
             log_dir_name: default_log_dir_name(),

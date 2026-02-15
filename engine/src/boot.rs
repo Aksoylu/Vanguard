@@ -56,7 +56,7 @@ impl Boot {
 
         let rpc_session = RpcSession::init(
             config.rpc_server.ip_address.clone(),
-            config.rpc_server.port.clone(),
+            config.rpc_server.port,
             config.rpc_server.private_secret_key.clone(),
         );
         let mut rpc_server = RPC_SERVER.write().unwrap();
@@ -103,9 +103,9 @@ impl Boot {
         let validation = config.validate();
 
         if validation.is_ok() {
-            return (config, true);
+            (config, true)
         } else {
-            return (Config::default(), false);
+            (Config::default(), false)
         }
     }
 

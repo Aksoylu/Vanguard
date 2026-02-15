@@ -8,9 +8,12 @@ use tokio_rustls::TlsAcceptor;
 use crate::constants::Constants;
 use crate::core::common_handler::{CommonHandler, Protocol};
 use crate::core::connection_lock::ConnectionLock;
-use crate::core::shared_memory::{CONNECTION_MANAGER, ROUTER, SHUTDOWN_SIGNAL};
-use crate::models::route::{HttpsRoute, SecureIwsRoute};
-use crate::utils::http_utility::get_content_length;
+use crate::core::shared_memory::{CONNECTION_MANAGER, ROUTER, RUNTIME_BOOT_INFO, SHUTDOWN_SIGNAL};
+use crate::models::route::secure_iws_route::SecureIwsRoute;
+use crate::models::{
+    route::https_route::HttpsRoute, traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
+};
+use crate::utils::http_utility::calculate_content_length;
 use crate::utils::time_utility::run_in_time_buffer;
 use crate::{log_debug, log_error, log_info};
 
@@ -125,7 +128,6 @@ impl HttpsServer {
                             "Unable to send negotiated protocol: {:?}",
                             stream_result.err().unwrap()
                         );
-                        return;
                     }
                 })
                 .await;
@@ -139,6 +141,7 @@ impl HttpsServer {
                 }
             };
 
+            // @todo: get request host and select server engine here
             // 4. Determining if we should use HTTP/2 or fallback to HTTP/1.1.
             let mut server_engine = https_server.get_server_engine();
             if let Ok(Some(protocol)) = receiver.await {
@@ -166,24 +169,52 @@ impl HttpsServer {
         });
     }
 
-    /// @TODO: it will be build by using current configurations
+    /// Returns a new HTTPS server engine with the current traffic policy
     fn get_server_engine(&self) -> Http {
+        // Clone traffic_policy to drop the RwLockReadGuard immediately
+        let traffic_policy = {
+            let runtime_info = RUNTIME_BOOT_INFO.read().unwrap();
+            runtime_info.config.get_https_effective_policy()
+        };
+
         let mut server_engine = Http::new();
 
-        // 5. Setting timeouts and limits for scalability
         server_engine
             .http1_header_read_timeout(std::time::Duration::from_secs(
-                Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT,
+                traffic_policy
+                    .http1_protocol_settings
+                    .get_http1_header_read_timeout(),
             ))
-            .max_buf_size(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
+            .max_buf_size(traffic_policy.upstream_settings.get_max_request_body_size() as usize)
+            .http1_keep_alive(traffic_policy.http1_protocol_settings.get_http1_keepalive())
             .http2_keep_alive_timeout(std::time::Duration::from_secs(
-                Constants::DEFAULT_POOL_IDLE_TIMEOUT,
+                traffic_policy.upstream_settings.get_pool_idle_timeout(),
             ))
-            .http2_max_concurrent_streams(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST as u32)
-            .http2_initial_connection_window_size(Some(Constants::DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE))
-            .http2_initial_stream_window_size(Some(Constants::DEFAULT_HTTP2_STREAM_WINDOW_SIZE))
-            .http2_max_frame_size(Some(Constants::DEFAULT_HTTP2_MAX_FRAME_SIZE))
-            .http2_max_header_list_size(Constants::DEFAULT_HTTP2_MAX_HEADER_LIST_SIZE);
+            .http2_max_concurrent_streams(
+                traffic_policy
+                    .upstream_settings
+                    .get_max_idle_conns_per_host() as u32,
+            )
+            .http2_initial_connection_window_size(Some(
+                traffic_policy
+                    .http2_protocol_settings
+                    .get_initial_connection_window_size(),
+            ))
+            .http2_initial_stream_window_size(Some(
+                traffic_policy
+                    .http2_protocol_settings
+                    .get_stream_window_size(),
+            ))
+            .http2_max_frame_size(Some(
+                traffic_policy.http2_protocol_settings.get_max_frame_size(),
+            ))
+            .http2_max_header_list_size(
+                traffic_policy
+                    .http2_protocol_settings
+                    .get_max_header_list_size(),
+            )
+            .http1_half_close(true)
+            .http1_writev(true);
 
         server_engine
     }
@@ -197,20 +228,32 @@ impl HttpsServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let request_host = extract_host(&req);
 
+        // Get traffic_policy to drop the RwLockReadGuard immediately
+        let (traffic_policy, global_rate_limit) = {
+            let runtime_info = RUNTIME_BOOT_INFO.read().unwrap();
+            (
+                runtime_info.config.get_https_effective_policy(),
+                runtime_info
+                    .config
+                    .global_traffic_policy
+                    .server
+                    .max_requests_per_minute,
+            )
+        };
+
         // Global Request Body Size Check
-        let content_length = get_content_length(&req);
-        if content_length.is_err() {
-            return Ok(Response::builder()
+        let content_length = calculate_content_length(&req).map_err(|_| {
+            Response::builder()
                 .status(hyper::StatusCode::BAD_REQUEST)
                 .body(Body::from(Render::internal_server_error(
                     &request_host,
-                    content_length.err().unwrap().get_message(),
+                    "Invalid Content-Length header",
                 )))
-                .unwrap());
-        }
+                .unwrap()
+        });
+        let content_length = content_length.unwrap();
 
-        let parsed_content_length = content_length.unwrap();
-        if parsed_content_length > Constants::DEFAULT_MAX_REQUEST_BODY_SIZE {
+        if content_length > traffic_policy.upstream_settings.get_max_request_body_size() {
             return Ok(Response::builder()
                 .status(hyper::StatusCode::PAYLOAD_TOO_LARGE)
                 .body(Body::from(Render::internal_server_error(
@@ -237,7 +280,7 @@ impl HttpsServer {
             );
         }
 
-        if !CONNECTION_MANAGER.check_rate_limit(client_ip) {
+        if !CONNECTION_MANAGER.check_rate_limit(client_ip, global_rate_limit) {
             log_info!("Rate limit exceeded for ip address {:?}", client_ip);
             return Ok::<_, hyper::Error>(
                 Response::builder()
@@ -252,8 +295,8 @@ impl HttpsServer {
 
         CONNECTION_MANAGER.increment_total_requests();
         let response = run_in_time_buffer(
-            Constants::DEFAULT_SERVER_READ_TIMEOUT,
-            self.handle_request(req, client_ip),
+            traffic_policy.upstream_settings.get_http_client_timeout() * 1000,
+            self.handle_request(req, client_ip, traffic_policy),
         )
         .await;
 
@@ -283,6 +326,7 @@ impl HttpsServer {
         request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
+        mut traffic_policy: ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         log_debug!(
             "HTTPS outband request source found in https route registry:  {:?}",
@@ -291,7 +335,17 @@ impl HttpsServer {
 
         let current_https_route = self.https_routes.get(request_host).unwrap();
 
-        if !String::is_empty(&request_host) {
+        // Merge route-specific overrides
+        if let Some(ref route_overrides) = current_https_route.traffic_policy {
+            traffic_policy.merge(route_overrides);
+        }
+
+        // Merge path-specific overrides
+        if let Some(ref path_overrides) = current_https_route.path_policy {
+            traffic_policy.merge_path_policy(path_overrides);
+        }
+
+        if !String::is_empty(request_host) {
             log_debug!(
                 "HTTPS outband request source ({}) is known. Forwarding request to {}",
                 &request_host,
@@ -303,7 +357,8 @@ impl HttpsServer {
                 request_host,
                 &current_https_route.target,
                 req,
-                client_ip.clone(),
+                client_ip,
+                &traffic_policy,
             )
             .await;
         }
@@ -321,6 +376,7 @@ impl HttpsServer {
         request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
+        _traffic_policy: ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
 
@@ -330,7 +386,7 @@ impl HttpsServer {
         );
 
         let current_iws_route = self.secure_iws_routes.get(request_host).unwrap();
-        if String::is_empty(&current_iws_route.serving_path) {
+        if !std::path::Path::new(&current_iws_route.serving_path).exists() {
             log_debug!(
                 "HTTPS outband IWS request source ({}) as domain/target is is unknown",
                 &request_host
@@ -408,13 +464,14 @@ impl HttpsServer {
             &current_iws_route.serving_path
         );
 
-        CommonHandler::iws_empty_path_error(Protocol::HTTPS, &request_host, req, client_ip).await
+        CommonHandler::iws_empty_path_error(Protocol::HTTPS, request_host, req, client_ip).await
     }
 
     async fn handle_request(
         &self,
         req: Request<Body>,
         client_ip: IpAddr,
+        traffic_policy: ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         let request_host = extract_host(&req);
 
@@ -425,7 +482,9 @@ impl HttpsServer {
         log_debug!("Looking for Https route table:");
 
         if self.https_routes.contains_key(&request_host) {
-            return self.handle_https_route(&request_host, req, client_ip).await;
+            return self
+                .handle_https_route(&request_host, req, client_ip, traffic_policy)
+                .await;
         }
 
         /* Processing IWS requests */
@@ -433,7 +492,7 @@ impl HttpsServer {
 
         if self.secure_iws_routes.contains_key(&request_host) {
             return self
-                .handle_secure_iws_route(&request_host, req, client_ip)
+                .handle_secure_iws_route(&request_host, req, client_ip, traffic_policy)
                 .await;
         }
 

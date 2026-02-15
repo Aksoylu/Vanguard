@@ -6,8 +6,6 @@ use std::sync::atomic::{AtomicU64, AtomicUsize, Ordering};
 use std::sync::RwLock;
 use std::time::Instant;
 
-pub type ConnectionPermit = ConnectionLock;
-
 pub struct ConnectionManager {
     active_connections: AtomicUsize,
     total_requests: AtomicU64,
@@ -49,7 +47,7 @@ impl ConnectionManager {
     }
 
     /// Checks if the IP address has exceeded the rate limit
-    pub fn check_rate_limit(&self, ip: IpAddr) -> bool {
+    pub fn check_rate_limit(&self, ip: IpAddr, limit: u32) -> bool {
         let mut limits = self.rate_limits.write().unwrap();
         let now = Instant::now();
         let (count, start) = limits.entry(ip).or_insert((0, now));
@@ -60,7 +58,7 @@ impl ConnectionManager {
             return true;
         }
 
-        if *count >= Constants::DEFAULT_MAX_REQUESTS_PER_MINUTE {
+        if *count >= limit {
             return false;
         }
 

@@ -1,4 +1,4 @@
-use crate::common::enums::route_type::{self, RouteType};
+use crate::common::enums::route_type::RouteType;
 use crate::rpc_service::models::get_route_list_response::GetRouteListResponse;
 use crate::{
     core::shared_memory::ROUTER, rpc_service::models::get_route_list_request::GetRouteListRequest,

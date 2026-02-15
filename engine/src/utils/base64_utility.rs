@@ -12,5 +12,5 @@ pub fn decode_b64(input: String) -> Option<String> {
         return None;
     }
 
-    return Some(decoded_str.unwrap());
+    Some(decoded_str.unwrap())
 }

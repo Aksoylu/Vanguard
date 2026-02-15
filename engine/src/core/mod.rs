@@ -6,6 +6,6 @@ pub mod common_handler;
 pub mod rpc_session;
 pub mod shared_memory;
 pub mod connection_manager;
-pub mod http_proxy_client;
+pub mod http_proxy_manager;
 pub mod connection_lock;
-pub mod shutdown_signal;
+pub mod http_client;

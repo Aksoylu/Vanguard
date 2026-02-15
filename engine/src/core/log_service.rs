@@ -4,26 +4,20 @@ use std::fmt::Debug;
 use std::path::PathBuf;
 
 use crate::constants::Constants;
-use crate::models::logger_config::LoggerConfig;
+use crate::models::settings::logger_settings::LoggerSettings;
 
 // Global Logger Instance: Initially empty default config, updated in Runtime init
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct LogService {
-    pub config: LoggerConfig,
+    pub settings: LoggerSettings,
 }
 
-impl Default for LogService {
-    fn default() -> Self {
-        Self {
-            config: LoggerConfig::default(),
-        }
-    }
-}
 
 impl LogService {
-    pub fn init(runtime_path: &PathBuf, logger_config: LoggerConfig) -> Self {
-        let log_dir_path = runtime_path.join(&logger_config.log_dir_name);
+    pub fn init(runtime_path: &PathBuf, logger_settings: LoggerSettings) -> Self {
+        let log_dir_path = runtime_path.join(&logger_settings.log_dir_name);
 
         FlexiLogger::try_with_str(Constants::LOG_LEVEL)
             .unwrap()
@@ -43,34 +37,34 @@ impl LogService {
                 )
             })
             .rotate(
-                Criterion::AgeOrSize(Age::Day, logger_config.log_file_size),
+                Criterion::AgeOrSize(Age::Day, logger_settings.log_file_size),
                 Naming::Timestamps,
-                Cleanup::KeepLogFiles(logger_config.keep_last_logs),
+                Cleanup::KeepLogFiles(logger_settings.keep_last_logs),
             )
             .start()
             .unwrap();
         Self {
-            config: logger_config,
+            settings: logger_settings,
         }
     }
 
     pub fn info<T: AsRef<str>>(&self, msg: T) {
-        if self.config.log_levels.contains(&"INFO".to_string()) {
+        if self.settings.log_levels.contains(&"INFO".to_string()) {
             info!("{}", msg.as_ref());
         }
     }
     pub fn warn<T: AsRef<str>>(&self, msg: T) {
-        if self.config.log_levels.contains(&"WARNING".to_string()) {
+        if self.settings.log_levels.contains(&"WARNING".to_string()) {
             warn!("{}", msg.as_ref());
         }
     }
     pub fn error<T: AsRef<str>>(&self, msg: T) {
-        if self.config.log_levels.contains(&"ERROR".to_string()) {
+        if self.settings.log_levels.contains(&"ERROR".to_string()) {
             error!("{}", msg.as_ref());
         }
     }
     pub fn debug<T: AsRef<str>>(&self, msg: T) {
-        if self.config.log_levels.contains(&"DEBUG".to_string()) {
+        if self.settings.log_levels.contains(&"DEBUG".to_string()) {
             debug!("{}", msg.as_ref());
         }
     }

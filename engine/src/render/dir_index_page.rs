@@ -80,9 +80,9 @@ impl DirIndexPage {
         let render_process = Tera::one_off(DirIndexPage::HTML_TEMPLATE, &context, true);
 
         if render_process.is_ok() {
-            return render_process.unwrap();
+            render_process.unwrap()
         } else {
-            return format!("Error: {:?}", render_process.err());
+            format!("Error: {:?}", render_process.err())
         }
     }
 
@@ -114,8 +114,8 @@ impl DirIndexPage {
         for i in 0..(path_parts.len() + 1) {
             let parent_path_parts = &path_parts[0..(i)].to_vec();
 
-            let part_path = &DirIndexPage::build_path(&parent_path_parts);
-            let part_name = &DirIndexPage::get_current_path_name(&parent_path_parts);
+            let part_path = &DirIndexPage::build_path(parent_path_parts);
+            let part_name = &DirIndexPage::get_current_path_name(parent_path_parts);
 
             if part_name.trim().is_empty() {
                 continue;
@@ -135,23 +135,23 @@ impl DirIndexPage {
     }
 
     fn get_current_path_name(path_parts: &Vec<&str>) -> String {
-        if path_parts.len() > 0 {
-            return path_parts[path_parts.len() - 1].to_string();
+        if !path_parts.is_empty() {
+            path_parts[path_parts.len() - 1].to_string()
         } else {
-            return String::from("Root");
+            String::from("Root")
         }
     }
 
     fn build_path(path_parts: &Vec<&str>) -> String {
-        if path_parts.len() >= 1 {
+        if !path_parts.is_empty() {
             let mut build_buffer = String::new();
             for part in path_parts {
                 build_buffer = format!("{}/{}", build_buffer, part);
             }
 
-            return build_buffer;
+            build_buffer
         } else {
-            return String::from("/");
+            String::from("/")
         }
     }
 }

@@ -14,12 +14,14 @@ pub struct BootDisplayUtility {
 impl BootDisplayUtility {
     pub fn init(boot_result: BootResult) -> Self {
         BootDisplayUtility {
-            boot_result: boot_result,
+            boot_result,
         }
     }
 
     fn table_format(&self) -> TableFormat {
-        let format = format::FormatBuilder::new()
+        
+
+        format::FormatBuilder::new()
             .column_separator(' ')
             .left_border('\0')
             .right_border('\0')
@@ -36,9 +38,7 @@ impl BootDisplayUtility {
                 &[format::LinePosition::Intern],
                 format::LineSeparator::new('─', '┼', '├', '┤'),
             )
-            .build();
-
-        format
+            .build()
     }
 
     fn add_build_info(&self, table: &mut Table) {

@@ -3,11 +3,11 @@ use std::sync::{Arc, RwLock};
 
 use crate::{
     core::{
-        connection_manager::ConnectionManager, http_proxy_client::HttpProxyClient,
+        connection_manager::ConnectionManager, http_proxy_manager::HttpProxyManager,
         http_server::HttpServer, https_server::HttpsServer, log_service::LogService,
-        router::Router, shutdown_signal::ShutdownSignal,
+        router::Router
     },
-    models::boot_result::BootResult,
+    models::{boot_result::BootResult, reload_signal::ReloadSignal, shutdown_signal::ShutdownSignal},
     rpc_service::rpc_server::RPCServer,
 };
 
@@ -32,6 +32,8 @@ pub static ROUTER: Lazy<Arc<RwLock<Router>>> =
 
 pub static CONNECTION_MANAGER: Lazy<ConnectionManager> = Lazy::new(|| ConnectionManager::default());
 
-pub static HTTP_CLIENT: Lazy<HttpProxyClient> = Lazy::new(|| HttpProxyClient::default());
+pub static HTTP_PROXY_MANAGER: Lazy<HttpProxyManager> = Lazy::new(|| HttpProxyManager::default());
 
 pub static SHUTDOWN_SIGNAL: Lazy<ShutdownSignal> = Lazy::new(|| ShutdownSignal::new());
+
+pub static RELOAD_SIGNAL: Lazy<ReloadSignal> = Lazy::new(|| ReloadSignal::new());

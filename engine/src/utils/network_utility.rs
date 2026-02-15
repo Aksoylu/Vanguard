@@ -3,10 +3,17 @@ use std::net::Ipv4Addr;
 use hyper::{header, Body, Request};
 
 pub fn extract_host(req: &Request<Body>) -> String {
+    if let Some(host) = req.uri().host() {
+        return host.to_string();
+    }
+
     req.headers()
         .get(header::HOST)
         .and_then(|host| host.to_str().ok())
-        .map_or_else(|| "/".to_string(), |host_value| host_value.to_string())
+        .map(|host_value| {
+            host_value.split(':').next().unwrap_or(host_value).to_string()
+        })
+        .unwrap_or_else(|| "/".to_string())
 }
 
 pub fn parse_ip_address(value: String) -> Ipv4Addr {
