@@ -25,8 +25,10 @@ use crate::{
     },
     log_debug, log_error, log_info,
     models::route::{http_route::HttpRoute, iws_route::IwsRoute},
+    models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
     render::Render,
     utils::{
+        http_utility::calculate_content_length,
         network_utility::{extract_host, parse_ip_address},
         time_utility::run_in_time_buffer,
     },
@@ -72,6 +74,7 @@ impl HttpServer {
         }
     }
 
+    /// Starts the HTTP server
     pub async fn start(&self) {
         let http_server = Arc::new(self.clone());
         log_info!("Vanguard Engine Http server started on {:?}", &self.socket);
@@ -84,7 +87,8 @@ impl HttpServer {
                 let http_server = Arc::clone(&http_server_clone);
 
                 async move {
-                    let start_new_connection = Arc::new(CONNECTION_MANAGER.try_acquire_connection());
+                    let start_new_connection =
+                        Arc::new(CONNECTION_MANAGER.try_acquire_connection());
 
                     Ok::<_, hyper::Error>(service_fn(move |req| {
                         let http_server = Arc::clone(&http_server);
@@ -103,7 +107,7 @@ impl HttpServer {
             let mut shutdown_event = SHUTDOWN_SIGNAL.subscriber.clone();
             let mut reload_event = RELOAD_SIGNAL.subscriber.clone();
 
-            let shutdown_signal = async move {
+            let stop_signal = async move {
                 tokio::select! {
                     _ = shutdown_event.wait_for(|&s| s) => {
                         log_info!("HTTP Server received shutdown signal.");
@@ -117,7 +121,7 @@ impl HttpServer {
             let execution_result = self
                 .get_server_engine()
                 .serve(make_svc)
-                .with_graceful_shutdown(shutdown_signal)
+                .with_graceful_shutdown(stop_signal)
                 .await;
 
             if execution_result.is_err() {
@@ -135,19 +139,31 @@ impl HttpServer {
         }
     }
 
-    /// @TODO: it will be build by using current configurations
+    /// Returns a new HTTP server engine with the current traffic policy
     fn get_server_engine(&self) -> Builder<AddrIncoming> {
+        // Clone traffic_policy to drop the RwLockReadGuard immediately
+        let traffic_policy = {
+            let runtime_info = RUNTIME_BOOT_INFO.read().unwrap();
+            runtime_info.config.get_http_effective_policy()
+        };
+
         let server_engine = Server::bind(&self.socket)
-            .tcp_nodelay(true)
-            .http1_keepalive(true)
             .http1_header_read_timeout(std::time::Duration::from_secs(
-                Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT,
+                traffic_policy
+                    .http1_protocol_settings
+                    .get_http1_header_read_timeout(),
             ))
             .tcp_keepalive(Some(std::time::Duration::from_secs(
-                Constants::DEFAULT_POOL_IDLE_TIMEOUT,
+                traffic_policy.upstream_settings.get_pool_idle_timeout(),
             )))
-            .http1_max_buf_size(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
-            .http1_only(true);
+            .http1_max_buf_size(
+                traffic_policy.upstream_settings.get_max_request_body_size() as usize
+            )
+            .http1_only(traffic_policy.http1_protocol_settings.get_http1_only())
+            .tcp_nodelay(traffic_policy.http1_protocol_settings.get_tcp_nodelay())
+            .http1_keepalive(traffic_policy.http1_protocol_settings.get_http1_keepalive())
+            .http1_half_close(true)
+            .http1_writev(true);
 
         server_engine
     }
@@ -161,26 +177,33 @@ impl HttpServer {
     ) -> Result<Response<Body>, hyper::Error> {
         let request_host = extract_host(&req);
 
-        // Clone traffic_policy to drop the RwLockReadGuard immediately
-        let traffic_policy = {
+        // Get traffic_policy to drop the RwLockReadGuard immediately
+        let (traffic_policy, global_rate_limit) = {
             let runtime_info = RUNTIME_BOOT_INFO.read().unwrap();
-            runtime_info.config.http_server.traffic_policy.clone()
+            (
+                runtime_info.config.get_http_effective_policy(),
+                runtime_info
+                    .config
+                    .global_traffic_policy
+                    .server
+                    .max_requests_per_minute,
+            )
         };
 
         // Global Request Body Size Check
-        let content_length = crate::utils::http_utility::get_content_length(&req);
-        if content_length.is_err() {
-            return Ok(Response::builder()
+        let content_length = calculate_content_length(&req).map_err(|_| {
+            Response::builder()
                 .status(hyper::StatusCode::BAD_REQUEST)
                 .body(Body::from(Render::internal_server_error(
                     &request_host,
-                    content_length.err().unwrap().get_message(),
+                    "Invalid Content-Length header",
                 )))
-                .unwrap());
-        }
+                .unwrap()
+        });
 
-        let parsed_content_length = content_length.unwrap();
-        if parsed_content_length > traffic_policy.upstream_settings.max_request_body_size {
+        let content_length = content_length.unwrap();
+
+        if content_length > traffic_policy.upstream_settings.get_max_request_body_size() {
             return Ok(Response::builder()
                 .status(hyper::StatusCode::PAYLOAD_TOO_LARGE)
                 .body(Body::from(Render::internal_server_error(
@@ -207,7 +230,7 @@ impl HttpServer {
             );
         }
 
-        if !CONNECTION_MANAGER.check_rate_limit(client_ip) {
+        if !CONNECTION_MANAGER.check_rate_limit(client_ip, global_rate_limit) {
             log_info!("Rate limit exceeded for ip address {:?}", client_ip);
             return Ok::<_, hyper::Error>(
                 Response::builder()
@@ -220,10 +243,9 @@ impl HttpServer {
             );
         }
 
-        CONNECTION_MANAGER.increment_total_requests();
         let response = run_in_time_buffer(
-            traffic_policy.upstream_settings.http_client_timeout,
-            self.handle_request(req, client_ip),
+            30000, // 30 seconds
+            self.handle_request(req, client_ip, traffic_policy),
         )
         .await;
 
@@ -252,6 +274,7 @@ impl HttpServer {
         &self,
         req: Request<Body>,
         client_ip: IpAddr,
+        traffic_policy: ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         let request_host = extract_host(&req);
 
@@ -262,14 +285,18 @@ impl HttpServer {
         log_debug!("Looking for Http route table:");
 
         if self.http_routes.contains_key(&request_host) {
-            return self.handle_http_route(&request_host, req, client_ip).await;
+            return self
+                .handle_http_route(&request_host, req, client_ip, traffic_policy)
+                .await;
         }
 
         /* Processing IWS requests */
         log_debug!("Looking for IWS route table:");
 
         if self.iws_routes.contains_key(&request_host) {
-            return self.handle_iws_route(&request_host, req, client_ip).await;
+            return self
+                .handle_iws_route(&request_host, req, client_ip, traffic_policy)
+                .await;
         }
 
         /* Handle not found */
@@ -286,6 +313,7 @@ impl HttpServer {
         request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
+        mut traffic_policy: ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         log_debug!(
             "HTTP outband request source found in http route registry:  {:?}",
@@ -293,6 +321,16 @@ impl HttpServer {
         );
 
         let current_http_route = self.http_routes.get(request_host).unwrap();
+
+        // Merge route-specific overrides
+        if let Some(ref route_overrides) = current_http_route.traffic_policy {
+            traffic_policy.merge(route_overrides);
+        }
+
+        // Merge path-specific overrides
+        if let Some(ref path_overrides) = current_http_route.path_policy {
+            traffic_policy.merge_path_policy(path_overrides);
+        }
 
         if !String::is_empty(&current_http_route.target) {
             log_debug!(
@@ -307,7 +345,7 @@ impl HttpServer {
                 &current_http_route.target,
                 req,
                 client_ip.clone(),
-                &current_http_route.traffic_policy,
+                &traffic_policy,
             )
             .await;
         }
@@ -325,6 +363,7 @@ impl HttpServer {
         request_host: &String,
         req: Request<Body>,
         client_ip: IpAddr,
+        _traffic_policy: ScopeTrafficPolicy,
     ) -> Result<Response<Body>, hyper::Error> {
         let url_path = req.uri().path().strip_prefix("/").unwrap_or("");
 
@@ -334,7 +373,7 @@ impl HttpServer {
         );
 
         let current_iws_route = self.iws_routes.get(request_host).unwrap();
-        if String::is_empty(&current_iws_route.serving_path) {
+        if !std::path::Path::new(&current_iws_route.serving_path).exists() {
             log_debug!(
                 "HTTP outband IWS request source ({}) as domain/target is is unknown",
                 &request_host

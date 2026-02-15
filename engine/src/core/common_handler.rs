@@ -61,7 +61,7 @@ impl CommonHandler {
         let client = HTTP_PROXY_MANAGER.get(traffic_policy);
 
         let response = run_in_time_buffer(
-            traffic_policy.upstream_settings.http_client_timeout,
+            traffic_policy.upstream_settings.get_http_client_timeout() * 1000,
             client.request(new_request),
         )
         .await;

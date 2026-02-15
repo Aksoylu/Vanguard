@@ -5,7 +5,7 @@ use crate::models::settings::{
     server_settings::ServerSettings, upstream_settings::UpstreamSettings,
 };
 
-#[derive(Debug, Serialize, Deserialize, PartialEq, Clone)]
+#[derive(Debug, Serialize, Deserialize, PartialEq, Clone, Default)]
 pub struct GlobalTrafficPolicy {
     #[serde(default)]
     pub server: ServerSettings,
@@ -20,13 +20,14 @@ pub struct GlobalTrafficPolicy {
     pub upstream_settings: UpstreamSettings,
 }
 
-impl Default for GlobalTrafficPolicy {
-    fn default() -> Self {
+impl GlobalTrafficPolicy {
+    /// Creates a new instance with all values set to their defaults.
+    pub fn global() -> Self {
         Self {
             server: ServerSettings::default(),
-            http1_protocol_settings: Http1ProtocolSettings::default(),
-            http2_protocol_settings: Http2ProtocolSettings::default(),
-            upstream_settings: UpstreamSettings::default(),
+            http1_protocol_settings: Http1ProtocolSettings::global(),
+            http2_protocol_settings: Http2ProtocolSettings::global(),
+            upstream_settings: UpstreamSettings::global(),
         }
     }
 }
