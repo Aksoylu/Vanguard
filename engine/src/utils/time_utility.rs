@@ -20,9 +20,9 @@ pub fn stop_clock(start_time: Clock) -> u128 {
     elapsed_time
 }
 
-/// Converts a u64 value to a Duration.
+/// Converts a u64 value representing milliseconds to a Duration.
 pub fn u64_to_duration(value: u64) -> std::time::Duration {
-    std::time::Duration::from_secs(value)
+    std::time::Duration::from_millis(value)
 }
 
 /// Runs a future with a timeout.
