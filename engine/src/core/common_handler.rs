@@ -51,6 +51,7 @@ impl CommonHandler {
 
         let (mut parts, body) = req.into_parts();
         parts.uri = new_uri.parse().unwrap();
+        parts.version = hyper::Version::HTTP_11;
         parts.headers.insert(
             "x-forwarded-for",
             HeaderValue::from_str(&client_ip.to_string()).unwrap(),
