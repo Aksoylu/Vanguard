@@ -2,7 +2,7 @@ use mime_guess::{from_path, Mime};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::{self, File, Metadata};
-use std::io::{Read, Write};
+use std::io::Write;
 use std::path::{Path, PathBuf};
 
 /// Loads a JSON file and deserializes it into the specified type `T`.
@@ -112,32 +112,6 @@ pub fn is_file_exist(file_path: &PathBuf) -> bool {
     file_path.is_file()
 }
 
-/// Reads a file's entire contents as a binary vector.
-///
-/// # Arguments
-///
-/// * `file_path` - The path of the file to read.
-///
-/// # Returns
-///
-/// * `Some(Vec<u8>)` containing the file bytes on success.
-/// * `None` if the file cannot be read.
-pub async fn read_file_as_binary(file_path: &PathBuf) -> Option<Vec<u8>> {
-    let file = File::open(file_path);
-    if file.is_err() {
-        return None;
-    }
-
-    let mut hex_content: Vec<u8> = vec![];
-
-    let read_operation = file.unwrap().read_to_end(&mut hex_content);
-    if read_operation.is_err() {
-        return None;
-    }
-
-    Some(hex_content)
-}
-
 /// Detects a MIME type by file extension.
 /// MIME type means http response type that sent to server. If could not detect, returns "application/octet-stream" as default
 /// # Returns
@@ -159,8 +133,6 @@ pub fn generate_file_tag(content_length: u64, last_modified: u64) -> String {
 }
 
 pub fn get_last_modified(metadata: &Metadata) -> u64 {
-    
-
     metadata
         .modified()
         .ok()

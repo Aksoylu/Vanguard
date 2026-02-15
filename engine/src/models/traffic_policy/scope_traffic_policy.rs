@@ -26,15 +26,6 @@ pub struct ScopeTrafficPolicy {
 }
 
 impl ScopeTrafficPolicy {
-    /// Creates a new instance with all values set to their defaults.
-    pub fn global() -> Self {
-        Self {
-            http1_protocol_settings: Http1ProtocolSettings::global(),
-            http2_protocol_settings: Http2ProtocolSettings::global(),
-            upstream_settings: UpstreamSettings::global(),
-        }
-    }
-
     /// Merges another policy into this one. Values in `other` take precedence.
     pub fn merge(&mut self, other: &Self) {
         self.http1_protocol_settings

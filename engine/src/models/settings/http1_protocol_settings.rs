@@ -82,16 +82,6 @@ impl Http1ProtocolSettings {
         self.http1_keepalive.unwrap_or(true)
     }
 
-    pub fn get_tcp_keepalive(&self) -> u64 {
-        self.tcp_keepalive
-            .unwrap_or(Constants::DEFAULT_POOL_IDLE_TIMEOUT)
-    }
-
-    pub fn get_http1_max_buf_size(&self) -> usize {
-        self.http1_max_buf_size
-            .unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
-    }
-
     pub fn get_http1_only(&self) -> bool {
         self.http1_only.unwrap_or(true)
     }
