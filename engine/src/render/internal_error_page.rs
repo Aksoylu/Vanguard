@@ -47,9 +47,9 @@ impl InternalErrorPage {
         let render_process = Tera::one_off(InternalErrorPage::HTML_TEMPLATE, &context, true);
 
         if render_process.is_ok() {
-            return render_process.unwrap();
+            render_process.unwrap()
         } else {
-            return format!("Error: {:?}", render_process.err());
+            format!("Error: {:?}", render_process.err())
         }
     }
 

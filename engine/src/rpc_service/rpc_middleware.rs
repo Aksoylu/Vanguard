@@ -32,13 +32,11 @@ impl RpcMiddleware {
             let check_auth_token_operation =
                 Self::check_auth_token(&authorization_token, &decrypted_payload);
             if !check_auth_token_operation {
-                return Err(RPCError::unauthorized(format!(
-                    "Vanguard JRPC Security Warning: Wrong authorization token.",
-                )));
+                return Err(RPCError::unauthorized("Vanguard JRPC Security Warning: Wrong authorization token.".to_string()));
             }
 
             // 4. Extract request input data from decrypted payload
-            let parse_request_data_operation = serde_json::to_value(&decrypted_payload.get("data"))
+            let parse_request_data_operation = serde_json::to_value(decrypted_payload.get("data"))
                 .map_err(|_| "invalid request data");
 
             if parse_request_data_operation.is_err() {
@@ -74,7 +72,7 @@ impl RpcMiddleware {
             nonce, crypted_payload
         );
 
-        let decrypted_payload_as_str = decrypt_aes256_hex(&aes_decryption_key, crypted_payload, nonce);
+        let decrypted_payload_as_str = decrypt_aes256_hex(aes_decryption_key, crypted_payload, nonce);
         if decrypted_payload_as_str.is_none() {
             return Err("decryption failed".into());
         }
@@ -93,8 +91,8 @@ impl RpcMiddleware {
             return false;
         }
 
-        let is_auth_token_correct = auth_token.unwrap_or_default() == valid_auth_token;
+        
 
-        is_auth_token_correct
+        auth_token.unwrap_or_default() == valid_auth_token
     }
 }

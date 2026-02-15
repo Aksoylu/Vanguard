@@ -30,7 +30,7 @@ impl GetRouteListResponse {
             secure_iws_routes: None,
         };
 
-        return instance
+        instance
     }
 
      pub fn build(&self) -> jsonrpc_core::Value {

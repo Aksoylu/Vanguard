@@ -131,9 +131,9 @@ impl Router {
 
     /* Service Functions */
     pub fn list_routes(&self) -> Vec<JsonRoute> {
-        let export_data = self.convert_to_json_route_vec();
+        
 
-        export_data
+        self.convert_to_json_route_vec()
     }
 
     pub fn add_http_route(

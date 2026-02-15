@@ -124,7 +124,7 @@ impl CommonHandler {
         let request_path = original_uri.path().to_string();
 
         // Getting file size and last modified info, then we can create a etag
-        let content_type = get_content_type(&serving_path);
+        let content_type = get_content_type(serving_path);
         let content_length = metadata.len();
         let last_modified = get_last_modified(metadata);
 
@@ -166,13 +166,13 @@ impl CommonHandler {
             &client_ip
         );
 
-        return Ok(Response::builder()
+        Ok(Response::builder()
             .header("Content-Type", content_type.as_ref())
             .header("Content-Length", content_length.to_string())
             .header("ETag", file_etag)
             .header("Connection", "keep-alive")
             .body(body)
-            .unwrap());
+            .unwrap())
     }
 
     /// If Index.html exist, render index.html as text
@@ -213,7 +213,7 @@ impl CommonHandler {
 
         let absolute_path = serving_path.join("index.html");
 
-        let dir_content: String = Render::directory_explorer_page(&absolute_path, &url_path);
+        let dir_content: String = Render::directory_explorer_page(&absolute_path, url_path);
 
         let elapsed_time = stop_clock(start_time);
 
@@ -231,12 +231,12 @@ impl CommonHandler {
 
         let content_length = dir_content.len();
 
-        return Ok(Response::builder()
+        Ok(Response::builder()
             .header("Content-Type", "text/html")
             .header("Content-Length", content_length.to_string())
             .header("Connection", "keep-alive")
             .body(Body::from(dir_content))
-            .unwrap());
+            .unwrap())
     }
 
     pub async fn not_found_error(
@@ -257,7 +257,7 @@ impl CommonHandler {
         let request_path = original_uri.path().to_string();
 
         let internal_server_error_content = Render::internal_server_error(
-            &request_host,
+            request_host,
             format!(
                 "Requested domain/target is not assigned to a valid {} source",
                 protocol_name
@@ -278,10 +278,10 @@ impl CommonHandler {
             &client_ip
         );
 
-        return Ok(Response::builder()
+        Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::from(internal_server_error_content))
-            .unwrap());
+            .unwrap())
     }
 
     pub async fn iws_empty_path_error(
@@ -302,7 +302,7 @@ impl CommonHandler {
         let request_path = original_uri.path().to_string();
 
         let internal_server_error_content = Render::internal_server_error(
-            &request_host,
+            request_host,
             format!(
                 "Requested domain/target is not assigned to a valid {} source",
                 protocol_name
@@ -323,10 +323,10 @@ impl CommonHandler {
             &client_ip
         );
 
-        return Ok(Response::builder()
+        Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::from(internal_server_error_content))
-            .unwrap());
+            .unwrap())
     }
 
     pub async fn iws_route_not_found_error(
@@ -347,7 +347,7 @@ impl CommonHandler {
         let request_path = original_uri.path().to_string();
 
         let internal_server_error_content = Render::internal_server_error(
-            &request_host,
+            request_host,
             format!(
                 "Requested domain/target is not assigned to a valid {} source",
                 protocol_name
@@ -368,9 +368,9 @@ impl CommonHandler {
             &client_ip
         );
 
-        return Ok(Response::builder()
+        Ok(Response::builder()
             .status(StatusCode::NOT_FOUND)
             .body(Body::from(internal_server_error_content))
-            .unwrap());
+            .unwrap())
     }
 }

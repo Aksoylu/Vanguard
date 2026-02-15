@@ -39,7 +39,7 @@ fn check_route_already_used(source: &String, serving_path: &String) -> Result<()
     let router = ROUTER.read().unwrap();
     let all_route_list = router.list_routes();
 
-    let normalized_new_source = normalize_string(&source);
+    let normalized_new_source = normalize_string(source);
 
     for each_route in all_route_list {
         let normalized_current_source = normalize_string(&each_route.source);

@@ -16,8 +16,8 @@ pub fn start_clock() -> Clock {
 
 /// Takes Clock as parameter, returns elapsed time as ms n U128 type
 pub fn stop_clock(start_time: Clock) -> u128 {
-    let elapsed_time = start_time.elapsed().as_millis();
-    elapsed_time
+    
+    start_time.elapsed().as_millis()
 }
 
 /// Converts a u64 value representing milliseconds to a Duration.

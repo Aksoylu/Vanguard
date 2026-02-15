@@ -147,7 +147,9 @@ impl HttpServer {
             runtime_info.config.get_http_effective_policy()
         };
 
-        let server_engine = Server::bind(&self.socket)
+        
+
+        Server::bind(&self.socket)
             .http1_header_read_timeout(std::time::Duration::from_secs(
                 traffic_policy
                     .http1_protocol_settings
@@ -163,9 +165,7 @@ impl HttpServer {
             .tcp_nodelay(traffic_policy.http1_protocol_settings.get_tcp_nodelay())
             .http1_keepalive(traffic_policy.http1_protocol_settings.get_http1_keepalive())
             .http1_half_close(true)
-            .http1_writev(true);
-
-        server_engine
+            .http1_writev(true)
     }
 
     /// Executes the request lifecycle
@@ -341,10 +341,10 @@ impl HttpServer {
 
             return CommonHandler::url_execution(
                 Protocol::HTTP,
-                &request_host,
+                request_host,
                 &current_http_route.target,
                 req,
-                client_ip.clone(),
+                client_ip,
                 &traffic_policy,
             )
             .await;

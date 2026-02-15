@@ -128,7 +128,6 @@ impl HttpsServer {
                             "Unable to send negotiated protocol: {:?}",
                             stream_result.err().unwrap()
                         );
-                        return;
                     }
                 })
                 .await;
@@ -346,7 +345,7 @@ impl HttpsServer {
             traffic_policy.merge_path_policy(path_overrides);
         }
 
-        if !String::is_empty(&request_host) {
+        if !String::is_empty(request_host) {
             log_debug!(
                 "HTTPS outband request source ({}) is known. Forwarding request to {}",
                 &request_host,
@@ -358,7 +357,7 @@ impl HttpsServer {
                 request_host,
                 &current_https_route.target,
                 req,
-                client_ip.clone(),
+                client_ip,
                 &traffic_policy,
             )
             .await;
@@ -465,7 +464,7 @@ impl HttpsServer {
             &current_iws_route.serving_path
         );
 
-        CommonHandler::iws_empty_path_error(Protocol::HTTPS, &request_host, req, client_ip).await
+        CommonHandler::iws_empty_path_error(Protocol::HTTPS, request_host, req, client_ip).await
     }
 
     async fn handle_request(

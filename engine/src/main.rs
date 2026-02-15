@@ -74,32 +74,28 @@ fn handle_application_params(boot_result: &BootResult) {
     if do_overwrite_config {
         log_info!("Default config file overwritten by system");
         Boot::save_config(boot_result.config_path.to_owned(), &boot_result.config);
-    } else {
-        if !boot_result.is_config_loaded_successfully {
-            println!("Config file can not be readed. File is corrupt or JSON format is broken. Please check on path: {}",  boot_result.config_path.to_string_lossy());
-            let approval = approve_dialog(
-                "Do you want to overwrite 'default' Vanguard Config on current [y/n]",
-            );
-            if approval {
-                log_info!("Default config file overwritten by system");
-                Boot::save_config(boot_result.config_path.to_owned(), &boot_result.config);
-            }
+    } else if !boot_result.is_config_loaded_successfully {
+        println!("Config file can not be readed. File is corrupt or JSON format is broken. Please check on path: {}",  boot_result.config_path.to_string_lossy());
+        let approval = approve_dialog(
+            "Do you want to overwrite 'default' Vanguard Config on current [y/n]",
+        );
+        if approval {
+            log_info!("Default config file overwritten by system");
+            Boot::save_config(boot_result.config_path.to_owned(), &boot_result.config);
         }
     }
 
     if do_overwrite_router {
         log_info!("Default router file overwritten by system");
         Boot::save_router(boot_result.route_path.to_owned(), &boot_result.router);
-    } else {
-        if !boot_result.is_router_loaded_successfully {
-            println!( "Router file can not be readed. File is corrut or JSON format is broken. Please check on path: {}", boot_result.config_path.to_string_lossy() );
-            let approval = approve_dialog(
-                "Do you want to overwrite 'default' Vanguard Route file on current [y/n]",
-            );
-            if approval {
-                log_info!("Default router file overwritten by system");
-                Boot::save_router(boot_result.route_path.to_owned(), &boot_result.router);
-            }
+    } else if !boot_result.is_router_loaded_successfully {
+        println!( "Router file can not be readed. File is corrut or JSON format is broken. Please check on path: {}", boot_result.config_path.to_string_lossy() );
+        let approval = approve_dialog(
+            "Do you want to overwrite 'default' Vanguard Route file on current [y/n]",
+        );
+        if approval {
+            log_info!("Default router file overwritten by system");
+            Boot::save_router(boot_result.route_path.to_owned(), &boot_result.router);
         }
     }
 }

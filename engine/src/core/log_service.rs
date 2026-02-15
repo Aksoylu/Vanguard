@@ -9,17 +9,11 @@ use crate::models::settings::logger_settings::LoggerSettings;
 // Global Logger Instance: Initially empty default config, updated in Runtime init
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct LogService {
     pub settings: LoggerSettings,
 }
 
-impl Default for LogService {
-    fn default() -> Self {
-        Self {
-            settings: LoggerSettings::default(),
-        }
-    }
-}
 
 impl LogService {
     pub fn init(runtime_path: &PathBuf, logger_settings: LoggerSettings) -> Self {
