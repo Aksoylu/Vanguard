@@ -296,7 +296,7 @@ impl HttpsServer {
 
         CONNECTION_MANAGER.increment_total_requests();
         let response = run_in_time_buffer(
-            30000, // 30 seconds
+            traffic_policy.upstream_settings.get_http_client_timeout() * 1000,
             self.handle_request(req, client_ip, traffic_policy),
         )
         .await;

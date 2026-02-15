@@ -25,10 +25,12 @@ impl HttpProxyManager {
         );
 
         // First try to read with a read lock by given key
-        let get_clients = self.http_clients.read().unwrap();
-        let pooled_http_client = get_clients.get(&key);
-        if pooled_http_client.is_some() {
-            return Arc::clone(pooled_http_client.unwrap());
+        {
+            let get_clients = self.http_clients.read().unwrap();
+            let pooled_http_client = get_clients.get(&key);
+            if pooled_http_client.is_some() {
+                return Arc::clone(pooled_http_client.unwrap());
+            }
         }
 
         // If not found, acquire write lock to insert
