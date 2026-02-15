@@ -37,14 +37,17 @@ impl PathTrafficPolicy {
     }
 
     pub fn get_http_client_timeout(&self) -> u64 {
-        self.http_client_timeout.unwrap_or(Constants::DEFAULT_HTTP_CLIENT_TIMEOUT)
+        self.http_client_timeout
+            .unwrap_or(Constants::DEFAULT_HTTP_CLIENT_TIMEOUT)
     }
 
     pub fn get_max_request_body_size(&self) -> u64 {
-        self.max_request_body_size.unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE)
+        self.max_request_body_size
+            .unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE)
     }
 
     pub fn get_max_requests_per_minute(&self) -> u32 {
-        self.max_requests_per_minute.unwrap_or(Constants::DEFAULT_MAX_REQUESTS_PER_MINUTE)
+        self.max_requests_per_minute
+            .unwrap_or(Constants::DEFAULT_MAX_REQUESTS_PER_MINUTE)
     }
 }

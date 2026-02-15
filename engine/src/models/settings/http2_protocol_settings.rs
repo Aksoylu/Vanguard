@@ -30,7 +30,9 @@ impl Default for Http2ProtocolSettings {
 impl Http2ProtocolSettings {
     pub fn global() -> Self {
         Self {
-            initial_connection_window_size: Some(Constants::DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE),
+            initial_connection_window_size: Some(
+                Constants::DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE,
+            ),
             stream_window_size: Some(Constants::DEFAULT_HTTP2_STREAM_WINDOW_SIZE),
             max_frame_size: Some(Constants::DEFAULT_HTTP2_MAX_FRAME_SIZE),
             max_header_list_size: Some(Constants::DEFAULT_HTTP2_MAX_HEADER_LIST_SIZE),
@@ -54,18 +56,22 @@ impl Http2ProtocolSettings {
 
     // Getters
     pub fn get_initial_connection_window_size(&self) -> u32 {
-        self.initial_connection_window_size.unwrap_or(Constants::DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE)
+        self.initial_connection_window_size
+            .unwrap_or(Constants::DEFAULT_HTTP_INITIAL_CONNECTION_WINDOW_SIZE)
     }
 
     pub fn get_stream_window_size(&self) -> u32 {
-        self.stream_window_size.unwrap_or(Constants::DEFAULT_HTTP2_STREAM_WINDOW_SIZE)
+        self.stream_window_size
+            .unwrap_or(Constants::DEFAULT_HTTP2_STREAM_WINDOW_SIZE)
     }
 
     pub fn get_max_frame_size(&self) -> u32 {
-        self.max_frame_size.unwrap_or(Constants::DEFAULT_HTTP2_MAX_FRAME_SIZE)
+        self.max_frame_size
+            .unwrap_or(Constants::DEFAULT_HTTP2_MAX_FRAME_SIZE)
     }
 
     pub fn get_max_header_list_size(&self) -> u32 {
-        self.max_header_list_size.unwrap_or(Constants::DEFAULT_HTTP2_MAX_HEADER_LIST_SIZE)
+        self.max_header_list_size
+            .unwrap_or(Constants::DEFAULT_HTTP2_MAX_HEADER_LIST_SIZE)
     }
 }

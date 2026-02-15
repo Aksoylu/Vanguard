@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::models::{
     settings::{
-        http1_protocol_settings::Http1ProtocolSettings, http2_protocol_settings::Http2ProtocolSettings,
-        upstream_settings::UpstreamSettings,
+        http1_protocol_settings::Http1ProtocolSettings,
+        http2_protocol_settings::Http2ProtocolSettings, upstream_settings::UpstreamSettings,
     },
     traffic_policy::path_traffic_policy::PathTrafficPolicy,
 };
@@ -37,8 +37,10 @@ impl ScopeTrafficPolicy {
 
     /// Merges another policy into this one. Values in `other` take precedence.
     pub fn merge(&mut self, other: &Self) {
-        self.http1_protocol_settings.merge(&other.http1_protocol_settings);
-        self.http2_protocol_settings.merge(&other.http2_protocol_settings);
+        self.http1_protocol_settings
+            .merge(&other.http1_protocol_settings);
+        self.http2_protocol_settings
+            .merge(&other.http2_protocol_settings);
         self.upstream_settings.merge(&other.upstream_settings);
     }
 

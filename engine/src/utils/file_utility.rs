@@ -1,12 +1,9 @@
-use jsonrpc_core::Error;
 use mime_guess::{from_path, Mime};
 use serde::de::DeserializeOwned;
 use serde::Serialize;
 use std::fs::{self, File, Metadata};
 use std::io::{Read, Write};
 use std::path::{Path, PathBuf};
-
-use crate::utils::directory_utility::get_ssl_upload_path;
 
 /// Loads a JSON file and deserializes it into the specified type `T`.
 ///
@@ -148,40 +145,6 @@ pub async fn read_file_as_binary(file_path: &PathBuf) -> Option<Vec<u8>> {
 /// * The detected `Mime` type.
 pub fn get_content_type(file_path: &PathBuf) -> Mime {
     from_path(file_path).first_or_octet_stream()
-}
-
-/// Resolves a file path string to an absolute `PathBuf`.
-///
-/// Supports a custom `@vanguard` prefix to resolve paths relative to the Vanguard upload directory.
-///
-/// # Arguments
-///
-/// * `file_path_as_string` - The raw file path string (e.g., "/abs/path" or "@vanguard/file.txt").
-///
-/// # Returns
-///
-/// * `Ok(PathBuf)` if the resolved path exists and is a file.
-/// * `Err(Error)` with `InternalError` code if the file is not found.
-pub fn get_absolute_ssl_file_path(file_path_as_string: &String) -> Result<PathBuf, Error> {
-    let absolute_path = if file_path_as_string.starts_with("@vanguard") {
-        let relative_path = file_path_as_string.replacen("@vanguard/", "", 1);
-        get_ssl_upload_path().join(relative_path)
-    } else {
-        PathBuf::from(file_path_as_string)
-    };
-
-    if absolute_path.is_file() {
-        Ok(absolute_path)
-    } else {
-        Err(Error {
-            code: jsonrpc_core::ErrorCode::InternalError,
-            message: format!(
-                "File not found at path '{}'",
-                absolute_path.to_string_lossy()
-            ),
-            data: None,
-        })
-    }
 }
 
 pub async fn open_file(file_path: &PathBuf) -> Option<tokio::fs::File> {

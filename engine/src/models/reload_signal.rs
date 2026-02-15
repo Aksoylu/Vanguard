@@ -1,6 +1,6 @@
-use tokio::sync::watch::Sender as TokioSender;
-use tokio::sync::watch::Receiver as TokioReceiver;
 use tokio::sync::watch::channel as TokioChannel;
+use tokio::sync::watch::Receiver as TokioReceiver;
+use tokio::sync::watch::Sender as TokioSender;
 
 #[derive(Clone)]
 pub struct ReloadSignal {

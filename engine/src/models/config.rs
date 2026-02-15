@@ -3,7 +3,8 @@ use serde::{Deserialize, Serialize};
 use crate::models::settings::logger_settings::LoggerSettings;
 
 use super::{
-    http_server_config::HttpServerConfig, https_server_config::HttpsServerConfig,
+    http_server_config::HttpServerConfig,
+    https_server_config::HttpsServerConfig,
     rpc_server_config::RpcServerConfig,
     traffic_policy::{
         global_traffic_policy::GlobalTrafficPolicy, scope_traffic_policy::ScopeTrafficPolicy,

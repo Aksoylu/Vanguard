@@ -54,18 +54,22 @@ impl UpstreamSettings {
 
     // Getters
     pub fn get_http_client_timeout(&self) -> u64 {
-        self.http_client_timeout.unwrap_or(Constants::DEFAULT_HTTP_CLIENT_TIMEOUT)
+        self.http_client_timeout
+            .unwrap_or(Constants::DEFAULT_HTTP_CLIENT_TIMEOUT)
     }
 
     pub fn get_pool_idle_timeout(&self) -> u64 {
-        self.pool_idle_timeout.unwrap_or(Constants::DEFAULT_POOL_IDLE_TIMEOUT)
+        self.pool_idle_timeout
+            .unwrap_or(Constants::DEFAULT_POOL_IDLE_TIMEOUT)
     }
 
     pub fn get_max_idle_conns_per_host(&self) -> usize {
-        self.max_idle_conns_per_host.unwrap_or(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST)
+        self.max_idle_conns_per_host
+            .unwrap_or(Constants::DEFAULT_MAX_IDLE_CONNS_PER_HOST)
     }
 
     pub fn get_max_request_body_size(&self) -> u64 {
-        self.max_request_body_size.unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE)
+        self.max_request_body_size
+            .unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE)
     }
 }

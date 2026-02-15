@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    constants::Constants,
-    models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
+    constants::Constants, models::traffic_policy::scope_traffic_policy::ScopeTrafficPolicy,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]

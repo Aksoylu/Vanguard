@@ -70,7 +70,8 @@ impl Http1ProtocolSettings {
 
     // Getters
     pub fn get_http1_header_read_timeout(&self) -> u64 {
-        self.http1_header_read_timeout.unwrap_or(Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT)
+        self.http1_header_read_timeout
+            .unwrap_or(Constants::DEFAULT_HTTP1_HEADER_READ_TIMEOUT)
     }
 
     pub fn get_tcp_nodelay(&self) -> bool {
@@ -82,11 +83,13 @@ impl Http1ProtocolSettings {
     }
 
     pub fn get_tcp_keepalive(&self) -> u64 {
-        self.tcp_keepalive.unwrap_or(Constants::DEFAULT_POOL_IDLE_TIMEOUT)
+        self.tcp_keepalive
+            .unwrap_or(Constants::DEFAULT_POOL_IDLE_TIMEOUT)
     }
 
     pub fn get_http1_max_buf_size(&self) -> usize {
-        self.http1_max_buf_size.unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
+        self.http1_max_buf_size
+            .unwrap_or(Constants::DEFAULT_MAX_REQUEST_BODY_SIZE as usize)
     }
 
     pub fn get_http1_only(&self) -> bool {
